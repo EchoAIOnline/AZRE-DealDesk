@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Loader2, User, X, Info } from 'lucide-react';
+import { AlertTriangle, Loader2, User, X, Info, CheckCircle } from 'lucide-react';
 import { api, supabase, setOrganizationId } from '../../services/api';
 import { User as UserType } from '../../types';
 import { generateId } from '../../services/utils';
@@ -20,6 +20,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         supabaseKey: ''
     });
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
     const [organizations, setOrganizations] = useState<string[]>([]);
     
@@ -41,8 +42,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 orgList = Array.from(new Set(orgList));
                 if (orgList.length === 0) orgList = ['AZRE'];
                 setOrganizations(orgList);
+                setFormData(prev => prev.selectedOrganization ? prev : { ...prev, selectedOrganization: orgList[0] as string });
             } catch {
                 setOrganizations(['AZRE']);
+                setFormData(prev => prev.selectedOrganization ? prev : { ...prev, selectedOrganization: 'AZRE' });
             }
         };
         fetchOrganizations();
@@ -71,6 +74,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 if (sessionError) throw sessionError;
                 
                 if (session?.user) {
+                    // If we are functioning inside the popup, let the parent window handle things after session is parsed and stored
+                    if (window.opener) {
+                        window.close();
+                        return;
+                    }
+                    
                     setLoading(true);
                     const email = session.user.email;
                     
@@ -81,12 +90,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     if (!user) {
                         // Create new user if not exists based on Google info
                         const newUserPartial = {
+                            id: session.user.id,
                             name: session.user.user_metadata.full_name || email?.split('@')[0] || 'Google User',
                             email: email || '',
                             photo: session.user.user_metadata.avatar_url,
                             position: 'Acquisitions',
                             createdAt: new Date().toISOString(),
-                            loginStatus: 'Logged In' 
+                            loginStatus: 'Logged In',
+                            organization: 'AZRE',
+                            organization_id: 'org_azre_00001'
                         };
                         user = await api.save(newUserPartial, 'Users');
                     } else {
@@ -129,6 +141,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         
         // Only run check if we aren't already manually loading
         if (!loading) checkSession();
+
+        // Listen for auth state changes (e.g. from the popup resolving the oauth flow)
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                if (window.opener) {
+                    window.close();
+                } else if (!loading) {
+                    checkSession();
+                }
+            }
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
     }, []);
 
     const handleSwitchAccount = () => {
@@ -141,17 +168,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         setError('');
         
         try {
-            // Using standard redirect flow
-            // CRITICAL FIX: We strip the query parameters (window.location.search) from the redirect URL.
-            // In AI Studio/Preview environments, the URL often contains params like "?showAssistant=true".
-            // When Supabase redirects back with its own params (#access_token=...), the combination causes a 
-            // 403 Forbidden error on the Google host. Using origin + pathname ensures a clean callback URL.
             const redirectUrl = window.location.origin + window.location.pathname;
 
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: redirectUrl,
+                    skipBrowserRedirect: true, // IMPORTANT FOR IFRAME COMPATIBILITY! Let's handle via popup.
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
@@ -160,7 +183,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             });
 
             if (error) throw error;
-            // Browser will redirect automatically
+            
+            if (data?.url) {
+                const popup = window.open(data.url, 'oauth_popup', 'width=600,height=700');
+                if (!popup) {
+                    throw new Error("Popup blocked by browser. Please allow popups to sign in with Google.");
+                }
+            } else {
+                throw new Error("Unable to retrieve Google OAuth URL.");
+            }
         } catch (err: any) {
             console.error("Google Login Error:", err);
             setError(err.message || "Failed to initiate Google Login.");
@@ -205,7 +236,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
                 // Check if session was created (implies email confirmation is disabled)
                 if (!authData.session) {
-                     throw new Error("Registration successful! Please check your email to confirm your account before logging in. If this is a test, ensure email confirmations are disabled in Supabase settings.");
+                     setSuccessMsg("Registration successful! Please check your email to confirm your account before logging in.");
+                     setLoading(false);
+                     return;
                 }
 
                 // 3. Create the Database Record (now that we enjoy a Supabase session context)
@@ -288,8 +321,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 if (authError) throw new Error("Invalid email or password");
                 if (!authData.user) throw new Error("Sign in failed");
 
-                // Get User Record matching UUID
-                const { data: userData, error: dbError } = await supabase.from('Users').select('*').eq('id', authData.user.id).single();
+                // Get User Record matching UUID (or fallback to email)
+                let { data: userData, error: dbError } = await supabase.from('Users').select('*').eq('id', authData.user.id).single();
+
+                if (dbError || !userData) {
+                    console.log("No explicit User record found by ID, checking by email.");
+                    const { data: userByEmail, error: emailError } = await supabase.from('Users').select('*').eq('email', formData.email).single();
+                    if (!emailError && userByEmail) {
+                        userData = userByEmail;
+                        dbError = null;
+                    }
+                }
 
                 let updatedUser: any;
 
@@ -304,7 +346,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                          }
                     }
                     if (!updatedUser) {
-                         throw new Error("Your account authenticated, but your user database record is missing. Please contact support.");
+                        console.warn("User database record missing, recreating...");
+                        const newUserPartial = {
+                            id: authData.user.id,
+                            name: formData.email?.split('@')[0] || 'Unknown User',
+                            email: formData.email,
+                            position: 'Acquisitions',
+                            createdAt: new Date().toISOString(),
+                            loginStatus: 'Logged In',
+                            organization: 'AZRE',
+                            organization_id: 'org_azre_00001'
+                        };
+                        updatedUser = await api.save(newUserPartial, 'Users');
+                        if (!updatedUser) {
+                            throw new Error("Your account authenticated, but we failed to recreate your missing database record. Please contact support.");
+                        }
                     }
                 } else {
                     updatedUser = { ...userData, loginStatus: 'Logged In' };
@@ -346,17 +402,35 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-2xl transition-all duration-300">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                        {isSignup ? 'Create Account' : (useCachedUser && cachedUser && !isSignup ? `Welcome Back, ${cachedUser.name.split(' ')[0]}` : 'Welcome Back')}
-                    </h2>
-                    
-                    {error && (
-                        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm flex items-center gap-2">
-                            <AlertTriangle size={16}/> {error}
+                    {successMsg ? (
+                        <div className="text-center py-6">
+                            <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-[#4ADE80] rounded-full flex items-center justify-center mb-4">
+                                <CheckCircle size={32} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check Your Email</h2>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+                                {successMsg}
+                            </p>
+                            <button
+                                onClick={() => { setSuccessMsg(''); setIsSignup(false); }}
+                                className="w-full bg-blue-600 hover:bg-blue-500 dark:bg-[#4ADE80] dark:hover:bg-[#3bc970] text-white dark:text-gray-900 font-bold py-3 rounded transition-all"
+                            >
+                                Return to Log In
+                            </button>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+                                {isSignup ? 'Create Account' : (useCachedUser && cachedUser && !isSignup ? `Welcome Back, ${cachedUser.name.split(' ')[0]}` : 'Welcome Back')}
+                            </h2>
+                            
+                            {error && (
+                                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm flex items-center gap-2">
+                                    <AlertTriangle size={16}/> {error}
+                                </div>
+                            )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                         {isSignup && (
                             <div>
                                 <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Full Name</label>
@@ -392,6 +466,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                             <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Password</label>
                             <input required type="password" autoComplete={isSignup ? "new-password" : "current-password"} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} />
                         </div>
+
+                        {isSignup && (
+                            <div>
+                                <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Confirm Password</label>
+                                <input required type="password" autoComplete="new-password" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.confirmPassword || ''} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
+                            </div>
+                        )}
 
                         {isSignup && (
                             <div className="space-y-4">
@@ -440,13 +521,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
-                        
-                        {isSignup && (
-                            <div>
-                                <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Confirm Password</label>
-                                <input required type="password" autoComplete="new-password" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.confirmPassword || ''} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
                             </div>
                         )}
 
@@ -502,12 +576,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                              </div>
                         )}
                         <button 
-                            onClick={() => { setIsSignup(!isSignup); setError(''); setFormData({ name: '', email: '', password: '', confirmPassword: '', inviteCode: '' }); setUseCachedUser(false); }}
+                            onClick={() => { setIsSignup(!isSignup); setError(''); setSuccessMsg(''); setFormData({ name: '', email: '', password: '', confirmPassword: '', inviteCode: '', organizationAction: 'join', organizationName: '', selectedOrganization: organizations[0] || 'AZRE', supabaseUrl: '', supabaseKey: ''}); setUseCachedUser(false); }}
                             className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                             {isSignup ? 'Already have an account? Log In' : "Don't have an account? Sign Up"}
                         </button>
                     </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

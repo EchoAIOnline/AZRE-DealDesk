@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Home, Users, Layout, Settings, Loader2, MapPin, Filter, LogOut, CheckCircle, Calculator, User as UserIcon, X, XCircle, Pencil, Upload, RefreshCw, Save, Menu, Search, ChevronDown, User, Calendar, FileSpreadsheet, Download, Moon, Sun, Monitor, AlertCircle, Database, Briefcase } from 'lucide-react';
-import { api, DEFAULT_DEALS, sendEmail, executeAdminSql, setOrganizationId } from './services/api';
+import { api, DEFAULT_DEALS, sendEmail, executeAdminSql, setOrganizationId, supabase } from './services/api';
 import { activityLogService } from './services/activityLogService';
 import { useAppStore } from './store/useAppStore';
 import { LoginForm } from './components/Auth/LoginForm';
@@ -145,6 +145,11 @@ export default function App() {
       if (currentUser) {
           const updatedUser = { ...currentUser, loginStatus: 'Logged Out' };
           await api.save(updatedUser, 'Users');
+      }
+      try {
+          await supabase.auth.signOut();
+      } catch (e) {
+          console.error("Error signing out of Supabase:", e);
       }
       setIsAuthenticated(false);
       setCurrentUser(null);
