@@ -1527,7 +1527,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                             <div key={num} className="grid grid-cols-12 gap-2 items-center">
                                                 <div className="col-span-1 text-xs text-gray-500 font-bold">Comp {num}</div>
                                                 <div className="col-span-3">
-                                                    <input className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white text-xs" placeholder="Address" value={comp.address} onChange={(e) => updateComp(compKey, 'address', e.target.value)} onBlur={handleAutoSave} />
+                                                    <input className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white text-xs" placeholder="Address" value={comp.address || ''} onChange={(e) => updateComp(compKey, 'address', e.target.value)} onBlur={handleAutoSave} />
                                                 </div>
                                                 <div className="col-span-1">
                                                     <input 
@@ -1539,7 +1539,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                     />
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <input className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white text-xs" placeholder="Date" value={comp.saleDate} onChange={(e) => updateComp(compKey, 'saleDate', e.target.value)} onBlur={handleAutoSave} />
+                                                    <input className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white text-xs" placeholder="Date" value={comp.saleDate || ''} onChange={(e) => updateComp(compKey, 'saleDate', e.target.value)} onBlur={handleAutoSave} />
                                                 </div>
                                                 <div className="col-span-2 relative">
                                                     <span className="absolute left-2 top-1.5 text-gray-400 text-xs">$</span>

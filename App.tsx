@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Home, Users, Layout, Settings, Loader2, MapPin, Filter, LogOut, CheckCircle, Calculator, User as UserIcon, X, XCircle, Pencil, Upload, RefreshCw, Save, Menu, Search, ChevronDown, User, Calendar, FileSpreadsheet, Download, Moon, Sun, Monitor, AlertCircle, Database, Briefcase } from 'lucide-react';
-import { api, DEFAULT_DEALS, sendEmail, executeAdminSql, updateSupabaseClient } from './services/api';
+import { api, DEFAULT_DEALS, sendEmail, executeAdminSql, setOrganizationId } from './services/api';
 import { activityLogService } from './services/activityLogService';
 import { useAppStore } from './store/useAppStore';
 import { LoginForm } from './components/Auth/LoginForm';
@@ -94,6 +94,7 @@ export default function App() {
       if (savedUser) {
           try {
             const user = JSON.parse(savedUser);
+            if (user.organization_id) setOrganizationId(user.organization_id);
             setCurrentUser(user);
             setIsAuthenticated(true);
           } catch (e) {
@@ -123,6 +124,7 @@ export default function App() {
 
   const handleLogin = async (user: UserType) => {
       const updatedUser: UserType = { ...user, loginStatus: 'Logged In' };
+      if (updatedUser.organization_id) setOrganizationId(updatedUser.organization_id);
       try {
           let saved = await api.save(updatedUser, 'Users');
           if (!saved) {
@@ -1105,22 +1107,10 @@ export default function App() {
           setCurrentUser(saved); 
           localStorage.setItem('azre-current-user', JSON.stringify(saved)); 
           
-          if (saved.organization && saved.organization !== currentUser?.organization) {
-               try {
-                   const ints = await api.load('Integrations');
-                   const orgConfig = ints.find((i: any) => {
-                       let o = i.organization;
-                       if (typeof o === 'string' && o.startsWith('"') && o.endsWith('"')) o = o.slice(1, -1);
-                       return o && o.toLowerCase() === saved.organization?.toLowerCase();
-                   });
-                   if (orgConfig && orgConfig.supabaseUrl && orgConfig.supabaseKey) {
-                       updateSupabaseClient(orgConfig.supabaseUrl.trim(), orgConfig.supabaseKey.trim());
-                       alert('Organization changed. The application will now reload to apply new database settings.');
-                       window.location.reload();
-                   }
-               } catch (e) {
-                   console.error("Failed to load new organization's supabase connection", e);
-               }
+          if (saved.organization_id && saved.organization_id !== currentUser?.organization_id) {
+               setOrganizationId(saved.organization_id);
+               alert('Organization changed. The application will now reload to apply new settings.');
+               window.location.reload();
           }
       }
   };

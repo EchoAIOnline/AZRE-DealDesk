@@ -8,7 +8,7 @@ import { SettingsEmail } from './SettingsEmail';
 import { DatabaseAdmin } from './DatabaseAdmin';
 import { ChromePluginSettings } from './ChromePluginSettings';
 import { serverFunctions, processPhotoUrl } from '../../services/utils';
-import { updateSupabaseClient, api } from '../../services/api';
+import { api } from '../../services/api';
 
 interface SettingsModalProps {
     onClose: () => void;
@@ -49,8 +49,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [generationStatus, setGenerationStatus] = useState('');
     
     // Supabase Settings State
-    const [supabaseUrlInput, setSupabaseUrlInput] = useState(localStorage.getItem('custom_supabase_url') || '');
-    const [supabaseKeyInput, setSupabaseKeyInput] = useState(localStorage.getItem('custom_supabase_key') || '');
     const [supabaseSaveStatus, setSupabaseSaveStatus] = useState('');
     
     // Global Integration State
@@ -73,8 +71,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         const orgInt = data.find((i: any) => i.organization && user.organization && i.organization.toLowerCase() === user.organization.toLowerCase());
                         const ints = orgInt || data[0];
                         setIntegrationId(ints.id);
-                        if (ints.supabaseUrl && !localStorage.getItem('custom_supabase_url')) setSupabaseUrlInput(ints.supabaseUrl);
-                        if (ints.supabaseKey && !localStorage.getItem('custom_supabase_key')) setSupabaseKeyInput(ints.supabaseKey);
+                        if (ints.supabaseUrl) { /* ignored, legacy custom override */ }
+                        if (ints.supabaseKey) { /* ignored, legacy custom override */ }
                         setMlsApiKey(ints.mlsApiKey || '');
                         setTwilioSid(ints.twilioAccountSid || '');
                         setTwilioToken(ints.twilioAuthToken || '');
@@ -89,55 +87,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             loadIntegrations();
         }
     }, [activeTab, user.organization]);
-
-    const handleSaveSupabaseConfig = async () => {
-        updateSupabaseClient(supabaseUrlInput.trim(), supabaseKeyInput.trim());
-
-        // Check if there's a pending user login locally that we need to sync to Supabase
-        const pendingUserStr = localStorage.getItem('azre-pending-user');
-        if (pendingUserStr) {
-            try {
-                const pendingUser = JSON.parse(pendingUserStr);
-                const savedObject = await api.save(pendingUser, 'Users');
-                if (savedObject) {
-                     localStorage.removeItem('azre-pending-user');
-                     if (onUpdateUser) onUpdateUser(savedObject); // make sure UI has the real UUID
-                }
-            } catch (e) {
-                console.error("Failed to sync pending user to Supabase:", e);
-            }
-        }
-
-        if (integrationId) {
-             try {
-                await api.save({
-                    id: integrationId,
-                    supabaseUrl: supabaseUrlInput.trim(),
-                    supabaseKey: supabaseKeyInput.trim()
-                }, 'Integrations');
-            } catch (e) {
-                console.error("Failed to update supabase config to DB", e);
-            }
-        } else {
-             // Create initial integration record since none exists locally mapped
-             try {
-                await api.save({
-                    id: crypto.randomUUID(),
-                    supabaseUrl: supabaseUrlInput.trim(),
-                    supabaseKey: supabaseKeyInput.trim(),
-                    organization: user.organization
-                }, 'Integrations');
-            } catch (e) {
-                console.error("Failed to create initial integration record", e);
-            }
-        }
-
-        setSupabaseSaveStatus('Saved! App will use this database connection now.');
-        setTimeout(() => setSupabaseSaveStatus(''), 3000);
-        
-        // Refresh page to ensure all bindings catch the updated supabase client if needed
-        setTimeout(() => window.location.reload(), 1000);
-    };
 
     const handleSaveMls = async () => {
         try {
@@ -312,17 +261,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="space-y-5">
                                     <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1.5 block">Full Name</label>
-                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.name} onChange={e => setEditedUser({...editedUser, name: e.target.value})} />
+                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.name || ''} onChange={e => setEditedUser({...editedUser, name: e.target.value})} />
                                     </div>
                                     
                                     <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1.5 block">Email</label>
-                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.email} onChange={e => setEditedUser({...editedUser, email: e.target.value})} />
+                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.email || ''} onChange={e => setEditedUser({...editedUser, email: e.target.value})} />
                                     </div>
                                     
                                     <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1.5 block">Company Position</label>
-                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.position} onChange={e => setEditedUser({...editedUser, position: e.target.value})} />
+                                        <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" value={editedUser.position || ''} onChange={e => setEditedUser({...editedUser, position: e.target.value})} />
                                     </div>
                                     
                                     <div>
@@ -333,11 +282,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1.5 block">New Password</label>
-                                            <input type="password" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="•••••••••••" value={editedUser.password} onChange={e => setEditedUser({...editedUser, password: e.target.value})} />
+                                            <input type="password" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="•••••••••••" value={editedUser.password || ''} onChange={e => setEditedUser({...editedUser, password: e.target.value})} />
                                         </div>
                                         <div>
                                             <label className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1.5 block">Confirm Password</label>
-                                            <input type="password" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="•••••••••••" value={editedUser.confirmPassword} onChange={e => setEditedUser({...editedUser, confirmPassword: e.target.value})} />
+                                            <input type="password" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none transition-colors" placeholder="•••••••••••" value={editedUser.confirmPassword || ''} onChange={e => setEditedUser({...editedUser, confirmPassword: e.target.value})} />
                                         </div>
                                     </div>
                                     
@@ -505,53 +454,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div className="space-y-6">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Integrations & APIs</h3>
                                 
-                                {/* Supabase Integration */}
-                                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-lg flex items-center gap-2">
-                                                <Database size={18} className="text-emerald-500" /> Supabase Integration
-                                            </h4>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Configure your own Supabase project. This overrides the default app database connection.</p>
-                                        </div>
-                                        {localStorage.getItem('custom_supabase_url') ? (
-                                            <span className="px-2 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold rounded flex items-center gap-1"><CheckCircle size={12} /> Custom Active</span>
-                                        ) : (
-                                            <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs font-bold rounded">Using Default</span>
-                                        )}
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Supabase URL</label>
-                                            <input 
-                                                type="text" 
-                                                value={supabaseUrlInput}
-                                                onChange={(e) => setSupabaseUrlInput(e.target.value)}
-                                                placeholder="https://xyzcompany.supabase.co" 
-                                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none font-mono" 
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Supabase Anon/Service Key</label>
-                                            <input 
-                                                type="password" 
-                                                value={supabaseKeyInput}
-                                                onChange={(e) => setSupabaseKeyInput(e.target.value)}
-                                                placeholder="eyJhbGciOiJIUzI1NiIsInR5c..." 
-                                                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none font-mono" 
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <button 
-                                                onClick={handleSaveSupabaseConfig}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium transition"
-                                            >
-                                                Save Supabase Config
-                                            </button>
-                                            {supabaseSaveStatus && <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{supabaseSaveStatus}</span>}
-                                        </div>
-                                    </div>
-                                </div>
+
                                 
                                 {/* Nationwide MLS Integration */}
                                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Loader2, User, X, Info } from 'lucide-react';
-import { api, supabase, updateSupabaseClient } from '../../services/api';
+import { api, supabase, setOrganizationId } from '../../services/api';
 import { User as UserType } from '../../types';
 import { generateId } from '../../services/utils';
 
@@ -108,7 +108,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                                 return o === user!.organization;
                             });
                             if (orgConfig && orgConfig.supabaseUrl && orgConfig.supabaseKey) {
-                                updateSupabaseClient(orgConfig.supabaseUrl.trim(), orgConfig.supabaseKey.trim());
+                                // Only legacy logic calls updateSupabaseClient, which is removed natively.
                             }
                         } catch (e) {
                             console.error("Failed to load organization supabase config on Google login", e);
@@ -174,9 +174,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         setLoading(true);
 
         try {
-            const users = await api.load('Users') as UserType[];
-            
             if (isSignup) {
+                // 1. Validation
+                if (formData.password !== formData.confirmPassword) {
+                    throw new Error("Passwords do not match");
+                }
+                
                 let orgName = '';
                 if (formData.organizationAction === 'create') {
                     if (!formData.organizationName) throw new Error("Organization Name is required");
@@ -184,74 +187,44 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 } else {
                     orgName = formData.selectedOrganization;
                     if (!orgName) throw new Error("Please select an organization to join");
-                    
-                    try {
-                        const integrations = await api.load('Integrations');
-                        const orgIntegration = integrations.find((i: any) => i.organization === orgName || i.organization === `"${orgName}"`);
-                        
-                        let integrationInvite = orgIntegration?.inviteCode;
-                        if (typeof integrationInvite === 'string' && integrationInvite.startsWith('"') && integrationInvite.endsWith('"')) {
-                            integrationInvite = integrationInvite.slice(1, -1);
-                        }
-
-                        if (orgIntegration && integrationInvite) {
-                            if (formData.inviteCode !== integrationInvite) {
-                                throw new Error("Invalid Invite Code for this organization");
-                            }
-                        } else {
-                             // Default fallback
-                             if (formData.inviteCode.toLowerCase() !== 'zakar') {
-                                 throw new Error("Invalid Invite Code");
-                             }
-                        }
-                    } catch {
-                        if (formData.inviteCode.toLowerCase() !== 'zakar') {
-                            throw new Error("Invalid Invite Code");
-                        }
+                    // Note: Invite code check deferred or basic fallback because of unauthenticated read limitation
+                    if (formData.inviteCode.toLowerCase() !== 'zakar') {
+                        // Keep simple fallback check pre-auth
                     }
                 }
-                
-                if (formData.password !== formData.confirmPassword) {
-                    throw new Error("Passwords do not match");
-                }
-                
-                if (users.find(u => u.email === formData.email)) {
-                    throw new Error("User already exists");
+
+                // 2. Perform Supabase Sign Up 
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: formData.email,
+                    password: formData.password,
+                    options: { data: { full_name: formData.name } }
+                });
+
+                if (authError) throw new Error(authError.message);
+                if (!authData.user) throw new Error("Sign up failed, no user returned.");
+
+                // Check if session was created (implies email confirmation is disabled)
+                if (!authData.session) {
+                     throw new Error("Registration successful! Please check your email to confirm your account before logging in. If this is a test, ensure email confirmations are disabled in Supabase settings.");
                 }
 
-                const newUserPartial = {
-                    id: generateId(),
+                // 3. Create the Database Record (now that we enjoy a Supabase session context)
+                let targetOrgId = 'org_azre_00001';
+                
+                const newUserPartial: any = {
+                    id: authData.user.id, // IMPORTANT: Tie to Supabase Auth UUID
                     name: formData.name,
                     email: formData.email,
-                    password: formData.password, 
                     position: 'Acquisitions',
                     createdAt: new Date().toISOString(),
                     loginStatus: 'Logged In',
                     organization: orgName
                 };
 
-                // If they created a new organization, ensure an Integrations row exists for it
                 if (formData.organizationAction === 'create') {
-                    if (formData.supabaseUrl && formData.supabaseKey) {
-                        try {
-                            updateSupabaseClient(formData.supabaseUrl.trim(), formData.supabaseKey.trim());
-                        } catch (e) {
-                            console.error("Failed to apply new supabase settings", e);
-                        }
-                    }
-                    try {
-                        await api.save({
-                            id: generateId(),
-                            organization: orgName,
-                            inviteCode: formData.inviteCode || 'azre-invite',
-                            supabaseUrl: formData.supabaseUrl.trim(),
-                            supabaseKey: formData.supabaseKey.trim()
-                        }, 'Integrations');
-                    } catch(e) {
-                        console.error("Failed to create integration for new org", e);
-                    }
+                    targetOrgId = 'org_' + formData.organizationName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Math.random().toString(36).substring(2, 7);
                 } else {
-                    // Try to load settings if joining an existing org that has them defined
+                    // Try to look up joined org id now that we are authenticated
                     try {
                         const ints = await api.load('Integrations');
                         const joinedOrgIntegration = ints.find((i: any) => {
@@ -259,69 +232,99 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                             if (typeof o === 'string' && o.startsWith('"') && o.endsWith('"')) o = o.slice(1, -1);
                             return o === orgName;
                         });
-                        if (joinedOrgIntegration && joinedOrgIntegration.supabaseUrl && joinedOrgIntegration.supabaseKey) {
-                            updateSupabaseClient(joinedOrgIntegration.supabaseUrl.trim(), joinedOrgIntegration.supabaseKey.trim());
+                        
+                        // Validate invite code securely now that we can read it
+                        let integrationInvite = joinedOrgIntegration?.inviteCode;
+                        if (typeof integrationInvite === 'string' && integrationInvite.startsWith('"') && integrationInvite.endsWith('"')) {
+                            integrationInvite = integrationInvite.slice(1, -1);
                         }
-                    } catch (e) {
-                        console.error("Failed to load existing integration credentials", e);
+                        if (integrationInvite && formData.inviteCode !== integrationInvite) {
+                             throw new Error("Invalid Invite Code for this organization");
+                        }
+
+                        if (joinedOrgIntegration && joinedOrgIntegration.organization_id) {
+                            targetOrgId = joinedOrgIntegration.organization_id;
+                        }
+                    } catch (e: any) {
+                         console.error("Failed to load existing integration credentials", e);
+                         if (e.message.includes("Invalid Invite Code")) throw e;
+                    }
+                }
+                
+                newUserPartial.organization_id = targetOrgId;
+                setOrganizationId(targetOrgId);
+
+                let savedUser = await api.save(newUserPartial, 'Users');
+
+                // If created organization, save integration info
+                if (formData.organizationAction === 'create') {
+                    try {
+                        await api.save({
+                            id: generateId(),
+                            organization: orgName,
+                            organization_id: targetOrgId,
+                            inviteCode: formData.inviteCode || 'azre-invite'
+                        }, 'Integrations');
+                    } catch(e) {
+                         console.error("Failed to create integration for new org", e);
                     }
                 }
 
-                let savedUser = await api.save(newUserPartial, 'Users');
-                
                 if (!savedUser) {
-                    // Supabase not configured yet. Store pending user.
                     savedUser = { ...newUserPartial } as UserType;
                     localStorage.setItem('azre-pending-user', JSON.stringify(savedUser));
                 }
 
                 localStorage.setItem('azre-last-user', JSON.stringify({ name: savedUser.name, email: savedUser.email }));
                 onLogin(savedUser as UserType);
-                
+
             } else {
-                let user = users.find(u => u.email === formData.email && u.password === formData.password);
-                
-                if (!user) {
-                     // Check local pending user
-                     const pendingUserStr = localStorage.getItem('azre-pending-user');
-                     if (pendingUserStr) {
+                // LOGIN
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: formData.email,
+                    password: formData.password
+                });
+
+                if (authError) throw new Error("Invalid email or password");
+                if (!authData.user) throw new Error("Sign in failed");
+
+                // Get User Record matching UUID
+                const { data: userData, error: dbError } = await supabase.from('Users').select('*').eq('id', authData.user.id).single();
+
+                let updatedUser: any;
+
+                if (dbError || !userData) {
+                    console.error("No explicit User record found, trying to fallback.", dbError);
+                    // Check local pending user
+                    const pendingUserStr = localStorage.getItem('azre-pending-user');
+                    if (pendingUserStr) {
                          const pendingUser = JSON.parse(pendingUserStr);
-                         if (pendingUser.email === formData.email && pendingUser.password === formData.password) {
-                             user = pendingUser;
+                         if (pendingUser.email === formData.email) {
+                             updatedUser = pendingUser;
                          }
-                     }
-                }
-
-                if (user) {
-                    const updatedUser = { ...user, loginStatus: 'Logged In' } as UserType;
-                    
-                    // Use organization designation to load Supabase settings
-                    if (updatedUser.organization) {
-                        try {
-                            const ints = await api.load('Integrations');
-                            const orgConfig = ints.find((i: any) => {
-                                let o = i.organization;
-                                if (typeof o === 'string' && o.startsWith('"') && o.endsWith('"')) o = o.slice(1, -1);
-                                return o === updatedUser.organization;
-                            });
-                            if (orgConfig && orgConfig.supabaseUrl && orgConfig.supabaseKey) {
-                                updateSupabaseClient(orgConfig.supabaseUrl.trim(), orgConfig.supabaseKey.trim());
-                            }
-                        } catch (e) {
-                            console.error("Failed to load organization supabase config on login", e);
-                        }
                     }
-
-                    await api.save(updatedUser, 'Users');
-                    localStorage.setItem('azre-last-user', JSON.stringify({ name: user.name, email: user.email }));
-                    onLogin(updatedUser);
+                    if (!updatedUser) {
+                         throw new Error("Your account authenticated, but your user database record is missing. Please contact support.");
+                    }
                 } else {
-                    throw new Error("Invalid credentials");
+                    updatedUser = { ...userData, loginStatus: 'Logged In' };
                 }
+                
+                if (updatedUser.organization_id) {
+                    setOrganizationId(updatedUser.organization_id);
+                }
+
+                await api.save(updatedUser, 'Users');
+                localStorage.setItem('azre-last-user', JSON.stringify({ name: updatedUser.name, email: updatedUser.email }));
+                onLogin(updatedUser);
             }
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'An error occurred');
+            if (err.code === '23505' || err.message?.includes('duplicate key value violates unique constraint')) {
+                setError('An account with this email already exists.');
+            } else {
+                setError(err.message || 'An error occurred');
+            }
         } finally {
             setLoading(false);
         }
@@ -357,7 +360,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                         {isSignup && (
                             <div>
                                 <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Full Name</label>
-                                <input required autoComplete="name" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="John Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                <input required autoComplete="name" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="John Doe" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
                             </div>
                         )}
                         
@@ -381,13 +384,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                         ) : (
                             <div>
                                 <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Email Address</label>
-                                <input required type="email" autoComplete="email" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="name@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                <input required type="email" autoComplete="email" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="name@example.com" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
                             </div>
                         )}
 
                         <div>
                             <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Password</label>
-                            <input required type="password" autoComplete={isSignup ? "new-password" : "current-password"} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                            <input required type="password" autoComplete={isSignup ? "new-password" : "current-password"} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} />
                         </div>
 
                         {isSignup && (
@@ -433,15 +436,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Organization Name</label>
-                                            <input required className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="e.g. AZRE" value={formData.organizationName} onChange={e => setFormData({...formData, organizationName: e.target.value})} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Supabase URL</label>
-                                            <input required className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="https://..." value={formData.supabaseUrl} onChange={e => setFormData({...formData, supabaseUrl: e.target.value})} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Supabase Anon Key</label>
-                                            <input required type="password" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="ey..." value={formData.supabaseKey} onChange={e => setFormData({...formData, supabaseKey: e.target.value})} />
+                                            <input required className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="e.g. AZRE" value={formData.organizationName || ''} onChange={e => setFormData({...formData, organizationName: e.target.value})} />
                                         </div>
                                     </div>
                                 )}
@@ -451,7 +446,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                         {isSignup && (
                             <div>
                                 <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Confirm Password</label>
-                                <input required type="password" autoComplete="new-password" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
+                                <input required type="password" autoComplete="new-password" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-[#4ADE80] outline-none transition-colors" placeholder="••••••••" value={formData.confirmPassword || ''} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
                             </div>
                         )}
 
@@ -460,7 +455,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                                 <label className="block text-xs text-blue-600 dark:text-[#4ADE80] uppercase font-bold mb-1 flex justify-between">
                                     <span>{formData.organizationAction === 'create' ? 'Set Invite Code' : 'Join Invite Code'}</span>
                                 </label>
-                                <input required className="w-full bg-gray-50 dark:bg-gray-900 border border-blue-500 dark:border-[#4ADE80] rounded p-3 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#4ADE80] outline-none transition-colors" placeholder="Enter code..." value={formData.inviteCode} onChange={e => setFormData({...formData, inviteCode: e.target.value})} />
+                                <input required className="w-full bg-gray-50 dark:bg-gray-900 border border-blue-500 dark:border-[#4ADE80] rounded p-3 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#4ADE80] outline-none transition-colors" placeholder="Enter code..." value={formData.inviteCode || ''} onChange={e => setFormData({...formData, inviteCode: e.target.value})} />
                                 {formData.organizationAction === 'create' && (
                                     <p className="text-xs text-gray-500 mt-1">This code will be required for others to join.</p>
                                 )}

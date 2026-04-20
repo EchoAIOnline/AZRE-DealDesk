@@ -32,6 +32,7 @@ export interface User {
   photo?: string;
   signature?: string;
   organization?: string;
+  organization_id?: string;
 }
 
 export interface DispoSettings {

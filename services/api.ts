@@ -2,27 +2,26 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { GOOGLE_SCRIPT_URL } from '../constants';
 
-const getStoredSupabaseUrl = () => localStorage.getItem('custom_supabase_url') || '';
-const getStoredSupabaseKey = () => localStorage.getItem('custom_supabase_key') || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const createOrFallbackClient = () => {
-    const url = getStoredSupabaseUrl();
-    const key = getStoredSupabaseKey();
-    if (url && key) {
-        return createClient(url, key);
+const isValidUrl = (url: string) => {
+    try {
+        new URL(url);
+        return true;
+    } catch {
+        return false;
     }
-    // Return a dummy client so the app doesn't crash on boot, but actual queries will fail gracefully.
-    return createClient('https://placeholder.supabase.co', 'placeholder');
 };
 
-export let supabase: SupabaseClient = createOrFallbackClient();
+export const supabase: SupabaseClient = supabaseUrl && supabaseKey && isValidUrl(supabaseUrl)
+    ? createClient(supabaseUrl, supabaseKey) 
+    : createClient('https://placeholder.supabase.co', 'placeholder');
 
-export const updateSupabaseClient = (url: string, key: string) => {
-    localStorage.setItem('custom_supabase_url', url);
-    localStorage.setItem('custom_supabase_key', key);
-    if (url && key) {
-        supabase = createClient(url, key);
-    }
+// Cache the current user's organization ID to append to saves.
+let currentOrgId: string | null = null;
+export const setOrganizationId = (orgId: string | null) => {
+    currentOrgId = orgId;
 };
 
 export interface Recipient {
@@ -145,7 +144,7 @@ export const executeAdminSql = async (query: string) => {
         return await response.json();
     }
     
-    if (!getStoredSupabaseUrl() || !getStoredSupabaseKey()) {
+    if (!supabaseUrl || !supabaseKey) {
         return { status: 'error', message: 'Supabase is not configured' };
     }
 
@@ -157,7 +156,7 @@ export const executeAdminSql = async (query: string) => {
 
 export const api = {
     load: async (table: string) => {
-        if (!getStoredSupabaseUrl() || !getStoredSupabaseKey()) {
+        if (!supabaseUrl || !supabaseKey) {
              console.warn("Supabase not configured. Return empty dataset.");
              return [];
         }
@@ -170,11 +169,16 @@ export const api = {
     },
 
     save: async (item: any, table: string) => {
-        if (!getStoredSupabaseUrl() || !getStoredSupabaseKey()) {
+        if (!supabaseUrl || !supabaseKey) {
              return null;
         }
         // Strip ID if it looks like a temp ID or let Supabase handle it if UUID
         const payload = { ...item };
+        
+        // Auto-inject organization_id
+        if (currentOrgId && !payload.organization_id && table !== 'Users') {
+            payload.organization_id = currentOrgId;
+        }
         
         // Ensure JSON fields are stringified if needed for text columns
         if (table === 'Wholesalers' && payload.properties && typeof payload.properties === 'object') {
@@ -193,17 +197,22 @@ export const api = {
         const { data, error } = await supabase.from(table).upsert(payload).select().single();
         if (error) {
             console.error(`Error saving to ${table}:`, JSON.stringify(error, null, 2));
-            return null;
+            throw error;
         }
         return processIncomingItem(data, table);
     },
 
     saveBatch: async (items: any[], table: string) => {
-        if (!getStoredSupabaseUrl() || !getStoredSupabaseKey()) {
+        if (!supabaseUrl || !supabaseKey) {
              return null;
         }
         const payloads = items.map(item => {
             const payload = { ...item };
+            
+            // Auto-inject organization_id
+            if (currentOrgId && !payload.organization_id && table !== 'Users') {
+                payload.organization_id = currentOrgId;
+            }
             if (table === 'Wholesalers' && payload.properties && typeof payload.properties === 'object') {
                 payload.properties = JSON.stringify(payload.properties);
             }
@@ -221,13 +230,13 @@ export const api = {
         const { data, error } = await supabase.from(table).upsert(payloads).select();
         if (error) {
             console.error(`Error batch saving to ${table}:`, error);
-            return null;
+            throw error;
         }
         return data.map(item => processIncomingItem(item, table));
     },
 
     delete: async (id: string, table: string) => {
-        if (!getStoredSupabaseUrl() || !getStoredSupabaseKey()) {
+        if (!supabaseUrl || !supabaseKey) {
              return false;
         }
         const { error } = await supabase.from(table).delete().eq('id', id);
