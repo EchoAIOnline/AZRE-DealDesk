@@ -1,144 +1,208 @@
 import React, { useState } from 'react';
-import { Search, Filter, Map, Grid, List, Heart, CheckSquare, Plus } from 'lucide-react';
+import { Search, Filter, Map as MapIcon, Heart, ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import { mockDealFinderProperties } from '../../services/mockData';
 import { DealFinderProperty } from '../../types';
 import { formatCurrency } from '../../services/utils';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Create a custom red dot icon to look like the design
+const customMarkerIcon = new L.DivIcon({
+  html: `<div class="w-3 h-3 bg-red-600 border border-white dark:border-gray-800 rounded-full shadow-sm"></div>`,
+  className: 'custom-marker-icon',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
+
+// A custom pulsing marker icon
+const customActiveMarkerIcon = new L.DivIcon({
+  html: `<div class="flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm relative">
+           <div class="w-2 h-2 bg-white rounded-full"></div> Available Soon
+           <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-600"></div>
+         </div>`,
+  className: 'custom-active-marker-icon',
+  iconSize: [110, 24],
+  iconAnchor: [55, 24]
+});
 
 export const MarketScanner: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('Atlanta GA');
   const [properties, setProperties] = useState<DealFinderProperty[]>(mockDealFinderProperties);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Market Scanner</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Search nationwide properties and identify investment opportunities</p>
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
+      {/* Top Navigation / Filters */}
+      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center gap-3 shadow-sm bg-white dark:bg-gray-900 z-10 w-full shrink-0">
+        
+        {/* Search Input */}
+        <div className="relative w-full md:w-72 shrink-0">
+          <input 
+            type="text" 
+            placeholder="Search address, city, or ZIP" 
+            className="w-full pl-3 pr-10 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="absolute right-2 top-1.5 flex items-center gap-1">
+             {searchQuery && (
+               <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  <X size={14} />
+               </button>
+             )}
+             <Search size={16} className="text-gray-500 ml-1" />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
-            <Filter size={16} /> Filters
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-            <Plus size={16} /> New Search
-          </button>
+
+        {/* Filter Dropdowns */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide shrink-0">
+            <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm whitespace-nowrap bg-white dark:bg-gray-800">
+                For sale <ChevronDown size={14} />
+            </button>
+            <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm whitespace-nowrap bg-white dark:bg-gray-800">
+                Price <ChevronDown size={14} />
+            </button>
+            <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm whitespace-nowrap bg-white dark:bg-gray-800">
+                Beds & baths <ChevronDown size={14} />
+            </button>
+            <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm whitespace-nowrap bg-white dark:bg-gray-800">
+                Property type <ChevronDown size={14} />
+            </button>
+            <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm whitespace-nowrap bg-white dark:bg-gray-800">
+                More filters <span className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[10px] text-white bg-blue-600 rounded-full">3</span> <ChevronDown size={14} />
+            </button>
+            <button className="ml-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium whitespace-nowrap transition-colors">
+                Save search
+            </button>
+        </div>
+
+        {/* Home Count */}
+        <div className="hidden lg:flex items-center ml-auto shrink-0 pr-2">
+            <span className="text-sm font-medium text-blue-600 dark:text-blue-400 mr-2">{properties.length * 25}</span>
+            <Heart size={16} className="text-blue-600 dark:text-blue-400" />
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Filters */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto hidden md:block">
-          <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-            <Filter size={16} /> Find Properties
-          </h3>
-          <div className="text-sm text-gray-500 mb-4">{properties.length.toLocaleString()} properties matching your filters</div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Location Search</label>
-              <div className="relative">
-                <Search size={14} className="absolute left-2 top-2.5 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search city, street, or ZIP" 
-                  className="w-full pl-8 pr-2 py-2 bg-gray-100 dark:bg-gray-700 border-transparent rounded text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
+        
+        {/* Left Map Area */}
+        <div className="hidden lg:block lg:w-[60%] bg-[#e5eadd] dark:bg-[#1a261c] relative overflow-hidden z-0">
+            <MapContainer 
+               center={[33.7490, -84.3880]} // Atlanta default
+               zoom={11} 
+               className="w-full h-full z-0"
+               zoomControl={false} // Disable default zoom to use our custom buttons
+            >
+               <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+               />
+               
+               {/* Example properties using the custom icons */}
+               <Marker position={[33.8, -84.4]} icon={customActiveMarkerIcon}>
+                  <Popup>
+                     <div className="text-sm font-bold text-gray-900">Available Soon</div>
+                     <div className="text-xs text-gray-500">123 Example St, Atlanta, GA</div>
+                  </Popup>
+               </Marker>
+               
+               <Marker position={[33.75, -84.35]} icon={customActiveMarkerIcon} />
+               <Marker position={[33.7, -84.45]} icon={customActiveMarkerIcon} />
+
+               {/* Random smaller dots */}
+               {[...Array(12)].map((_, i) => (
+                  <Marker 
+                     key={i} 
+                     position={[33.7490 + (Math.random() - 0.5) * 0.2, -84.3880 + (Math.random() - 0.5) * 0.2]} 
+                     icon={customMarkerIcon} 
+                  />
+               ))}
+               
+            </MapContainer>
             
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Quick Strategy Presets</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button className="p-2 border border-gray-200 dark:border-gray-700 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-700">Wholesaling</button>
-                <button className="p-2 border border-gray-200 dark:border-gray-700 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-700">Fix & Flip</button>
-                <button className="p-2 border border-gray-200 dark:border-gray-700 rounded text-xs hover:bg-gray-50 dark:hover:bg-gray-700">Buy & Hold</button>
-                <button className="p-2 border border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded text-xs">Custom</button>
-              </div>
+            <div className="absolute top-4 right-4 flex items-center gap-2 z-[400]">
+                 <button className="px-3 py-1.5 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-md text-sm flex items-center gap-1 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                     Schools <ChevronDown size={14} />
+                 </button>
+                 <button className="px-3 py-1.5 bg-white dark:bg-gray-800 shadow-sm border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 rounded-md text-sm flex items-center gap-1 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                     Remove Boundary <X size={14} />
+                 </button>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button className="w-full py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition">
-                Find Properties
-              </button>
+            <div className="absolute bottom-8 right-6 flex flex-col gap-2 z-[400]">
+                <button className="w-10 h-10 bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition font-bold text-xl text-gray-700 dark:text-gray-300">+</button>
+                <div className="flex bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 rounded-full h-10 w-24">
+                   <button className="flex-1 flex justify-center items-center font-medium text-sm border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-l-full">Map <ChevronDown size={14} className="ml-1"/></button>
+                </div>
+                <button className="w-10 h-10 bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition font-bold text-xl text-gray-700 dark:text-gray-300">-</button>
             </div>
-          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Featured Properties</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <CheckSquare size={16} /> Select All
-              </div>
-              <div className="flex bg-gray-200 dark:bg-gray-700 rounded p-1">
-                <button 
-                  className={`px-3 py-1 text-xs rounded flex items-center gap-1 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid size={14} /> Grid
-                </button>
-                <button 
-                  className={`px-3 py-1 text-xs rounded flex items-center gap-1 ${viewMode === 'map' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
-                  onClick={() => setViewMode('map')}
-                >
-                  <Map size={14} /> Map
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {properties.map(prop => (
-              <div key={prop.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition group">
-                <div className="relative h-48">
-                  <img src={prop.imageUrl} alt={prop.address} className="w-full h-full object-cover" />
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    <button className="p-1.5 bg-white/80 backdrop-blur rounded-full text-gray-700 hover:text-red-500 transition">
-                      <Heart size={16} />
-                    </button>
+        {/* Right Property List Area */}
+        <div className="w-full lg:w-[40%] bg-white dark:bg-gray-100 p-3 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 pb-8">
+            {properties.concat(properties).map((prop, idx) => (
+              <div key={`${prop.id}-${idx}`} className="bg-white dark:bg-white rounded-md overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition">
+                
+                {/* Image container */}
+                <div className="relative h-44 cursor-pointer group">
+                  <img src={prop.imageUrl} alt={prop.address} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  
+                  {/* Top left badges */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+                     <span className="bg-white/90 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                        {idx % 3 === 0 ? "30 days on Zillow" : idx % 2 === 0 ? "Spacious owners suite" : "Cleared vacant lots"}
+                     </span>
                   </div>
-                  <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                    Score: {Math.floor(Math.random() * 30) + 70}/100
+
+                  {/* Heart button */}
+                  <button className="absolute top-2 right-2 p-1 text-white hover:text-red-500 transition drop-shadow-md">
+                     <Heart size={24} className="fill-gray-900/40 stroke-white stroke-2 hover:fill-red-500/80 hover:stroke-white focus:outline-none" />
+                  </button>
+
+                  <div className="absolute bottom-2 right-2 flex gap-1">
+                      <div className="bg-white/90 text-[9px] px-1 font-bold rounded shadow-sm uppercase">FMLS IDX</div>
+                  </div>
+
+                  {/* Image carousel dots indicator */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white truncate" title={prop.address}>{prop.address}</h3>
-                    <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(prop.listPrice)}</span>
+                
+                {/* Details container */}
+                <div className="p-3 bg-white dark:bg-white text-gray-900">
+                  <div className="flex justify-between items-start mb-0.5">
+                    <div className="text-[22px] font-bold tracking-tight">{formatCurrency(prop.listPrice || 225000)}</div>
+                    <button className="text-blue-600 hover:text-blue-800 pt-1">
+                        <MoreHorizontal size={20} className="font-bold" />
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{prop.city}, {prop.state} {prop.zip}</p>
                   
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-600 dark:text-gray-400 mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
-                    <div><span className="block font-semibold text-gray-900 dark:text-white">{prop.beds}</span> Beds</div>
-                    <div><span className="block font-semibold text-gray-900 dark:text-white">{prop.baths}</span> Baths</div>
-                    <div><span className="block font-semibold text-gray-900 dark:text-white">{prop.sqft}</span> Sqft</div>
+                  <div className="text-[13px] text-gray-700 mb-1 flex items-center flex-wrap">
+                    <span className="font-bold mr-1">{prop.beds || 3}</span> <span className="mr-1">bds</span> <span className="text-gray-300 mx-1">|</span>
+                    <span className="font-bold mr-1">{prop.baths || 2}</span> <span className="mr-1">ba</span> <span className="text-gray-300 mx-1">|</span>
+                    <span className="font-bold mr-1">{prop.sqft?.toLocaleString() || '1,500'}</span> <span className="mr-1">sqft</span> <span className="text-gray-300 mx-1">|</span>
+                    <span className="truncate">Active</span>
                   </div>
-
-                  <div className="flex justify-between text-xs mb-4">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400 block">Cash Flow</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">${prop.cashFlow}/mo</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-gray-500 dark:text-gray-400 block">Cap Rate</span>
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">{prop.capRate}%</span>
-                    </div>
+                  
+                  <div className="text-[13px] text-gray-500 truncate mb-2">
+                    {prop.address}, {prop.city}, {prop.state} {prop.zip}
                   </div>
-
-                  <button className="w-full py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded font-medium text-sm hover:bg-green-100 dark:hover:bg-green-900/40 transition">
-                    View Details
-                  </button>
+                  
+                  <div className="text-[10px] text-gray-400 uppercase tracking-widest mt-auto">
+                    {idx % 2 === 0 ? 'THE MCGILL CO' : 'KELLER KNAPP'}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );
 };
+
