@@ -15,7 +15,9 @@ const isValidUrl = (url: string) => {
     }
 };
 
-export const supabase: SupabaseClient = supabaseUrl && supabaseKey && isValidUrl(supabaseUrl) && !supabaseUrl.includes('your-project-id')
+const isDummyClient = !supabaseUrl || !supabaseKey || !isValidUrl(supabaseUrl) || supabaseUrl.includes('your-project-id');
+
+export const supabase: SupabaseClient = !isDummyClient
     ? createClient(supabaseUrl, supabaseKey) 
     : createClient('http://localhost:65535', 'placeholder_key_will_fail_fast');
 
@@ -146,7 +148,7 @@ export const executeAdminSql = async (query: string) => {
         return await response.json();
     }
     
-    if (!supabaseUrl || !supabaseKey) {
+    if (isDummyClient) {
         return { status: 'error', message: 'Supabase is not configured' };
     }
 
@@ -158,7 +160,7 @@ export const executeAdminSql = async (query: string) => {
 
 export const api = {
     load: async (table: string) => {
-        if (!supabaseUrl || !supabaseKey) {
+        if (isDummyClient) {
              console.warn("Supabase not configured. Return empty dataset.");
              return [];
         }
@@ -198,7 +200,7 @@ export const api = {
     },
 
     save: async (item: any, table: string) => {
-        if (!supabaseUrl || !supabaseKey) {
+        if (isDummyClient) {
              return null;
         }
         // Strip ID if it looks like a temp ID or let Supabase handle it if UUID
@@ -247,7 +249,7 @@ export const api = {
     },
 
     saveBatch: async (items: any[], table: string) => {
-        if (!supabaseUrl || !supabaseKey) {
+        if (isDummyClient) {
              return null;
         }
         const payloads = items.map(item => {
@@ -302,7 +304,7 @@ export const api = {
     },
 
     delete: async (id: string, table: string) => {
-        if (!supabaseUrl || !supabaseKey) {
+        if (isDummyClient) {
              return false;
         }
         const { error } = await supabase.from(table).delete().eq('id', id);
