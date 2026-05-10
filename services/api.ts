@@ -2,8 +2,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { GOOGLE_SCRIPT_URL } from '../constants';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseUrl = rawSupabaseUrl.startsWith('http') ? rawSupabaseUrl : (rawSupabaseUrl ? `https://${rawSupabaseUrl}` : '');
+const supabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 const isValidUrl = (url: string) => {
     try {
@@ -14,15 +15,16 @@ const isValidUrl = (url: string) => {
     }
 };
 
-export const supabase: SupabaseClient = supabaseUrl && supabaseKey && isValidUrl(supabaseUrl)
+export const supabase: SupabaseClient = supabaseUrl && supabaseKey && isValidUrl(supabaseUrl) && !supabaseUrl.includes('your-project-id')
     ? createClient(supabaseUrl, supabaseKey) 
-    : createClient('https://placeholder.supabase.co', 'placeholder');
+    : createClient('http://localhost:65535', 'placeholder_key_will_fail_fast');
 
 // Cache the current user's organization ID to append to saves.
 let currentOrgId: string | null = null;
 export const setOrganizationId = (orgId: string | null) => {
     currentOrgId = orgId;
 };
+export const getCurrentOrgId = () => currentOrgId;
 
 export interface Recipient {
     email: string;
@@ -160,7 +162,34 @@ export const api = {
              console.warn("Supabase not configured. Return empty dataset.");
              return [];
         }
-        const { data, error } = await supabase.from(table).select('*');
+        
+        if (!currentOrgId && table !== 'Integrations' && table !== 'Users') {
+            console.warn(`Refusing to load all ${table} for unauthenticated/unassigned organization.`);
+            return []; // Prevents leaking AZRE data when org ID is missing
+        }
+
+        let query = supabase.from(table).select('*');
+        if (currentOrgId && table !== 'Integrations') {
+            query = query.eq('organization_id', currentOrgId);
+        }
+        
+        let { data, error } = await query;
+
+        // If the schema cache is stale after running the SQL script, we must strictly enforce data isolation 
+        // by throwing the error. We cannot fallback to loading all data, otherwise new organizations see old data.
+        if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find'))) {
+            console.error(`PostgREST Schema Cache is stale. Table ${table} reports missing organization_id but it was added.`);
+             if (currentOrgId && currentOrgId !== 'org_azre_00001') {
+                 console.warn(`Refusing to load all ${table} for new organization to maintain data isolation.`);
+                 return []; // Returns empty array to prevent leaking AZRE data to the new org
+             }
+             // For the master org let it slide so they aren't totally broken, but still warn.
+             console.warn(`Falling back to unprotected load for Master AZRE Org. You MUST run "NOTIFY pgrst, 'reload schema';" in Supabase.`);
+             const fallback = await supabase.from(table).select('*');
+             data = fallback.data;
+             error = fallback.error;
+        }
+
         if (error) {
             console.error(`Error loading ${table}:`, error);
             throw error;
@@ -194,7 +223,22 @@ export const api = {
             }
         }
         
-        const { data, error } = await supabase.from(table).upsert(payload).select().single();
+        let { data, error } = await supabase.from(table).upsert(payload).select().single();
+        
+        // Fallback for tables that don't have organization_id yet (Schema cache stale)
+        if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find')) && payload.organization_id) {
+            console.warn(`Table ${table} does not have organization_id. Saving without it but keeping it in local state.`);
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.organization_id;
+            const fallback = await supabase.from(table).upsert(fallbackPayload).select().single();
+            data = fallback.data;
+            error = fallback.error;
+            if (data) {
+                // Re-inject so the frontend retains knowledge of the org id and doesn't wipe it
+                data.organization_id = payload.organization_id;
+            }
+        }
+
         if (error) {
             console.error(`Error saving to ${table}:`, JSON.stringify(error, null, 2));
             throw error;
@@ -227,7 +271,29 @@ export const api = {
             return payload;
         });
 
-        const { data, error } = await supabase.from(table).upsert(payloads).select();
+        let { data, error } = await supabase.from(table).upsert(payloads).select();
+        
+        // Fallback for tables that don't have organization_id yet (Schema cache stale)
+        if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find'))) {
+            console.warn(`Table ${table} does not have organization_id. Saving batch without it but keeping it locally.`);
+            const fallbackPayloads = payloads.map(p => {
+                const copy = { ...p };
+                delete copy.organization_id;
+                return copy;
+            });
+            const fallback = await supabase.from(table).upsert(fallbackPayloads).select();
+            data = fallback.data;
+            error = fallback.error;
+            if (data && Array.isArray(data)) {
+                 data = data.map((d, index) => {
+                     if (payloads[index]?.organization_id) {
+                         d.organization_id = payloads[index].organization_id;
+                     }
+                     return d;
+                 });
+            }
+        }
+
         if (error) {
             console.error(`Error batch saving to ${table}:`, error);
             throw error;

@@ -1,4 +1,4 @@
-import { supabase } from './api';
+import { supabase, getCurrentOrgId } from './api';
 import { ActivityLog, User } from '../types';
 
 export const activityLogService = {
@@ -16,21 +16,27 @@ export const activityLogService = {
     ) => {
         if (!user) return;
 
+        const currentOrgId = getCurrentOrgId();
+
         // Grouping logic for UPDATE actions
         if (actionType === 'UPDATE') {
             // Check if there's a recent UPDATE log for this user and entity within the last 5 minutes
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
             
-            const { data: recentLogs, error: fetchError } = await supabase
+            let query = supabase
                 .from('activity_logs')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('action_type', 'UPDATE')
                 .eq('entity_type', entityType)
                 .eq('entity_id', entityId)
-                .gte('created_at', fiveMinutesAgo)
-                .order('created_at', { ascending: false })
-                .limit(1);
+                .gte('created_at', fiveMinutesAgo);
+                
+            if (currentOrgId) {
+                query = query.eq('organization_id', currentOrgId);
+            }
+                
+            const { data: recentLogs, error: fetchError } = await query.order('created_at', { ascending: false }).limit(1);
 
             if (!fetchError && recentLogs && recentLogs.length > 0) {
                 const recentLog = recentLogs[0];
@@ -63,7 +69,7 @@ export const activityLogService = {
             }
         }
 
-        const logEntry = {
+        const logEntry: any = {
             user_id: user.id,
             user_name: user.name,
             action_type: actionType,
@@ -74,6 +80,10 @@ export const activityLogService = {
             metadata: metadata,
             created_at: new Date().toISOString()
         };
+        
+        if (currentOrgId) {
+            logEntry.organization_id = currentOrgId;
+        }
 
         const { error } = await supabase.from('activity_logs').insert(logEntry);
         
@@ -86,9 +96,16 @@ export const activityLogService = {
      * Get recent activities
      */
     getRecentActivity: async (limit: number = 20): Promise<ActivityLog[]> => {
-        const { data, error } = await supabase
+        const currentOrgId = getCurrentOrgId();
+        let query = supabase
             .from('activity_logs')
-            .select('*')
+            .select('*');
+            
+        if (currentOrgId) {
+            query = query.eq('organization_id', currentOrgId);
+        }
+            
+        const { data, error } = await query
             .order('created_at', { ascending: false })
             .limit(limit);
 
@@ -101,10 +118,17 @@ export const activityLogService = {
     },
 
     getLogsByActionType: async (actionType: string): Promise<ActivityLog[]> => {
-        const { data, error } = await supabase
+        const currentOrgId = getCurrentOrgId();
+        let query = supabase
             .from('activity_logs')
             .select('*')
-            .eq('action_type', actionType)
+            .eq('action_type', actionType);
+            
+        if (currentOrgId) {
+            query = query.eq('organization_id', currentOrgId);
+        }
+            
+        const { data, error } = await query
             .order('created_at', { ascending: false });
 
         if (error) {

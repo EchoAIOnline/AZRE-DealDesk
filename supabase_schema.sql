@@ -181,7 +181,19 @@ CREATE TABLE IF NOT EXISTS public."Campaigns" (
     delivered INTEGER DEFAULT 0,
     responses INTEGER DEFAULT 0,
     "startDate" TIMESTAMP WITH TIME ZONE,
-    "templateId" TEXT
+    "templateId" TEXT,
+    subject TEXT,
+    from_email TEXT,
+    lists JSONB,
+    tags JSONB,
+    send_at TEXT,
+    content_type TEXT,
+    body TEXT,
+    alt_body TEXT,
+    "deliveryLogs" JSONB,
+    "sentAt" TEXT,
+    "recipientCount" INTEGER,
+    last_updated TEXT
 );
 
 -- 10. InboxMessages Table

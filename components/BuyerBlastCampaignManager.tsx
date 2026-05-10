@@ -32,7 +32,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
 }) => {
     // --- 1. STATE ARCHITECTURE ---
     const [campaignData, setCampaignData] = useState({
-        id: initialData?.id || Math.random().toString(36).substr(2, 9),
+        id: initialData?.id || generateId(),
         status: initialData?.status || "draft" as "draft" | "scheduled" | "running" | "finished",
         name: initialData?.name || "",
         subject: initialData?.subject || "",

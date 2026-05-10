@@ -1,0 +1,15 @@
+-- SQL Script to update Supabase Campaigns table for new Email Blast fields
+
+ALTER TABLE public."Campaigns"
+ADD COLUMN IF NOT EXISTS "subject" TEXT,
+ADD COLUMN IF NOT EXISTS "from_email" TEXT,
+ADD COLUMN IF NOT EXISTS "lists" JSONB,
+ADD COLUMN IF NOT EXISTS "tags" JSONB,
+ADD COLUMN IF NOT EXISTS "send_at" TEXT,
+ADD COLUMN IF NOT EXISTS "content_type" TEXT,
+ADD COLUMN IF NOT EXISTS "body" TEXT,
+ADD COLUMN IF NOT EXISTS "alt_body" TEXT,
+ADD COLUMN IF NOT EXISTS "deliveryLogs" JSONB,
+ADD COLUMN IF NOT EXISTS "sentAt" TEXT,
+ADD COLUMN IF NOT EXISTS "recipientCount" INTEGER,
+ADD COLUMN IF NOT EXISTS "last_updated" TEXT;

@@ -154,6 +154,7 @@ export default function App() {
       setIsAuthenticated(false);
       setCurrentUser(null);
       localStorage.removeItem('azre-current-user');
+      window.location.reload(); // Force full reload to wipe all React memory/state
   };
 
   useEffect(() => {

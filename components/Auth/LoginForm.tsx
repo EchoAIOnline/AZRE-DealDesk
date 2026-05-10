@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Loader2, User, X, Info, CheckCircle } from 'lucide-react';
 import { api, supabase, setOrganizationId } from '../../services/api';
 import { User as UserType } from '../../types';
@@ -22,6 +22,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const loadingRef = useRef(loading);
+    useEffect(() => { loadingRef.current = loading; }, [loading]);
+
     const [organizations, setOrganizations] = useState<string[]>([]);
     
     // Cache state
@@ -88,19 +91,54 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     let user = users.find(u => u.email === email);
 
                     if (!user) {
+                        // Check if we saved a pending signup organization request
+                        const pendingOrgJson = localStorage.getItem('azre_pending_signup');
+                        let orgName = 'My Organization';
+                        let orgId = 'org_' + Math.random().toString(36).substring(2, 9);
+                        let isNewOrg = true;
+                        let inviteCode = 'azre-invite';
+                        let customName = session.user.user_metadata?.full_name || email?.split('@')[0] || 'Google User';
+                        
+                        if (pendingOrgJson) {
+                            try {
+                                const pendingData = JSON.parse(pendingOrgJson);
+                                if (pendingData.email === email) {
+                                    orgName = pendingData.organizationName;
+                                    orgId = pendingData.organizationId;
+                                    isNewOrg = pendingData.isNew;
+                                    if (pendingData.inviteCode) inviteCode = pendingData.inviteCode;
+                                    if (pendingData.name) customName = pendingData.name;
+                                }
+                            } catch (e) {}
+                            localStorage.removeItem('azre_pending_signup');
+                        }
+
                         // Create new user if not exists based on Google info
-                        const newUserPartial = {
+                        const newUserPartial: any = {
                             id: session.user.id,
-                            name: session.user.user_metadata.full_name || email?.split('@')[0] || 'Google User',
+                            name: customName,
                             email: email || '',
-                            photo: session.user.user_metadata.avatar_url,
+                            photo: session.user.user_metadata?.avatar_url,
                             position: 'Acquisitions',
                             createdAt: new Date().toISOString(),
                             loginStatus: 'Logged In',
-                            organization: 'AZRE',
-                            organization_id: 'org_azre_00001'
+                            organization: orgName,
+                            organization_id: orgId
                         };
                         user = await api.save(newUserPartial, 'Users');
+
+                        if (isNewOrg) {
+                            try {
+                                await api.save({
+                                    id: generateId(),
+                                    organization: orgName,
+                                    organization_id: orgId,
+                                    inviteCode: inviteCode
+                                }, 'Integrations');
+                            } catch (e) {
+                                console.error("Failed to save integration for new org", e);
+                            }
+                        }
                     } else {
                         // Update existing user login status
                         const updatedUser = { 
@@ -140,14 +178,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         };
         
         // Only run check if we aren't already manually loading
-        if (!loading) checkSession();
+        if (!loadingRef.current) checkSession();
 
         // Listen for auth state changes (e.g. from the popup resolving the oauth flow)
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN') {
                 if (window.opener) {
                     window.close();
-                } else if (!loading) {
+                } else if (!loadingRef.current) {
                     checkSession();
                 }
             }
@@ -189,6 +227,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 if (!popup) {
                     throw new Error("Popup blocked by browser. Please allow popups to sign in with Google.");
                 }
+                
+                // Clear loading state after popup opens so the UI isn't stuck forever
+                setLoading(false);
             } else {
                 throw new Error("Unable to retrieve Google OAuth URL.");
             }
@@ -228,36 +269,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: formData.email,
                     password: formData.password,
-                    options: { data: { full_name: formData.name } }
+                    options: { 
+                        data: { 
+                            full_name: formData.name,
+                            pending_org_action: formData.organizationAction,
+                            pending_org_name: orgName,
+                            pending_invite_code: formData.inviteCode
+                        },
+                        emailRedirectTo: window.location.origin
+                    }
                 });
 
                 if (authError) throw new Error(authError.message);
                 if (!authData.user) throw new Error("Sign up failed, no user returned.");
 
-                // Check if session was created (implies email confirmation is disabled)
-                if (!authData.session) {
-                     setSuccessMsg("Registration successful! Please check your email to confirm your account before logging in.");
-                     setLoading(false);
-                     return;
-                }
-
-                // 3. Create the Database Record (now that we enjoy a Supabase session context)
-                let targetOrgId = 'org_azre_00001';
-                
-                const newUserPartial: any = {
-                    id: authData.user.id, // IMPORTANT: Tie to Supabase Auth UUID
-                    name: formData.name,
-                    email: formData.email,
-                    position: 'Acquisitions',
-                    createdAt: new Date().toISOString(),
-                    loginStatus: 'Logged In',
-                    organization: orgName
-                };
-
+                // Save pending organization creation info to localStorage ALWAYS for signup
+                // so that when checkSession() fires (either immediately on return, or after email confirm),
+                // it picks it up and processes it exactly once.
+                let targetOrgId = '';
+                let isNewOrg = false;
                 if (formData.organizationAction === 'create') {
                     targetOrgId = 'org_' + formData.organizationName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Math.random().toString(36).substring(2, 7);
+                    isNewOrg = true;
                 } else {
-                    // Try to look up joined org id now that we are authenticated
+                    // Try to look up joined org id
                     try {
                         const ints = await api.load('Integrations');
                         const joinedOrgIntegration = ints.find((i: any) => {
@@ -266,7 +301,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                             return o === orgName;
                         });
                         
-                        // Validate invite code securely now that we can read it
                         let integrationInvite = joinedOrgIntegration?.inviteCode;
                         if (typeof integrationInvite === 'string' && integrationInvite.startsWith('"') && integrationInvite.endsWith('"')) {
                             integrationInvite = integrationInvite.slice(1, -1);
@@ -283,34 +317,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                          if (e.message.includes("Invalid Invite Code")) throw e;
                     }
                 }
-                
-                newUserPartial.organization_id = targetOrgId;
-                setOrganizationId(targetOrgId);
 
-                let savedUser = await api.save(newUserPartial, 'Users');
-
-                // If created organization, save integration info
-                if (formData.organizationAction === 'create') {
-                    try {
-                        await api.save({
-                            id: generateId(),
-                            organization: orgName,
-                            organization_id: targetOrgId,
-                            inviteCode: formData.inviteCode || 'azre-invite'
-                        }, 'Integrations');
-                    } catch(e) {
-                         console.error("Failed to create integration for new org", e);
-                    }
+                if (!targetOrgId) {
+                    targetOrgId = 'org_' + Math.random().toString(36).substring(2, 7);
+                    isNewOrg = true;
                 }
 
-                if (!savedUser) {
-                    savedUser = { ...newUserPartial } as UserType;
-                    localStorage.setItem('azre-pending-user', JSON.stringify(savedUser));
+                localStorage.setItem('azre_pending_signup', JSON.stringify({
+                    email: formData.email,
+                    organizationName: orgName,
+                    organizationId: targetOrgId,
+                    isNew: isNewOrg,
+                    inviteCode: formData.inviteCode,
+                    name: formData.name
+                }));
+
+                // If email confirmation is enabled, session won't exist
+                if (!authData.session) {
+                     setSuccessMsg("Registration successful! Please check your email to confirm your account before logging in. (If you don't receive an email, go to Supabase Dashboard > Authentication > Providers > Email and turn OFF 'Confirm email')");
+                     setLoading(false);
+                     return;
                 }
 
-                localStorage.setItem('azre-last-user', JSON.stringify({ name: savedUser.name, email: savedUser.email }));
-                onLogin(savedUser as UserType);
-
+                // If session is returned immediately (email confirmations off),
+                // DO NOTHING FURTHER! The onAuthStateChange listener has already caught the SIGNED_IN event,
+                // and it is going to call checkSession() which will read azre_pending_signup, build the user,
+                // save it, and log the user in!
             } else {
                 // LOGIN
                 const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -347,6 +379,54 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     }
                     if (!updatedUser) {
                         console.warn("User database record missing, recreating...");
+                        
+                        // Check if we saved a pending signup organization request
+                        const pendingOrgJson = localStorage.getItem('azre_pending_signup');
+                        let orgName = authData?.user?.user_metadata?.pending_org_name || 'My Organization';
+                        let orgId = '';
+                        let isNewOrg = false;
+                        let inviteCode = authData?.user?.user_metadata?.pending_invite_code || '';
+                        
+                        if (pendingOrgJson) {
+                            try {
+                                const pendingData = JSON.parse(pendingOrgJson);
+                                if (pendingData.email === formData.email) {
+                                    orgName = pendingData.organizationName || orgName;
+                                    orgId = pendingData.organizationId || orgId;
+                                    isNewOrg = pendingData.isNew;
+                                    inviteCode = pendingData.inviteCode || inviteCode;
+                                }
+                            } catch (e) {}
+                            localStorage.removeItem('azre_pending_signup');
+                        }
+
+                        // Try fixing missing orgId using user_metadata
+                        if (!orgId) {
+                            if (authData?.user?.user_metadata?.pending_org_action === 'create') {
+                                orgId = 'org_' + orgName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Math.random().toString(36).substring(2, 7);
+                                isNewOrg = true;
+                            } else if (authData?.user?.user_metadata?.pending_org_action === 'join') {
+                                try {
+                                    const ints = await api.load('Integrations');
+                                    const joinedOrg = ints.find((i: any) => {
+                                        let o = i.organization;
+                                        if (typeof o === 'string' && o.startsWith('"') && o.endsWith('"')) o = o.slice(1, -1);
+                                        return o === orgName;
+                                    });
+                                    if (joinedOrg && joinedOrg.organization_id) {
+                                        orgId = joinedOrg.organization_id;
+                                    }
+                                } catch (e) {
+                                    console.error("Failed to load integrations for join fallback", e);
+                                }
+                            }
+                            if (!orgId) {
+                                // Default fallback: isolate the user into their own new random organization instead of AZRE
+                                orgId = 'org_' + Math.random().toString(36).substring(2, 7);
+                                isNewOrg = true;
+                            }
+                        }
+
                         const newUserPartial = {
                             id: authData.user.id,
                             name: formData.email?.split('@')[0] || 'Unknown User',
@@ -354,10 +434,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                             position: 'Acquisitions',
                             createdAt: new Date().toISOString(),
                             loginStatus: 'Logged In',
-                            organization: 'AZRE',
-                            organization_id: 'org_azre_00001'
+                            organization: orgName,
+                            organization_id: orgId
                         };
                         updatedUser = await api.save(newUserPartial, 'Users');
+
+                        if (isNewOrg && updatedUser) {
+                            try {
+                                await api.save({
+                                    id: 'int_' + Math.random().toString(36).substring(2, 9),
+                                    organization: orgName,
+                                    organization_id: orgId,
+                                    inviteCode: inviteCode || 'azre-invite'
+                                }, 'Integrations');
+                            } catch (e) {
+                                console.error("Failed to save integration for new org", e);
+                            }
+                        }
+
                         if (!updatedUser) {
                             throw new Error("Your account authenticated, but we failed to recreate your missing database record. Please contact support.");
                         }
@@ -376,7 +470,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             }
         } catch (err: any) {
             console.error(err);
-            if (err.code === '23505' || err.message?.includes('duplicate key value violates unique constraint')) {
+            if (err.message === 'Failed to fetch') {
+                setError('Failed to connect. Please ensure your Supabase URL and Anon Key are correct in settings.');
+            } else if (err.code === '23505' || err.message?.includes('duplicate key value violates unique constraint')) {
                 setError('An account with this email already exists.');
             } else {
                 setError(err.message || 'An error occurred');
