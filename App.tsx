@@ -147,7 +147,11 @@ export default function App() {
   const handleLogout = async () => {
       if (currentUser) {
           const updatedUser = { ...currentUser, loginStatus: 'Logged Out' };
-          await api.save(updatedUser, 'Users');
+          try {
+              await api.save(updatedUser, 'Users');
+          } catch (error) {
+              console.error("Error updating user status on logout:", error);
+          }
       }
       try {
           await supabase.auth.signOut();
@@ -157,7 +161,18 @@ export default function App() {
       setIsAuthenticated(false);
       setCurrentUser(null);
       localStorage.removeItem('azre-current-user');
-      window.location.reload(); // Force full reload to wipe all React memory/state
+      
+      // Clear Supabase auth tokens forcefully to prevent auto-login loop if signOut fails
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              keysToRemove.push(key);
+          }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      window.location.href = '/'; 
   };
 
   useEffect(() => {
