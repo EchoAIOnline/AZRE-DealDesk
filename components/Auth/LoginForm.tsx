@@ -22,9 +22,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
-    const loadingRef = useRef(loading);
-    useEffect(() => { loadingRef.current = loading; }, [loading]);
-
+    
     const [organizations, setOrganizations] = useState<string[]>([]);
     
     // Cache state
@@ -177,15 +175,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             }
         };
         
-        // Only run check if we aren't already manually loading
-        if (!loadingRef.current) checkSession();
+        // Only run check on mount
+        checkSession();
 
         // Listen for auth state changes (e.g. from the popup resolving the oauth flow)
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN') {
                 if (window.opener) {
                     window.close();
-                } else if (!loadingRef.current) {
+                } else {
                     checkSession();
                 }
             }
@@ -464,7 +462,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     setOrganizationId(updatedUser.organization_id);
                 }
 
-                await api.save(updatedUser, 'Users');
                 localStorage.setItem('azre-last-user', JSON.stringify({ name: updatedUser.name, email: updatedUser.email }));
                 onLogin(updatedUser);
             }
