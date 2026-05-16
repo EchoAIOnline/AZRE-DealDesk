@@ -15,11 +15,11 @@ envFile.split('\n').forEach(line => {
 const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
 
 async function run() {
-  console.log("Fetching Deals schema...");
+  console.log("Fetching Agents schema...");
   const { data, error } = await supabase.rpc('execute_sql', { query: `
     SELECT column_name, data_type 
     FROM information_schema.columns 
-    WHERE table_name = 'Deals';
+    WHERE table_name = 'Agents';
   `});
   if (error) {
      console.error("RPC Error:", error);

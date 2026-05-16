@@ -445,7 +445,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                         <div className="md:col-span-2">
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email Address</label>
                                             <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
-                                                value={formData.email} onChange={e => handleChange('email', e.target.value)} onBlur={handleAutoSave} placeholder="agent@example.com" />
+                                                value={formData.email || ''} onChange={e => handleChange('email', e.target.value)} onBlur={handleAutoSave} placeholder="agent@example.com" />
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email List Subscription Status</label>

@@ -489,6 +489,18 @@ export default function App() {
           if (viewingAgent && viewingAgent.id === agentId) setViewingAgent(saved);
           if (editingAgent && editingAgent.id === agentId) setEditingAgent(saved);
           
+          setEditingDeal(prev => {
+              if (prev && prev.agentName && prev.agentName.toLowerCase() === saved.name.toLowerCase()) {
+                  return {
+                      ...prev,
+                      agentPhone: saved.phone || prev.agentPhone,
+                      agentEmail: saved.email || prev.agentEmail,
+                      agentBrokerage: saved.brokerage || prev.agentBrokerage
+                  };
+              }
+              return prev;
+          });
+
           // Log Activity
           activityLogService.logActivity(
               currentUser, 
@@ -511,6 +523,18 @@ export default function App() {
           setWholesalers(prev => prev.map(w => w.id === wholesalerId ? saved : w));
           if (editingWholesaler && editingWholesaler.id === wholesalerId) setEditingWholesaler(saved);
           
+          setEditingDeal(prev => {
+              if (prev && prev.agentName && prev.agentName.toLowerCase() === saved.name.toLowerCase() && prev.pipelineType === 'jv') {
+                  return {
+                      ...prev,
+                      agentPhone: saved.phone || prev.agentPhone,
+                      agentEmail: saved.email || prev.agentEmail,
+                      agentBrokerage: saved.companyName || prev.agentBrokerage
+                  };
+              }
+              return prev;
+          });
+
           let actionType = 'UPDATE';
           let description = `Updated wholesaler: ${saved.name}`;
           
