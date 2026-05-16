@@ -268,7 +268,7 @@ export const api = {
         let missingColumns: string[] = [];
         let retryCount = 0;
         
-        while (error && error.code === 'PGRST204' && retryCount < 10) {
+        while (error && error.message && error.message.includes('Could not find the') && error.message.includes('column') && retryCount < 10) {
              const match = error.message.match(/Could not find the '([^']+)' column/);
              if (match && match[1]) {
                  const missingColumn = match[1];
@@ -345,7 +345,7 @@ export const api = {
         let missingColumns: string[] = [];
         let retryCount = 0;
         
-        while (error && error.code === 'PGRST204' && retryCount < 10) {
+        while (error && error.message && error.message.includes('Could not find the') && error.message.includes('column') && retryCount < 10) {
              const match = error.message.match(/Could not find the '([^']+)' column/);
              if (match && match[1]) {
                  const missingColumn = match[1];

@@ -489,6 +489,21 @@ export default function App() {
           if (viewingAgent && viewingAgent.id === agentId) setViewingAgent(saved);
           if (editingAgent && editingAgent.id === agentId) setEditingAgent(saved);
           
+          // Sync the updated agent details across deals
+          setDeals(prevDeals => prevDeals.map(d => {
+              if (d.agentName && d.agentName.toLowerCase() === saved.name.toLowerCase()) {
+                  const updatedDeal = {
+                      ...d,
+                      agentPhone: saved.phone || d.agentPhone,
+                      agentEmail: saved.email || d.agentEmail,
+                      agentBrokerage: saved.brokerage || d.agentBrokerage
+                  };
+                  api.save(updatedDeal, updatedDeal.pipelineType === 'jv' ? 'JVDeals' : 'Deals'); // persist to DB
+                  return updatedDeal;
+              }
+              return d;
+          }));
+
           setEditingDeal(prev => {
               if (prev && prev.agentName && prev.agentName.toLowerCase() === saved.name.toLowerCase()) {
                   return {
