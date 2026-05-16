@@ -63,8 +63,43 @@ const processIncomingItem = (item: any, tableName: string) => {
     
     if (tableName === 'Deals' || tableName === 'JVDeals') {
         processed.photos = cleanArrayField(processed.photos, false).filter(Boolean);
+        
+        // Map Documents (from Supabase) back to documents for the frontend
+        if (processed.Documents !== undefined) {
+            processed.documents = processed.Documents;
+            delete processed.Documents;
+        }
+
+        processed.motivationSignals = processed.motivationSignals || processed.MotivationSignals || processed['Motivation Signals'] || processed.motivation_signals || [];
+        processed.motivationSignals = cleanArrayField(processed.motivationSignals, false).filter(Boolean);
+        
+        // Remove the variations so they don't pollute the generic object
+        delete processed.MotivationSignals;
+        delete processed['Motivation Signals'];
+        delete processed.motivation_signals;
+        processed.documents = cleanArrayField(processed.documents, false).filter(Boolean);
         processed.dealType = Array.from(new Set(cleanArrayField(processed.dealType, true))).filter(Boolean);
         processed.logs = cleanArrayField(processed.logs, false).filter(Boolean);
+        
+        // Extract dynamically stored documents from logs
+        if (processed.logs && processed.logs.length > 0) {
+            const extractedDocs: any[] = [];
+            processed.logs = processed.logs.filter((log: string) => {
+                if (log && typeof log === 'string' && log.startsWith('[SYS_DOC]')) {
+                    try {
+                        extractedDocs.push(JSON.parse(log.substring(9)));
+                    } catch (e) {
+                         console.warn("Failed to parse [SYS_DOC]", e);
+                    }
+                    return false;
+                }
+                return true;
+            });
+            if (extractedDocs.length > 0) {
+                processed.documents = [...(processed.documents || []), ...extractedDocs];
+            }
+        }
+        
         processed.interestedBuyers = cleanArrayField(processed.interestedBuyers, false);
         processed.buyersWhoPassed = cleanArrayField(processed.buyersWhoPassed, false);
         processed.pipelineType = tableName === 'JVDeals' ? 'jv' : 'main';
@@ -223,9 +258,31 @@ export const api = {
             if (payload.buyersWhoPassed && typeof payload.buyersWhoPassed === 'object') {
                 payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
             }
+            
+            // motivationSignals and documents are now native JSONB columns in Supabase
+            // Do not stringify them. PostgREST handles JS arrays seamlessly.
         }
         
         let { data, error } = await supabase.from(table).upsert(payload).select().single();
+        
+        let missingColumns: string[] = [];
+        let retryCount = 0;
+        
+        while (error && error.code === 'PGRST204' && retryCount < 10) {
+             const match = error.message.match(/Could not find the '([^']+)' column/);
+             if (match && match[1]) {
+                 const missingColumn = match[1];
+                 console.warn(`Table ${table} does not have column ${missingColumn}. Stripping it and retrying.`);
+                 missingColumns.push(missingColumn);
+                 delete payload[missingColumn];
+                 const retry = await supabase.from(table).upsert(payload).select().single();
+                 data = retry.data;
+                 error = retry.error;
+                 retryCount++;
+             } else {
+                 break;
+             }
+        }
         
         // Fallback for tables that don't have organization_id yet (Schema cache stale)
         if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find')) && payload.organization_id) {
@@ -245,6 +302,14 @@ export const api = {
             console.error(`Error saving to ${table}:`, JSON.stringify(error, null, 2));
             throw error;
         }
+        
+        if (data && missingColumns.length > 0) {
+            // Re-inject so frontend state isn't missing the property
+            for (const col of missingColumns) {
+                 data[col] = item[col];
+            }
+        }
+        
         return processIncomingItem(data, table);
     },
 
@@ -269,11 +334,34 @@ export const api = {
                 if (payload.buyersWhoPassed && typeof payload.buyersWhoPassed === 'object') {
                     payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
                 }
+                
+                // motivationSignals and documents are natively JSONB, do not map to strings
             }
             return payload;
         });
 
         let { data, error } = await supabase.from(table).upsert(payloads).select();
+        
+        let missingColumns: string[] = [];
+        let retryCount = 0;
+        
+        while (error && error.code === 'PGRST204' && retryCount < 10) {
+             const match = error.message.match(/Could not find the '([^']+)' column/);
+             if (match && match[1]) {
+                 const missingColumn = match[1];
+                 console.warn(`Table ${table} does not have column ${missingColumn}. Stripping it from batch and retrying.`);
+                 missingColumns.push(missingColumn);
+                 for (const p of payloads) {
+                     delete p[missingColumn];
+                 }
+                 const retry = await supabase.from(table).upsert(payloads).select();
+                 data = retry.data;
+                 error = retry.error;
+                 retryCount++;
+             } else {
+                 break;
+             }
+        }
         
         // Fallback for tables that don't have organization_id yet (Schema cache stale)
         if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find'))) {
@@ -300,6 +388,16 @@ export const api = {
             console.error(`Error batch saving to ${table}:`, error);
             throw error;
         }
+        
+        if (data && missingColumns.length > 0 && Array.isArray(data)) {
+            data = data.map((d, index) => {
+                for (const col of missingColumns) {
+                    d[col] = items[index][col];
+                }
+                return d;
+            });
+        }
+        
         return data.map(item => processIncomingItem(item, table));
     },
 

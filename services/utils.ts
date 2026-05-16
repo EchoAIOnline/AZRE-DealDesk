@@ -258,6 +258,30 @@ export const serverFunctions = {
     });
   },
 
+  uploadDocument: (file: File, address: string, docCategory: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Data = reader.result as string;
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'uploadDocument',
+            data: base64Data,
+            name: file.name,
+            mimeType: file.type,
+            address: address,
+            docCategory: docCategory
+          })
+        })
+        .then(res => res.json())
+        .then(resolve)
+        .catch(reject);
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
   uploadBuyerImage: (file: File, buyerName: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

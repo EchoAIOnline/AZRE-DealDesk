@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Home, Wrench, PhoneOutgoing, DollarSign, User, Clock, ArrowRight, Save, X, Activity, Briefcase, Calendar, MapPin, FileText, TrendingUp, AlertTriangle, CheckCircle, Search, Phone, Mail, Send, Copy, Plus, ChevronLeft, ChevronRight, TrendingDown, Loader2, LayoutGrid, Image as ImageIcon, Link as LinkIcon, Users, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
+import { Home, Wrench, PhoneOutgoing, DollarSign, User, Clock, ArrowRight, Save, X, Activity, Briefcase, Calendar, MapPin, FileText, TrendingUp, AlertTriangle, CheckCircle, Search, Phone, Mail, Send, Copy, Plus, ChevronLeft, ChevronRight, TrendingDown, Loader2, LayoutGrid, Image as ImageIcon, Link as LinkIcon, Users, Pencil, Trash2, ArrowRightLeft, Check, Upload, File as FileIcon } from 'lucide-react';
 import { api, sendBulkEmailGAS } from '../../services/api';
 import { Deal, Agent, Brokerage, Comparable, User as UserType, Buyer } from '../../types';
 import { formatNumberWithCommas, parseNumberFromCurrency, formatPhoneNumber, getLogTimestamp, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
@@ -60,6 +60,206 @@ interface EditDealModalProps {
     allDeals?: Deal[];
     onSwitchToDeal?: (deal: Deal) => void;
 }
+
+const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
+    const listPrice = deal.listPrice || 0;
+    const offerPrice = deal.offerPrice || 0;
+    const arv = deal.arv || 0;
+    const signalCount = deal.motivationSignals?.length || 0;
+
+    let listPercent = listPrice > 0 ? (offerPrice / listPrice) * 100 : 0;
+    let arvPercent = arv > 0 ? (offerPrice / arv) * 100 : 0;
+
+    let listScore, listTier, listLabel;
+    if (offerPrice === 0 || listPrice === 0) {
+        listScore = 0; listTier = 'gray'; listLabel = 'AWAITING INPUT';
+    } else if (listPercent >= 60) {
+        listScore = 100; listTier = 'green'; listLabel = 'IN CLOSING ZONE';
+    } else if (listPercent >= 51) {
+        listScore = 70; listTier = 'amber'; listLabel = 'AGGRESSIVE — ACHIEVABLE';
+    } else if (listPercent >= 45) {
+        listScore = 30; listTier = 'orange'; listLabel = 'BELOW CLOSED RANGE';
+    } else {
+        listScore = 10; listTier = 'red'; listLabel = 'FAR BELOW — NON-STARTER';
+    }
+
+    let arvScore, arvTier, arvLabel;
+    if (offerPrice === 0 || arv === 0) {
+        arvScore = 0; arvTier = 'gray'; arvLabel = 'AWAITING INPUT';
+    } else if (arvPercent <= 40) {
+        arvScore = 100; arvTier = 'green'; arvLabel = 'ON TARGET — SAFE OFFER';
+    } else if (arvPercent <= 45) {
+        arvScore = 70; arvTier = 'amber'; arvLabel = 'MARGIN COMPRESSED';
+    } else if (arvPercent <= 50) {
+        arvScore = 35; arvTier = 'orange'; arvLabel = 'EATING BUYER PROFIT';
+    } else {
+        arvScore = 10; arvTier = 'red'; arvLabel = 'OVER SAFE OFFER AMOUNT';
+    }
+
+    let signalScore, signalTier, signalLabel;
+    if (signalCount >= 5) {
+        signalScore = 100; signalTier = 'green'; signalLabel = 'HIGH MOTIVATION';
+    } else if (signalCount >= 3) {
+        signalScore = 65; signalTier = 'amber'; signalLabel = 'MEETS 3+ MINIMUM';
+    } else if (signalCount >= 1) {
+        signalScore = 25; signalTier = 'red'; signalLabel = 'BELOW 3+ RULE';
+    } else {
+        signalScore = 0; signalTier = 'red'; signalLabel = 'BELOW 3+ RULE';
+    }
+
+    const compositeScore = (listScore * 0.40) + (signalScore * 0.35) + (arvScore * 0.25);
+    
+    let compTier, compLabel;
+    if (offerPrice === 0 || listPrice === 0 || arv === 0) {
+        compTier = 'gray'; compLabel = 'AWAITING INPUT';
+    } else if (compositeScore >= 75) {
+        compTier = 'green'; compLabel = 'HIGH';
+    } else if (compositeScore >= 50) {
+        compTier = 'amber'; compLabel = 'MEDIUM';
+    } else if (compositeScore >= 25) {
+        compTier = 'orange'; compLabel = 'LOW';
+    } else {
+        compTier = 'red'; compLabel = 'VERY LOW';
+    }
+
+    const getColorClasses = (tier: string) => {
+        switch (tier) {
+            case 'green': return { text: 'text-emerald-400', bg: 'bg-emerald-500', dot: 'bg-emerald-400' };
+            case 'amber': return { text: 'text-yellow-400', bg: 'bg-yellow-500', dot: 'bg-yellow-400' };
+            case 'orange': return { text: 'text-orange-400', bg: 'bg-orange-500', dot: 'bg-orange-400' };
+            case 'red': return { text: 'text-red-400', bg: 'bg-red-500', dot: 'bg-red-400' };
+            default: return { text: 'text-gray-400', bg: 'bg-gray-500', dot: 'bg-gray-400' };
+        }
+    };
+
+    let recText, recClass, recIcon;
+    if (compTier === 'gray') {
+        recText = 'Add Offer Price, Asking Price, and ARV to see offer analytics.';
+        recClass = 'bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300';
+        recIcon = <AlertTriangle size={16} />;
+    } else if (compTier === 'green') {
+        recText = '✓ Strong deal profile. Recommend submitting offer.';
+        recClass = 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-200 dark:border-emerald-500/50 text-emerald-700 dark:text-emerald-400';
+        recIcon = null;
+    } else if (compTier === 'amber') {
+        recText = '! Borderline. Improve offer or gather more motivation signals.';
+        recClass = 'bg-yellow-50 dark:bg-yellow-900/40 border-yellow-200 dark:border-yellow-500/50 text-yellow-700 dark:text-yellow-400';
+        recIcon = null;
+    } else if (compTier === 'orange') {
+        recText = '! Low close probability. Recommend pass unless more signals found.';
+        recClass = 'bg-orange-50 dark:bg-orange-900/40 border-orange-200 dark:border-orange-500/50 text-orange-700 dark:text-orange-400';
+        recIcon = null;
+    } else {
+        recText = '✕ Below AZRE threshold. Strongly recommend pass.';
+        recClass = 'bg-red-50 dark:bg-red-900/40 border-red-200 dark:border-red-500/50 text-red-700 dark:text-red-400';
+        recIcon = null;
+    }
+
+    return (
+        <div className="space-y-4 pt-6 pb-2">
+            <div className="flex items-center gap-2">
+                <Activity size={14} className="text-gray-400" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Offer Analytics</h3>
+                <span className="text-xs text-gray-400 dark:text-gray-500 tracking-wide font-normal">· calibrated to 5 verified closed deals</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 bg-[#111827] dark:bg-[#0f141f] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-800 shadow-sm">
+                
+                {/* % OF LIST PRICE */}
+                <div className="p-5 flex flex-col justify-between space-y-3">
+                    <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">% OF LIST PRICE</div>
+                    <div className={`text-4xl font-black ${getColorClasses(listTier).text}`}>
+                        {listPrice > 0 && offerPrice > 0 ? `${listPercent.toFixed(1)}%` : '--'}
+                    </div>
+                    <div className="space-y-2 pt-1">
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full ${getColorClasses(listTier).bg}`} style={{ width: `${Math.min(100, Math.max(0, listPercent))}%` }}></div>
+                        </div>
+                        <div className="flex items-start gap-1.5 pt-1">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${getColorClasses(listTier).dot}`}></span>
+                            <span className={`text-[10px] font-bold uppercase leading-tight ${getColorClasses(listTier).text}`}>
+                                {listLabel}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* % OF ARV */}
+                <div className="p-5 flex flex-col justify-between space-y-3">
+                    <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">% OF ARV</div>
+                    <div className={`text-4xl font-black ${getColorClasses(arvTier).text}`}>
+                        {arv > 0 && offerPrice > 0 ? `${arvPercent.toFixed(1)}%` : '--'}
+                    </div>
+                    <div className="space-y-2 pt-1">
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full ${getColorClasses(arvTier).bg}`} style={{ width: `${Math.max(0, Math.min(100, 100 - arvPercent))}%` }}></div>
+                        </div>
+                        <div className="flex items-start gap-1.5 pt-1">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${getColorClasses(arvTier).dot}`}></span>
+                            <span className={`text-[10px] font-bold uppercase leading-tight ${getColorClasses(arvTier).text}`}>
+                                {arvLabel}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* MOTIVATION SIGNALS */}
+                <div className="p-5 flex flex-col justify-between space-y-3">
+                    <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">MOTIVATION SIGNALS</div>
+                    <div className={`text-4xl font-black ${getColorClasses(signalTier).text}`}>
+                        {signalCount} <span className="text-2xl text-gray-500 font-bold">/ 8</span>
+                    </div>
+                    <div className="space-y-2 pt-1">
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full ${getColorClasses(signalTier).bg}`} style={{ width: `${(signalCount / 8) * 100}%` }}></div>
+                        </div>
+                        <div className="flex items-start gap-1.5 pt-1">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${getColorClasses(signalTier).dot}`}></span>
+                            <span className={`text-[10px] font-bold uppercase leading-tight ${getColorClasses(signalTier).text}`}>
+                                {signalLabel}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* CLOSE PROBABILITY */}
+                <div className="p-5 flex flex-col justify-between space-y-3">
+                    <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">CLOSE PROBABILITY</div>
+                    <div className={`text-4xl font-black ${getColorClasses(compTier).text}`}>
+                        {compLabel}
+                    </div>
+                    <div className="space-y-2 pt-1">
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full ${getColorClasses(compTier).bg}`} style={{ width: `${Math.max(0, Math.min(100, compositeScore))}%` }}></div>
+                        </div>
+                        <div className="flex items-start gap-1.5 pt-1">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${getColorClasses(compTier).dot}`}></span>
+                            <span className={`text-[10px] font-bold uppercase leading-tight ${getColorClasses(compTier).text}`}>
+                                {compTier !== 'gray' ? `SCORE ${Math.round(compositeScore)} / 100` : 'SCORE --'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className={`border rounded-lg p-4 flex items-center gap-3 shadow-sm ${recClass}`}>
+                {recIcon && <div className="shrink-0">{recIcon}</div>}
+                <span className="font-bold text-sm">{recText}</span>
+            </div>
+        </div>
+    );
+}
+
+const MOTIVATION_SIGNALS_LIST = [
+    "60+ Days on Market",
+    "Price drops / relisted",
+    "Distressed language in listing",
+    "Visible property distress",
+    "Vacant / carrying costs",
+    "Motivated seller (estate, REO, etc.)",
+    "Agent engaged / responsive",
+    "Strong ARV disparity"
+];
 
 const AgentSlot: React.FC<{
     slotIndex: number;
@@ -845,6 +1045,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     loiSentDate: now,
                     loiSentBy: currentUser?.name || '',
                     offerDecision: 'Made Written Offer On Property',
+                    contactStatus: 'Sent LOI Email',
                     logs: newLogs,
                     dispo: {
                         ...(deal.dispo || { photos: false, blast: false }),
@@ -1067,6 +1268,50 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         setTempLogValue('');
         setShowSavedNotification(true);
         setTimeout(() => setShowSavedNotification(false), 1000);
+    };
+
+    const handleDocumentUpload = async (docCategory: 'A-B Purchase Contract' | 'B-C Purchase Contract' | 'Other Documents', file: File) => {
+        try {
+            console.log(`Uploading document to ${docCategory}: ${file.name}`);
+            const response = await serverFunctions.uploadDocument(file, deal.address, docCategory);
+            console.log("Upload response:", response);
+            if (response && response.url) {
+                const newDoc = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: file.name,
+                    url: response.url,
+                    category: docCategory,
+                    uploadedAt: new Date().toISOString()
+                };
+                const newDocs = [...(deal.documents || []), newDoc];
+                dealRef.current = { ...deal, documents: newDocs };
+                setDeal(dealRef.current);
+                if (onUpdate) {
+                    onUpdate(deal.id, { documents: newDocs }).catch((err: any) => {
+                         alert(`Error saving document to database: ${err.message}`);
+                    });
+                } else {
+                    triggerSave();
+                }
+            } else {
+                alert(`Upload failed: ${response?.error || response?.message || 'Unknown error from Google Apps Script. Be sure your Google Apps Script is updated to the latest version.'}`);
+            }
+        } catch (e: any) {
+            console.error("Document upload exception:", e);
+            alert(`Upload error: ${e.message}`);
+        }
+    };
+
+    const handleRemoveDocument = (docId: string) => {
+        if (!window.confirm("Delete this document?")) return;
+        const newDocs = (deal.documents || []).filter(d => d.id !== docId);
+        dealRef.current = { ...dealRef.current, documents: newDocs };
+        setDeal(dealRef.current);
+        if (onUpdate) {
+            onUpdate(deal.id, { documents: newDocs });
+        } else {
+            triggerSave();
+        }
     };
 
     const handleSaveLogEdit = (index: number) => {
@@ -1398,7 +1643,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     if(onUpdate) onUpdate(deal.id, updates);
     triggerSave(); 
 }}><option disabled>-- Potential Deals --</option>{POTENTIAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Under Contract --</option>{UNDER_CONTRACT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Counter Offers --</option>{COUNTER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Declined / Dead --</option>{DECLINED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Closed --</option>{CLOSED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                                <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}><option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option><option value="Sent Initial Offer Email">Sent Initial Offer Email</option><option value="Sent Initial Text Message">Sent Initial Text Message</option><option value="First Call, No Answer">First Call, No Answer</option><option value="Spoke With Agent">Spoke With Agent</option><option value="Waiting To Hear Back">Waiting To Hear Back</option><option value="Offer Declined">Offer Declined</option><option value="Offer Accepted">Offer Accepted</option></select></div><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}><option value="" disabled>Unassigned</option><option value="Ashari Zakar">Ashari Zakar</option><option value="Angelica Henderson">Angelica Henderson</option><option value="Grias Ramos">Grias Ramos</option></select></div></div>
+                                <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}><option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option><option value="Sent LOI Email">Sent LOI Email</option><option value="Sent Initial Text Message">Sent Initial Text Message</option><option value="First Call, No Answer">First Call, No Answer</option><option value="Spoke With Agent">Spoke With Agent</option><option value="Waiting To Hear Back">Waiting To Hear Back</option><option value="Offer Declined">Offer Declined</option><option value="Offer Accepted">Offer Accepted</option></select></div><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}><option value="" disabled>Unassigned</option><option value="Ashari Zakar">Ashari Zakar</option><option value="Angelica Henderson">Angelica Henderson</option><option value="Grias Ramos">Grias Ramos</option></select></div></div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-800/50">
                                     <div>
@@ -1448,6 +1693,9 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                             </div>
                         </div>
                    </div>
+
+                   {/* Offer Analytics Section */}
+                   <OfferAnalyticsBar deal={deal} />
 
                    {/* Financials Section */}
                    <div className="space-y-4">
@@ -1506,6 +1754,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 </div>
                             </div>
                             <div className="h-px bg-gray-200 dark:bg-gray-700/50 w-full my-6"></div>
+
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><TrendingUp size={12}/> Valuation & Comparables</h4></div>
                                 <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.arv) || ''} onChange={e => updateDealState({arv: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationEstimate) || ''} onChange={e => updateDealState({renovationEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div></div>
@@ -1558,6 +1807,39 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     })}
                                 </div>
                             </div>
+                        </div>
+                   </div>
+
+                   {/* Motivation Signals Section */}
+                   <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">Motivation Signals</h3>
+                            <span className="text-xs font-bold text-gray-400 dark:text-gray-600 uppercase">— TICK WHAT APPLIES</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {MOTIVATION_SIGNALS_LIST.map((signal) => {
+                                const isSelected = deal.motivationSignals?.includes(signal);
+                                return (
+                                    <div 
+                                        key={signal}
+                                        onClick={() => {
+                                            const currentSignals = deal.motivationSignals || [];
+                                            const newSignals = isSelected 
+                                                ? currentSignals.filter(s => s !== signal)
+                                                : [...currentSignals, signal];
+                                            updateDealState({ motivationSignals: newSignals });
+                                            if (onUpdate) onUpdate(deal.id, { motivationSignals: newSignals });
+                                            triggerSave();
+                                        }}
+                                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-emerald-900/40 border-emerald-500/50 text-white' : 'bg-transparent border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                                    >
+                                        <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-gray-400 dark:border-gray-600'}`}>
+                                            {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+                                        </div>
+                                        <span className="text-sm font-semibold">{signal}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                    </div>
 
@@ -1789,6 +2071,208 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                         </div>
                    </div>
 
+
+                    <div className="space-y-4 pt-6">
+                        <div className="flex items-center justify-between pb-4">
+                            <h3 className="text-[13px] font-bold text-gray-500 tracking-wider flex items-center gap-2 uppercase">
+                                <FileIcon size={16} className="text-gray-400" /> DOCUMENTS
+                            </h3>
+                            <div className="px-3 py-1 rounded-full bg-[#3A141A]/50 border border-[#4A181F] text-[12px] font-medium text-[#FF453A]">
+                                1 of 2 required
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {/* A-B Purchase Contract */}
+                            <div className="flex flex-col dark:bg-[#111318] bg-white rounded-xl border border-gray-200 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 p-4 relative transition-colors shadow-sm">
+                                <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#FF453A] rounded-r-md"></div>
+                                <div className="pl-3 h-full flex flex-col">
+                                    {(() => {
+                                        const docs = (deal.documents || []).filter(d => d.category === 'A-B Purchase Contract');
+                                        return (
+                                            <>
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h4 className="font-semibold text-[15px] text-gray-900 dark:text-white tracking-tight">A–B Purchase Contract</h4>
+                                                    {docs.length > 0 ? (
+                                                        <span className="px-2 py-0.5 flex items-center gap-1.5 rounded text-[11px] font-semibold bg-green-100 dark:bg-[#0E2818]/60 text-green-700 dark:text-[#32D74B] border border-green-200 dark:border-[#32D74B]/20 uppercase">
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            Uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 dark:bg-[#3A141A]/60 text-red-600 dark:text-[#FF453A] border border-red-200 dark:border-[#FF453A]/20 uppercase">Required</span>
+                                                    )}
+                                                </div>
+                                                
+                                                {docs.length === 0 ? (
+                                                    <div className="mt-auto">
+                                                        <label className="border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 bg-gray-50 dark:bg-[#14171D] hover:bg-gray-100 dark:hover:bg-[#1A1D24] transition-colors rounded-lg flex items-center justify-center p-[18px] cursor-pointer group shadow-inner">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[#3273F6] font-medium text-[14px]">Upload file</span>
+                                                                <span className="text-gray-500 text-[14px]">·&nbsp;&nbsp;PDF or DOCX</span>
+                                                            </div>
+                                                            <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={e => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) handleDocumentUpload('A-B Purchase Contract', file);
+                                                                e.target.value = '';
+                                                            }} />
+                                                        </label>
+                                                        <div className="mt-3 text-[12px] text-gray-500 font-medium">Seller → AZRE <span className="mx-1.5 inline-block w-[3px] h-[3px] rounded-full bg-gray-400 dark:bg-gray-600"></span> <span className="text-gray-500 dark:text-gray-600">Due at signing</span></div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-auto">
+                                                        {docs.map(doc => (
+                                                            <div key={doc.id} className="border border-red-200 dark:border-[#1E3A2B] bg-red-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
+                                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                                    <div className="w-8 h-10 bg-white/50 dark:bg-white/5 rounded flex flex-col justify-center items-center shrink-0 border border-black/5 dark:border-white/5">
+                                                                        <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
+                                                                    </div>
+                                                                    <div className="truncate">
+                                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-red-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block">{doc.name}</a>
+                                                                        <span className="text-gray-500 text-[11px] mt-0.5 block">Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <label className="text-gray-500 dark:text-gray-400 text-[12px] hover:text-gray-900 dark:hover:text-white cursor-pointer px-2 border-b border-transparent hover:border-gray-500 transition-colors shrink-0">
+                                                                    Replace
+                                                                    <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={e => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) {
+                                                                            handleRemoveDocument(doc.id);
+                                                                            handleDocumentUpload('A-B Purchase Contract', file);
+                                                                        }
+                                                                        e.target.value = '';
+                                                                    }} />
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                        <div className="mt-3 text-[12px] text-gray-500 font-medium">Seller → AZRE <span className="mx-1.5 inline-block w-[3px] h-[3px] rounded-full bg-gray-400 dark:bg-gray-600"></span> <span className="text-gray-500 dark:text-gray-600">Due at signing</span></div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* B-C Purchase Contract */}
+                            <div className="flex flex-col bg-white dark:bg-[#111318] rounded-xl border border-gray-200 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 p-4 relative transition-colors shadow-sm">
+                                <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#32D74B] rounded-r-md"></div>
+                                <div className="pl-3 h-full flex flex-col">
+                                    {(() => {
+                                        const docs = (deal.documents || []).filter(d => d.category === 'B-C Purchase Contract');
+                                        return (
+                                            <>
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h4 className="font-semibold text-[15px] text-gray-900 dark:text-white tracking-tight">B–C Purchase Contract</h4>
+                                                    {docs.length > 0 ? (
+                                                        <span className="px-2 py-0.5 flex items-center gap-1.5 rounded text-[11px] font-semibold bg-green-100 dark:bg-[#0E2818]/60 text-green-700 dark:text-[#32D74B] border border-green-200 dark:border-[#32D74B]/20 uppercase">
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            Uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 dark:bg-[#3A141A]/60 text-red-600 dark:text-[#FF453A] border border-red-200 dark:border-[#FF453A]/20 uppercase">Required</span>
+                                                    )}
+                                                </div>
+                                                
+                                                {docs.length === 0 ? (
+                                                    <div className="mt-auto">
+                                                        <label className="border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 bg-gray-50 dark:bg-[#14171D] hover:bg-gray-100 dark:hover:bg-[#1A1D24] transition-colors rounded-lg flex items-center justify-center p-[18px] cursor-pointer group shadow-inner">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[#3273F6] font-medium text-[14px]">Upload file</span>
+                                                                <span className="text-gray-500 text-[14px]">·&nbsp;&nbsp;PDF or DOCX</span>
+                                                            </div>
+                                                            <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={e => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) handleDocumentUpload('B-C Purchase Contract', file);
+                                                                e.target.value = '';
+                                                            }} />
+                                                        </label>
+                                                        <div className="mt-3 text-[12px] text-gray-500 font-medium">AZRE → {deal.acquisitionManager || 'Buyer'} <span className="mx-1.5 inline-block w-[3px] h-[3px] rounded-full bg-gray-400 dark:bg-gray-600"></span> <span className="text-gray-500 dark:text-gray-600">Closing {deal.emdDate ? new Date(deal.emdDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : 'May 28'}</span></div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-auto">
+                                                        {docs.map(doc => (
+                                                            <div key={doc.id} className="border border-green-200 dark:border-[#1E3A2B] bg-green-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
+                                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                                    <div className="w-8 h-10 bg-white/50 dark:bg-white/5 rounded flex flex-col justify-center items-center shrink-0 border border-black/5 dark:border-white/5">
+                                                                        <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
+                                                                    </div>
+                                                                    <div className="truncate">
+                                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-green-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block">{doc.name}</a>
+                                                                        <span className="text-gray-500 text-[11px] mt-0.5 block">Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <label className="text-gray-500 dark:text-gray-400 text-[12px] hover:text-gray-900 dark:hover:text-white cursor-pointer px-2 border-b border-transparent hover:border-gray-500 transition-colors shrink-0">
+                                                                    Replace
+                                                                    <input type="file" className="hidden" accept=".pdf,.docx,.doc" onChange={e => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) {
+                                                                            handleRemoveDocument(doc.id);
+                                                                            handleDocumentUpload('B-C Purchase Contract', file);
+                                                                        }
+                                                                        e.target.value = '';
+                                                                    }} />
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                        <div className="mt-3 text-[12px] text-gray-500 font-medium">AZRE → {deal.acquisitionManager || 'Buyer'} <span className="mx-1.5 inline-block w-[3px] h-[3px] rounded-full bg-gray-400 dark:bg-gray-600"></span> <span className="text-gray-500 dark:text-gray-600">Closing {deal.emdDate ? new Date(deal.emdDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : 'May 28'}</span></div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Other Documents */}
+                        <div className="bg-white dark:bg-[#111318] rounded-xl border border-gray-200 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 p-4 transition-colors shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-semibold text-[15px] text-gray-900 dark:text-white tracking-tight">Other Documents</h4>
+                                <span className="px-3 py-1 rounded-md text-[11px] font-semibold bg-gray-100 dark:bg-[#1C1F26] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">Optional</span>
+                            </div>
+                            <div className="border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 bg-gray-50 dark:bg-[#14171D] hover:bg-gray-100 dark:hover:bg-[#1A1D24] transition-colors rounded-lg p-[18px] shadow-inner">
+                                <label className="flex flex-col items-center justify-center cursor-pointer group">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <span className="text-[#3273F6] font-medium text-[14px]">Upload files</span>
+                                        <span className="text-gray-500 text-[14px]">·&nbsp;&nbsp;Inspection reports, HOA docs, title search, etc.</span>
+                                    </div>
+                                    <div className="text-gray-500 dark:text-gray-600 text-[12px] font-medium">Drag & drop supported <span className="mx-1 inline-block w-[3px] h-[3px] rounded-full bg-gray-400 dark:bg-gray-600 relative -top-[1px]"></span> Multiple files allowed</div>
+                                    <input type="file" className="hidden" multiple accept="*" onChange={e => {
+                                        const files = e.target.files ? (Array.from(e.target.files) as File[]) : [];
+                                        files.forEach(file => handleDocumentUpload('Other Documents', file));
+                                        e.target.value = '';
+                                    }} />
+                                </label>
+                                
+                                {(() => {
+                                    const docs = (deal.documents || []).filter(d => d.category === 'Other Documents');
+                                    if (docs.length > 0) {
+                                        return (
+                                            <div className="mt-5 space-y-2">
+                                                {docs.map(doc => (
+                                                    <div key={doc.id} className="flex justify-between items-center bg-white dark:bg-[#1A1D24] p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 group transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                                                <FileIcon size={14} className="text-gray-500 dark:text-gray-400" />
+                                                            </div>
+                                                            <div>
+                                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 font-medium text-[13px] hover:text-gray-900 dark:hover:text-white truncate block max-w-[300px]">{doc.name}</a>
+                                                                <span className="text-gray-500 text-[11px]">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" onClick={() => handleRemoveDocument(doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-[#FF453A] dark:hover:text-[#FF453A] p-2 transition-colors bg-transparent hover:bg-red-50 dark:hover:bg-[#FF453A]/10 rounded-md">
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        </div>
+                    </div>
                  </form>
               </div>
               

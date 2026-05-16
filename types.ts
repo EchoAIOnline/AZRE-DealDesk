@@ -89,6 +89,14 @@ export interface RenovationWorkflow {
   contractors: RenovationContractor[];
 }
 
+export interface DealDocument {
+  id: string;
+  name: string;
+  url: string;
+  category: 'A-B Purchase Contract' | 'B-C Purchase Contract' | 'Other Documents';
+  uploadedAt: string;
+}
+
 export interface Deal {
   id: string;
   createdAt?: string;
@@ -145,6 +153,7 @@ export interface Deal {
   dateListed?: string | null;
   arv?: number;
   renovationEstimate?: number;
+  motivationSignals?: string[];
   comparable1?: Comparable;
   comparable2?: Comparable;
   comparable3?: Comparable;
@@ -156,6 +165,7 @@ export interface Deal {
   loiSentBy?: string;
   offerDecisionTracking?: OfferDecisionTrack[];
   renovationWorkflow?: RenovationWorkflow;
+  documents?: DealDocument[];
 }
 
 export interface Agent {

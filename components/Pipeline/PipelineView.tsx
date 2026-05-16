@@ -117,7 +117,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 ) : (
                                     <>
                                         <option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option>
-                                        <option value="Sent Initial Offer Email">Sent Initial Offer Email</option>
+                                        <option value="Sent LOI Email">Sent LOI Email</option>
                                         <option value="Sent Initial Text Message">Sent Initial Text Message</option>
                                         <option value="First Call, No Answer">First Call, No Answer</option>
                                         <option value="Spoke With Agent">Spoke With Agent</option>
