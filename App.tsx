@@ -22,6 +22,7 @@ import { EditWholesalerModal } from './components/Wholesalers/EditWholesalerModa
 import { ImportMapModal } from './components/Settings/ImportMapModal';
 import { ImportBuyerMapModal } from './components/Settings/ImportBuyerMapModal';
 import { ImportAgentMapModal } from './components/Settings/ImportAgentMapModal'; 
+import { ImportWholesalerMapModal } from './components/Settings/ImportWholesalerMapModal'; 
 import { SettingsModal } from './components/Settings/SettingsModal'; 
 import { CalendarView } from './components/Calendar/CalendarView';
 import { PageNavBar } from './components/Shared/PageNavBar';
@@ -257,6 +258,7 @@ export default function App() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importBuyerFile, setImportBuyerFile] = useState<File | null>(null);
   const [importAgentFile, setImportAgentFile] = useState<File | null>(null);
+  const [importWholesalerFile, setImportWholesalerFile] = useState<File | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [agentSuggestions, setAgentSuggestions] = useState<Agent[]>([]);
   const [wholesalerSuggestions, setWholesalerSuggestions] = useState<Wholesaler[]>([]);
@@ -313,6 +315,7 @@ export default function App() {
         const wholesalersData = await api.load('Wholesalers');
         const cleanWholesalers = deduplicateById(wholesalersData).map((w: any) => ({
             ...w,
+            status: w.status ? w.status.trim() : 'New',
             subscriptionStatus: w.subscriptionStatus || 'Subscribed',
             notes: Array.isArray(w.notes) ? w.notes : [],
             properties: Array.isArray(w.properties) ? w.properties : [],
@@ -1181,6 +1184,7 @@ export default function App() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setImportFile(e.target.files[0]); e.target.value = ''; };
   const handleBuyerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setImportBuyerFile(e.target.files[0]); e.target.value = ''; };
   const handleAgentFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setImportAgentFile(e.target.files[0]); e.target.value = ''; };
+  const handleWholesalerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setImportWholesalerFile(e.target.files[0]); e.target.value = ''; };
   
   const handleSyncAgentPhotos = async () => {
     setIsSyncingPhotos(true);
@@ -1937,16 +1941,18 @@ export default function App() {
           setImportBuyerFile(null);
       }} />)}
       {importAgentFile && (<ImportAgentMapModal file={importAgentFile} onClose={() => setImportAgentFile(null)} onImport={async (a) => { const saved = await api.saveBatch(a,'Agents'); if(saved) { setAgents(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'AGENT', 'batch', `Imported ${saved.length} agents`, {}, 'Batch Import'); } }} />)}
+      {importWholesalerFile && (<ImportWholesalerMapModal file={importWholesalerFile} onClose={() => setImportWholesalerFile(null)} onImport={async (w) => { const saved = await api.saveBatch(w,'Wholesalers'); if(saved) { setWholesalers(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'WHOLESALER', 'batch', `Imported ${saved.length} wholesalers`, {}, 'Batch Import'); } }} />)}
       
 
       {showAddWholesalerModal && editingWholesaler && (<EditWholesalerModal wholesaler={editingWholesaler} onClose={() => { setShowAddWholesalerModal(false); setEditingWholesaler(null); }} onSave={handleSaveWholesaler} onDelete={handleDeleteWholesaler} currentUser={currentUser} deals={deals} onOpenDeal={(d) => { setEditingWholesaler(null); setShowAddWholesalerModal(false); setDealModalZIndex('z-[160]'); setEditingDeal(d); }} onNavigate={handleWholesalerNavigate} hasNext={sortedWholesalers.indexOf(editingWholesaler) < sortedWholesalers.length - 1} hasPrevious={sortedWholesalers.indexOf(editingWholesaler) > 0} onMoveToAgent={() => handleMoveWholesalerToAgent(editingWholesaler)} onMoveToBuyer={() => handleMoveWholesalerToBuyer(editingWholesaler)} />)}
       {/* FIXED: currentUser prop added to ensure activity log name correctly renders */}
       {showAddBuyerModal && editingBuyer && (<EditBuyerModal buyer={editingBuyer} onClose={() => { setShowAddBuyerModal(false); setEditingBuyer(null); }} onSave={handleSaveBuyer} currentUser={currentUser} deals={deals} onOpenDeal={(d) => { setEditingBuyer(null); setShowAddBuyerModal(false); setDealModalZIndex('z-[160]'); setEditingDeal(d); }} onNavigate={handleBuyerNavigate} hasNext={sortedBuyers.indexOf(editingBuyer) < sortedBuyers.length - 1} hasPrevious={sortedBuyers.indexOf(editingBuyer) > 0} allBuyers={buyers} onSwitchToBuyer={(b) => setEditingBuyer(b)} onMoveToAgent={() => handleMoveBuyerToAgent(editingBuyer)} onMoveToWholesaler={() => handleMoveBuyerToWholesaler(editingBuyer)} zIndex="z-[140]" />)}
-      {showSettings && currentUser && (<SettingsModal onClose={() => setShowSettings(false)} user={currentUser} onUpdateUser={handleUpdateUserProfile} onLogout={handleLogout} onOpenImportDeals={() => { setShowSettings(false); document.getElementById('import-deals')?.click(); }} onOpenImportBuyers={() => { setShowSettings(false); document.getElementById('import-buyers')?.click(); }} onOpenImportAgents={() => { setShowSettings(false); document.getElementById('import-agents')?.click(); }} theme={theme} setTheme={setTheme} isSidebarCollapsed={isSidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} agentsCount={agents.length} buyersCount={buyers.length} onSyncAgentPhotos={handleSyncAgentPhotos} isSyncingPhotos={isSyncingPhotos} onSyncAgentDetails={handleSyncAgentDetails} isSyncingDetails={isSyncingDetails} />)}
+      {showSettings && currentUser && (<SettingsModal onClose={() => setShowSettings(false)} user={currentUser} onUpdateUser={handleUpdateUserProfile} onLogout={handleLogout} onOpenImportDeals={() => { setShowSettings(false); document.getElementById('import-deals')?.click(); }} onOpenImportBuyers={() => { setShowSettings(false); document.getElementById('import-buyers')?.click(); }} onOpenImportAgents={() => { setShowSettings(false); document.getElementById('import-agents')?.click(); }} onOpenImportWholesalers={() => { setShowSettings(false); document.getElementById('import-wholesalers')?.click(); }} theme={theme} setTheme={setTheme} isSidebarCollapsed={isSidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} agentsCount={agents.length} buyersCount={buyers.length} wholesalersCount={wholesalers.length} onSyncAgentPhotos={handleSyncAgentPhotos} isSyncingPhotos={isSyncingPhotos} onSyncAgentDetails={handleSyncAgentDetails} isSyncingDetails={isSyncingDetails} />)}
       
       <input type="file" id="import-deals" className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
       <input type="file" id="import-buyers" className="hidden" accept=".xlsx, .xls, .csv" onChange={handleBuyerFileUpload} />
       <input type="file" id="import-agents" className="hidden" accept=".xlsx, .xls, .csv" onChange={handleAgentFileUpload} />
+      <input type="file" id="import-wholesalers" className="hidden" accept=".xlsx, .xls, .csv" onChange={handleWholesalerFileUpload} />
 
       {viewingAgent && (<AgentProfileModal agent={viewingAgent} onClose={() => setViewingAgent(null)} onUpdateAgent={handleUpdateAgent} currentUser={currentUser} deals={deals} onOpenDeal={(d) => { setDealModalZIndex('z-[160]'); setEditingDeal(d); }} zIndex={agentModalZIndex} onNavigate={handleAgentNavigate} hasNext={sortedAgents.indexOf(viewingAgent) < sortedAgents.length - 1} hasPrevious={sortedAgents.indexOf(viewingAgent) > 0} onMoveToBuyer={() => handleMoveAgentToBuyer(viewingAgent)} onMoveToWholesaler={() => handleMoveAgentToWholesaler(viewingAgent)} />)}
       {editingAgent && (<AgentProfileModal agent={editingAgent} onClose={() => setEditingAgent(null)} onUpdateAgent={handleUpdateAgent} currentUser={currentUser} deals={deals} onOpenDeal={(d) => { setDealModalZIndex('z-[160]'); setEditingDeal(d); }} onDelete={async (id) => { const agentToDelete = agents.find(a => a.id === id); const s = await api.delete(id, 'Agents'); if(s) { setAgents(prev => prev.filter(a => a.id !== id)); setEditingAgent(null); if (agentToDelete) { activityLogService.logActivity(currentUser, 'DELETE', 'AGENT', id, `Deleted agent: ${agentToDelete.name}`, {}, agentToDelete.name); } }}} zIndex={agentModalZIndex} onNavigate={handleAgentNavigate} hasNext={sortedAgents.indexOf(editingAgent) < sortedAgents.length - 1} hasPrevious={sortedAgents.indexOf(editingAgent) > 0} onMoveToBuyer={() => handleMoveAgentToBuyer(editingAgent)} onMoveToWholesaler={() => handleMoveAgentToWholesaler(editingAgent)} />)}
@@ -2034,6 +2040,31 @@ export default function App() {
                 const b = buyers.find(buyer => buyer.id === id); 
                 if(b) { setEditingBuyer(b); setShowAddBuyerModal(true); } 
             }} 
+            onAddNewBuyer={async (name) => {
+                const newBuyer: Buyer = { 
+                    id: generateId(), 
+                    createdAt: new Date().toISOString(),
+                    dateAdded: new Date().toISOString(), 
+                    name: name || '', 
+                    companyName: '', 
+                    phone: '', 
+                    email: '', 
+                    status: 'New Lead', 
+                    subscriptionStatus: 'Subscribed',
+                    propertiesBought: 0, 
+                    buyBox: { locations: '', minPrice: 0, maxPrice: 0, minArv: 0, maxArv: 0, maxRenoBudget: 0, earliestYearBuilt: 0, latestYearBuilt: 0, propertyTypes: [], minBedrooms: 0, minBathrooms: 0, notes: '' }, 
+                    notes: [`${getLogTimestamp()}: Created from Deal Modal`], 
+                    about: '' 
+                };
+                const saved = await api.save(newBuyer, 'Buyers');
+                if (saved) {
+                    setBuyers(prev => {
+                        if (prev.some(b => b.id === saved.id)) return prev;
+                        return [...prev, saved];
+                    });
+                    return saved;
+                }
+            }}
             zIndex={dealModalZIndex} 
             allDeals={deals}
             onSwitchToDeal={handleSwitchToDeal}

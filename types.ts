@@ -41,6 +41,7 @@ export interface DispoSettings {
   loiSentAgents?: string[];
   interestedBuyers?: { buyerId: string; price: string }[];
   passedBuyers?: string[];
+  manualMatchedBuyers?: string[];
 }
 
 export interface Comparable {

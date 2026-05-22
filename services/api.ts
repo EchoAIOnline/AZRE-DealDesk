@@ -207,7 +207,12 @@ export const api = {
 
         let query = supabase.from(table).select('*');
         if (currentOrgId && table !== 'Integrations') {
-            query = query.eq('organization_id', currentOrgId);
+            if (currentOrgId === 'org_azre_00001') {
+                // Master org automatically sees records with null organization_id to handle manual Supabase CSV imports
+                query = query.or(`organization_id.eq.${currentOrgId},organization_id.is.null`);
+            } else {
+                query = query.eq('organization_id', currentOrgId);
+            }
         }
         
         let { data, error } = await query;

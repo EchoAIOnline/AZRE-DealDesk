@@ -53,6 +53,7 @@ interface EditDealModalProps {
     onUpdate?: (id: string, updates: Partial<Deal>) => void;
     buyers: Buyer[];
     onViewBuyer?: (id: string) => void;
+    onAddNewBuyer?: (name?: string) => Promise<Buyer | void>;
     
     zIndex?: string; 
     
@@ -461,6 +462,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     onAgentLookup, onBrokerageLookup, onSelectAgent, onSelectBrokerage,
     agents = [], onUpdateAgent, onAddNewAgent, currentUser,
     onNavigate, hasNext, hasPrevious, onUpdate, buyers, onViewBuyer,
+    onAddNewBuyer,
     zIndex = 'z-[120]', 
     allDeals = [], onSwitchToDeal
 }) => {
@@ -721,8 +723,15 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const availableMatchedBuyers = useMemo(() => {
         const interestedIds = (deal.dispo?.interestedBuyers || []).map(b => b.buyerId);
         const passedIds = deal.dispo?.passedBuyers || [];
-        return matchedBuyers.filter(b => !interestedIds.includes(b.id) && !passedIds.includes(b.id));
-    }, [matchedBuyers, deal.dispo?.interestedBuyers, deal.dispo?.passedBuyers]);
+        const manualMatchedIds = deal.dispo?.manualMatchedBuyers || [];
+        
+        const combinedMatched = [
+            ...matchedBuyers,
+            ...buyers.filter(b => manualMatchedIds.includes(b.id) && !matchedBuyers.some(mb => mb.id === b.id))
+        ];
+
+        return combinedMatched.filter(b => !interestedIds.includes(b.id) && !passedIds.includes(b.id));
+    }, [matchedBuyers, deal.dispo?.interestedBuyers, deal.dispo?.passedBuyers, deal.dispo?.manualMatchedBuyers, buyers]);
 
     const interestedBuyersList = useMemo(() => {
         return (deal.dispo?.interestedBuyers || []).map(ib => {
@@ -735,19 +744,29 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         return (deal.dispo?.passedBuyers || []).map(id => buyers.find(b => b.id === id)).filter(b => b !== undefined) as Buyer[];
     }, [deal.dispo?.passedBuyers, buyers]);
 
-    const interestedSearchResults = useMemo(() => {
+    const matchedSearchResults = useMemo(() => {
         if (!interestedSearchQuery.trim()) return [];
         const query = interestedSearchQuery.toLowerCase();
         return buyers.filter(b => {
-            // Exclude buyers already in interested or passed lists
             if (deal.dispo?.interestedBuyers?.some(ib => ib.buyerId === b.id)) return false;
             if (deal.dispo?.passedBuyers?.includes(b.id)) return false;
+            if (availableMatchedBuyers.some(mb => mb.id === b.id)) return false; // hide if already in matched column
             
             const nameMatch = b.name?.toLowerCase().includes(query);
             const companyMatch = b.companyName?.toLowerCase().includes(query);
             return nameMatch || companyMatch;
-        }).slice(0, 5); // Limit to 5 results
-    }, [interestedSearchQuery, buyers, deal.dispo?.interestedBuyers, deal.dispo?.passedBuyers]);
+        }).slice(0, 5); 
+    }, [interestedSearchQuery, buyers, deal.dispo?.interestedBuyers, deal.dispo?.passedBuyers, availableMatchedBuyers]);
+
+    const handleMarkMatched = (buyerId: string) => {
+        const currentManual = dealRef.current.dispo?.manualMatchedBuyers || [];
+        const newManual = [...currentManual, buyerId];
+        const newDispo = { ...(dealRef.current.dispo || { photos: false, blast: false }), manualMatchedBuyers: newManual };
+        updateDealState({ dispo: newDispo });
+        if(onUpdate) onUpdate(deal.id, { dispo: newDispo });
+        triggerSave();
+        setInterestedSearchQuery("");
+    };
 
     const handleMarkInterested = (buyerId: string) => {
         const currentInterested = dealRef.current.dispo?.interestedBuyers || [];
@@ -1870,6 +1889,51 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     Matched Buyers
                                     <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{availableMatchedBuyers.length}</span>
                                 </h4>
+                                
+                                <div className="relative mb-3">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search buyers..." 
+                                        value={interestedSearchQuery}
+                                        onChange={(e) => setInterestedSearchQuery(e.target.value)}
+                                        className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md py-1.5 px-3 text-xs focus:outline-none focus:border-blue-500"
+                                    />
+                                    {interestedSearchQuery && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-56 overflow-y-auto">
+                                            {matchedSearchResults.length > 0 ? (
+                                                matchedSearchResults.map(b => (
+                                                    <button 
+                                                        key={b.id}
+                                                        type="button"
+                                                        onClick={() => handleMarkMatched(b.id)}
+                                                        className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700/30 font-medium"
+                                                    >
+                                                        {b.name || b.companyName}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-xs text-gray-500 italic border-b border-gray-100 dark:border-gray-700/30">
+                                                    No matching buyers in database
+                                                </div>
+                                            )}
+                                            {onAddNewBuyer && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        const newB = await onAddNewBuyer(interestedSearchQuery);
+                                                        if (newB) {
+                                                            handleMarkMatched(newB.id);
+                                                        }
+                                                    }}
+                                                    className="w-full text-left px-3 py-2.5 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5"
+                                                >
+                                                    <Plus size={14} /> Add & Match New Buyer "{interestedSearchQuery}"
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                                     {availableMatchedBuyers.length > 0 ? availableMatchedBuyers.map(buyer => (
                                         <div key={buyer.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">
@@ -1892,30 +1956,6 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{interestedBuyersList.length}</span>
                                 </h4>
                                 
-                                <div className="relative mb-3">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search buyers..." 
-                                        value={interestedSearchQuery}
-                                        onChange={(e) => setInterestedSearchQuery(e.target.value)}
-                                        className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md py-1.5 px-3 text-xs focus:outline-none focus:border-blue-500"
-                                    />
-                                    {interestedSearchQuery && interestedSearchResults.length > 0 && (
-                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                                            {interestedSearchResults.map(b => (
-                                                <button 
-                                                    key={b.id}
-                                                    type="button"
-                                                    onClick={() => handleAddInterestedBuyer(b.id)}
-                                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                                                >
-                                                    {b.name || b.companyName}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                                     {interestedBuyersList.length > 0 ? interestedBuyersList.map(({ buyer, price }) => (
                                         <div key={buyer.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">

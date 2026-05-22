@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { X, CheckCircle, User, Home, Users, Layout, Save, LogOut, Upload, FileSpreadsheet, Download, Moon, Sun, Monitor, RefreshCw, Loader2, Database, Mail, Chrome, Image as ImageIcon, Wand2, Link } from 'lucide-react';
+import { X, CheckCircle, User, Home, Users, Layout, Save, LogOut, Upload, FileSpreadsheet, Download, Moon, Sun, Monitor, RefreshCw, Loader2, Database, Mail, Chrome, Image as ImageIcon, Wand2, Link, Briefcase } from 'lucide-react';
 import { User as UserType } from '../../types';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -19,6 +19,7 @@ interface SettingsModalProps {
     onOpenImportDeals: () => void;
     onOpenImportBuyers: () => void;
     onOpenImportAgents: () => void;
+    onOpenImportWholesalers: () => void;
     
     theme: string;
     setTheme: (t: 'dark' | 'light' | 'system') => void;
@@ -28,6 +29,7 @@ interface SettingsModalProps {
     
     agentsCount: number;
     buyersCount: number;
+    wholesalersCount: number;
     
     onSyncAgentPhotos?: () => void;
     isSyncingPhotos?: boolean;
@@ -38,9 +40,9 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
     onClose, user, onUpdateUser, onLogout, 
-    onOpenImportDeals, onOpenImportBuyers, onOpenImportAgents,
+    onOpenImportDeals, onOpenImportBuyers, onOpenImportAgents, onOpenImportWholesalers,
     theme, setTheme, isSidebarCollapsed, setSidebarCollapsed,
-    agentsCount, buyersCount, onSyncAgentPhotos, isSyncingPhotos,
+    agentsCount, buyersCount, wholesalersCount, onSyncAgentPhotos, isSyncingPhotos,
     onSyncAgentDetails, isSyncingDetails
 }) => {
     const [activeTab, setActiveTab] = useState('users');
@@ -192,6 +194,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     
                     <button onClick={() => setActiveTab('agents')} className={`text-sm text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${activeTab === 'agents' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'}`}>
                         <Users size={16} /> Agents
+                    </button>
+
+                    <button onClick={() => setActiveTab('wholesalers')} className={`text-sm text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${activeTab === 'wholesalers' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'}`}>
+                        <Briefcase size={16} /> Wholesalers
                     </button>
 
                     <button onClick={() => setActiveTab('integrations')} className={`text-sm text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${activeTab === 'integrations' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'}`}>
@@ -439,7 +445,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             </p>
                                             <button 
                                                 onClick={onOpenImportAgents}
-                                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-lg"
+                                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-50 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-lg"
+                                            >
+                                                <Upload size={18} /> Select File
+                                            </button>
+                                            <p className="text-xs text-gray-500 mt-2">Supported formats: .xlsx, .xls, .csv</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'wholesalers' && (
+                            <div className="space-y-6">
+                                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-lg">Manage Wholesalers</h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">You have {wholesalersCount} wholesalers in your database.</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-3 py-1 text-xs h-8 rounded-md font-bold transition-colors flex items-center gap-2">
+                                            <Download size={12} /> Export List
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-start gap-4">
+                                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg">
+                                            <FileSpreadsheet size={24} className="text-blue-600 dark:text-blue-500" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Import Wholesalers</h3>
+                                            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                                                Upload a CSV or Excel file to bulk import wholesalers with Smart Mapping.
+                                            </p>
+                                            <button 
+                                                onClick={onOpenImportWholesalers}
+                                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-50 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-lg"
                                             >
                                                 <Upload size={18} /> Select File
                                             </button>
