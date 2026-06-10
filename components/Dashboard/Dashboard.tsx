@@ -51,8 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
         const previousPeriodDeals = getDealsInPeriod(twoWeeksAgo, oneWeekAgo);
 
         const calculateTrend = (current: number, previous: number) => {
-            if (previous === 0) return current > 0 ? 100 : 0;
-            return ((current - previous) / previous) * 100;
+            return current - previous;
         };
 
         // Active Statuses
@@ -317,14 +316,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
         return deals.filter(d => d.offerDecision === 'Deal Canceled' && new Date(d.createdAt || new Date()) >= startDate).length;
     }, [deals, dealCanceledTimeframe]);
 
-    const renderTrend = (trend: number) => {
+    const renderTrend = (trend: number, isCurrency = false) => {
         const isPositive = trend >= 0;
         const Icon = isPositive ? TrendingUp : TrendingDown;
         const colorClass = isPositive ? 'text-green-400' : 'text-red-400';
+        
+        const formattedTrend = isCurrency 
+            ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Math.abs(trend))
+            : Math.abs(trend).toString();
+            
         return (
             <div className={`flex items-center gap-1 text-sm ${colorClass}`}>
                 <Icon size={14} />
-                <span>{isPositive ? '+' : ''}{trend.toFixed(1)}%</span>
+                <span>{isPositive ? '+' : '-'}{formattedTrend}</span>
                 <span className="text-gray-500 text-xs ml-1">vs last 7 days</span>
             </div>
         );
@@ -406,7 +410,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                                 <span className="text-gray-500 dark:text-gray-400 font-medium">Potential Revenue</span>
                             </div>
                             <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{formatCurrency(kpis.potentialRevenue)}</div>
-                            {renderTrend(kpis.revenueTrend)}
+                            {renderTrend(kpis.revenueTrend, true)}
                         </div>
                     </div>
                 </div>
