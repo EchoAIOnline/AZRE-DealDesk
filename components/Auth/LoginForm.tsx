@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Loader2, User, X, Info, CheckCircle } from 'lucide-react';
 import { api, supabase, setOrganizationId } from '../../services/api';
+import { Logo } from '../Shared/Logo';
 import { User as UserType } from '../../types';
 import { generateId } from '../../services/utils';
 
@@ -482,16 +483,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 font-sans transition-colors duration-300">
             <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <div className="inline-block p-4">
-                        <h1 className="text-5xl font-light tracking-tight text-gray-900 dark:text-white mb-0">ASHARI</h1>
-                        <h1 className="text-5xl font-light tracking-tight text-blue-600 dark:text-[#4ADE80] mb-1">ZAKAR</h1>
-                        <div className="text-justify flex justify-between w-full text-gray-600 dark:text-white tracking-[0.35em] text-sm mt-2">
-                            <span>R</span><span>E</span><span>A</span><span>L</span>
-                            <span className="w-4"></span>
-                            <span>E</span><span>S</span><span>T</span><span>A</span><span>T</span><span>E</span>
-                        </div>
-                    </div>
+                <div className="text-center mb-8 flex justify-center">
+                    <Logo iconSize={64} className="scale-125" />
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-2xl transition-all duration-300">

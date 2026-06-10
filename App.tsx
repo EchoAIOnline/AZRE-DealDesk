@@ -25,7 +25,7 @@ import { ImportAgentMapModal } from './components/Settings/ImportAgentMapModal';
 import { ImportWholesalerMapModal } from './components/Settings/ImportWholesalerMapModal'; 
 import { SettingsModal } from './components/Settings/SettingsModal'; 
 import { CalendarView } from './components/Calendar/CalendarView';
-import { PageNavBar } from './components/Shared/PageNavBar';
+import { Logo } from './components/Shared/Logo';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { EmailManager } from './components/EmailManager/EmailManager';
@@ -1705,7 +1705,7 @@ export default function App() {
           <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 md:p-4 shadow-lg flex justify-between items-center z-10 shrink-0 gap-4">
               <div className="flex items-center gap-3 md:gap-4">
                   <div className="md:hidden"><button onClick={() => setIsMobileMenuOpen(true)} className="bg-blue-600 p-2.5 rounded-lg hover:bg-blue-500 transition-colors shadow-sm"><Menu size={24} className="text-white" /></button></div>
-                  <h1 className="text-lg md:text-xl font-bold tracking-tight shrink-0 text-gray-900 dark:text-white flex items-center gap-1"><span className="md:inline hidden">AZRE</span><span className="md:hidden">AZRE</span><span className="text-blue-500">DealDesk</span></h1>
+                  <Logo iconSize={32} />
               </div>
               <div className="flex-1 max-w-xl mx-auto relative hidden md:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
