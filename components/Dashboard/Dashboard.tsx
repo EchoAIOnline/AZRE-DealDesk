@@ -336,7 +336,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">
-                        Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">{(currentUser?.name || 'User').split(' ')[0]}</span>!
+                        Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">{(currentUser?.name || 'User').split(' ')[0]}</span>!
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">Here's what's happening with your deals today.</p>
                 </div>
