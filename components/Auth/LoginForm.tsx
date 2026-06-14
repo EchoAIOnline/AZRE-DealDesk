@@ -73,7 +73,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             try {
                 // Check for active session from OAuth redirect
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                if (sessionError) throw sessionError;
+                if (sessionError) {
+                    if (sessionError.message?.toLowerCase().includes("refresh token")) {
+                        await supabase.auth.signOut();
+                    } else {
+                        console.warn("Session error:", sessionError);
+                    }
+                }
                 
                 if (session?.user) {
                     // If we are functioning inside the popup, let the parent window handle things after session is parsed and stored
@@ -170,7 +176,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     }
                 }
             } catch (err: any) {
-                console.error("Google Auth Sync Error:", err);
+                if (err?.message?.toLowerCase().includes("refresh token")) {
+                    console.log("Cleared invalid session.");
+                } else {
+                    console.error("Google Auth Sync Error:", err);
+                }
             } finally {
                 setLoading(false);
             }

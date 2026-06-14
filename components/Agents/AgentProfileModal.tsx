@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Phone, Mail, Briefcase, MessageSquare, User, Calendar, Save, Upload, Search, Loader2, MapPin, CheckCircle, AlertCircle, Clock, Link, ExternalLink, AlertTriangle, Plus, Home, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
 import { Agent, Deal, User as UserType } from '../../types';
+import { api } from '../../services/api';
 import { formatPhoneNumber, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, getLogTimestamp, calculateDaysRemaining, formatCurrency, processPhotoUrl } from '../../services/utils';
 import { ModalFooter, NavigationArrows, UnsavedChangesModal } from '../Shared/ModalComponents';
 import { useAutoSave, SavedNotification } from '../Shared/AutoSave';
@@ -44,6 +45,20 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
     // Note Editing State
     const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
     const [tempNoteContent, setTempNoteContent] = useState("");
+    const [users, setUsers] = useState<UserType[]>([]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const fetchedUsers = await api.load('Users') as UserType[];
+                // You can also consider using the org restricted hook or we just assume they're already fetched
+                setUsers(fetchedUsers);
+            } catch (e) {
+                console.error("Failed to load users for acquisition manager dropdown", e);
+            }
+        };
+        fetchUsers();
+    }, []);
 
     // Save Logic States
     const initialAgentJson = useRef(JSON.stringify(agent));
@@ -411,6 +426,20 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                         <div className="flex items-center justify-center md:justify-start gap-2 text-purple-600 dark:text-purple-400 font-medium text-lg">
                             <Briefcase size={18} />
                             {formData.brokerage || 'No Brokerage Listed'}
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
+                            <label className="text-xs text-gray-500 font-bold uppercase shrink-0">Acquisition Manager:</label>
+                            <select
+                                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded p-1 text-sm focus:border-blue-500 outline-none max-w-[200px]"
+                                value={(formData as any).acquisitionManager || ''}
+                                onChange={(e) => handleChange('acquisitionManager', e.target.value)}
+                                onBlur={handleAutoSave}
+                            >
+                                <option value="">Unassigned</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.name}>{u.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

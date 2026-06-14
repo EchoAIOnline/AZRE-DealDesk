@@ -156,8 +156,10 @@ export default function App() {
       }
       try {
           await supabase.auth.signOut();
-      } catch (e) {
-          console.error("Error signing out of Supabase:", e);
+      } catch (e: any) {
+          if (!e?.message?.toLowerCase().includes("refresh token")) {
+              console.error("Error signing out of Supabase:", e);
+          }
       }
       setIsAuthenticated(false);
       setCurrentUser(null);

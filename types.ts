@@ -190,6 +190,7 @@ export interface Agent {
   hasClosedDeals?: boolean;
   closedDealIds?: string[];
   subscriptionStatus?: 'Subscribed' | 'Unsubscribed'; // New Field
+  acquisitionManager?: string;
 }
 
 export interface WholesalerProperty {
