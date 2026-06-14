@@ -87,7 +87,7 @@ const WholesalerSlot: React.FC<{
     }, [slotIndex, agent, customNameValue]);
 
     const filteredWholesalers = searchTerm.length > 0 
-        ? allWholesalers.filter(a => (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        ? allWholesalers.filter(a => a && (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
 
     const handleSearchChange = (val: string) => {
@@ -485,7 +485,7 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
         fetchEmails();
     }, []);
 
-    const wholesaler1 = wholesalers.find(a => (a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
+    const wholesaler1 = wholesalers.find(a => a && (a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
     const wholesaler2 = wholesalers.find(a => a.id === deal.secondAgentId);
     
     const daysToInsp = calculateDaysRemaining(deal.inspectionDate);

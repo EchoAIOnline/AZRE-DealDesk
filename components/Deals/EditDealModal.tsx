@@ -290,7 +290,7 @@ const AgentSlot: React.FC<{
     }, [slotIndex, agent, customNameValue]);
 
     const filteredAgents = searchTerm.length > 0 
-        ? allAgents.filter(a => (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        ? allAgents.filter(a => a && (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
 
     const handleSearchChange = (val: string) => {
@@ -933,7 +933,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         fetchEmails();
     }, [currentUser]);
 
-    const agent1 = agents.find(a => (a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
+    const agent1 = agents.find(a => a && (a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
     const agent2 = agents.find(a => a.id === deal.secondAgentId);
     
     const daysToInsp = calculateDaysRemaining(deal.inspectionDate);

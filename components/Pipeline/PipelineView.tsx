@@ -43,15 +43,15 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     setEditingDeal, filteredDeals, orderedDeals, handleDeleteDeal
 }) => {
     const tabs = pipelineType === 'jv' ? [
-        { id: 'All Deals', label: 'All Deals', count: filteredDeals.length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
-        { id: 'Available', label: 'Available', count: filteredDeals.filter(d => d.offerDecision === 'Available').length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
-        { id: 'No Longer Available', label: 'No Longer Available', count: filteredDeals.filter(d => d.offerDecision === 'No Longer Available').length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
+        { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
+        { id: 'Available', label: 'Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'Available').length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
+        { id: 'No Longer Available', label: 'No Longer Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'No Longer Available').length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
     ] : [
-        { id: 'All Deals', label: 'All Deals', count: filteredDeals.length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
-        { id: 'Potential', label: 'Potential', count: filteredDeals.filter(d => POTENTIAL_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
-        { id: 'Under Contract', label: 'Under Contract', count: filteredDeals.filter(d => UNDER_CONTRACT_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
-        { id: 'Closed', label: 'Closed', count: filteredDeals.filter(d => CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
-        { id: 'Declined', label: 'Declined', count: filteredDeals.filter(d => DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
+        { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
+        { id: 'Potential', label: 'Potential', count: (filteredDeals || []).filter(d => d && POTENTIAL_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
+        { id: 'Under Contract', label: 'Under Contract', count: (filteredDeals || []).filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
+        { id: 'Closed', label: 'Closed', count: (filteredDeals || []).filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
+        { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
     ];
 
     return (
@@ -141,10 +141,10 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 <input type="text" className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 focus:border-blue-500 outline-none" placeholder={`Search ${pipelineType === 'jv' ? 'Wholesaler' : 'Agent'}...`} value={agentFilterSearch} onChange={(e) => { const val = e.target.value; setAgentFilterSearch(val); if (filterConfig.type === 'Agent Name') setFilterConfig({ type: 'All', value: '' }); setShowAgentFilterSuggestions(true); }} onFocus={() => setShowAgentFilterSuggestions(true)} onBlur={() => setTimeout(() => setShowAgentFilterSuggestions(false), 200)} />
                                 {showAgentFilterSuggestions && agentFilterSearch && (
                                     <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-b-lg shadow-xl z-50 max-h-48 overflow-y-auto mt-1">
-                                        {agents.filter(a => String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).map(a => (
+                                        {(agents || []).filter(a => a && String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).map(a => (
                                             <div key={a.id} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-0" onMouseDown={() => { setFilterConfig({ type: 'Agent Name', value: a.name }); setAgentFilterSearch(a.name); setShowAgentFilterSuggestions(false); }}>{a.name}</div>
                                         ))}
-                                        {agents.filter(a => String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).length === 0 && (<div className="p-2 text-xs text-gray-500 italic">No {pipelineType === 'jv' ? 'wholesalers' : 'agents'} found</div>)}
+                                        {(agents || []).filter(a => a && String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).length === 0 && (<div className="p-2 text-xs text-gray-500 italic">No {pipelineType === 'jv' ? 'wholesalers' : 'agents'} found</div>)}
                                     </div>
                                 )}
                                 {filterConfig.type === 'Agent Name' && (<button onClick={() => { setFilterConfig({ type: 'All', value: '' }); setAgentFilterSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"><X size={14} /></button>)}

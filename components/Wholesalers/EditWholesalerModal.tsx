@@ -341,7 +341,7 @@ export const EditWholesalerModal: React.FC<EditWholesalerModalProps> = ({
     const daysUntilFollowUp = formData.nextFollowUpDate ? calculateDaysRemaining(formData.nextFollowUpDate) : null;
 
     const filteredDeals = dealSearch.length > 2 
-        ? deals.filter(d => d.address.toLowerCase().includes(dealSearch.toLowerCase()) && !(formData.closedDealIds || []).includes(d.id))
+        ? deals.filter(d => d && (d.address || '').toLowerCase().includes(dealSearch.toLowerCase()) && !(formData.closedDealIds || []).includes(d.id))
         : [];
 
     return (

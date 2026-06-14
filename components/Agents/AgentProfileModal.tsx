@@ -352,10 +352,10 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
 
     // Filtered deals for search
     const filteredDeals = dealSearch.length > 2 
-        ? deals.filter(d => d.address.toLowerCase().includes(dealSearch.toLowerCase()) && !(formData.closedDealIds || []).includes(d.id))
+        ? deals.filter(d => d && (d.address || '').toLowerCase().includes(dealSearch.toLowerCase()) && !(formData.closedDealIds || []).includes(d.id))
         : [];
 
-    const listedProperties = deals.filter(d => d.agentName && d.agentName.toLowerCase().trim() === agent.name.toLowerCase().trim());
+    const listedProperties = deals.filter(d => d && d.agentName && d.agentName.toLowerCase().trim() === (agent.name || '').toLowerCase().trim());
 
     return (
         <div className={`fixed inset-0 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm ${zIndex}`} onClick={handleCloseClick}>

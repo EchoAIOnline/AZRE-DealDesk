@@ -57,7 +57,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   }, [deal.id, deal.photos, deal.address]);
 
   // Dynamic Agent Lookup
-  const matchingAgent = agents?.find(a => a.name.toLowerCase() === (deal.agentName || '').toLowerCase());
+  const matchingAgent = agents?.find(a => a && String(a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
   const displayPhone = matchingAgent?.phone || deal.agentPhone;
   const displayEmail = matchingAgent?.email || deal.agentEmail;
   const displayBrokerage = matchingAgent?.brokerage || (matchingAgent as any)?.companyName || deal.agentBrokerage;

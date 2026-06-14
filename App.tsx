@@ -1530,7 +1530,7 @@ export default function App() {
   };
 
   const getFilteredDeals = () => {
-    let filtered = [...deals]; 
+    let filtered = [...(deals || [])].filter(Boolean); 
     if (location.pathname === '/jv-pipeline') {
         filtered = filtered.filter(d => d.pipelineType === 'jv');
     } else if (location.pathname === '/pipeline') {
@@ -1585,7 +1585,7 @@ export default function App() {
             }
         }
     }
-    return filteredDeals.filter(d => statusesToShow.includes(d.offerDecision));
+    return (filteredDeals || []).filter(d => d && statusesToShow.includes(d.offerDecision));
   };
   const orderedDeals = getOrderedDeals();
   const getSortedAgents = () => {
