@@ -12,7 +12,7 @@ export const Inbox: React.FC<{ title?: string, initialMessages?: InboxMessage[] 
     if (channelFilter !== 'all' && msg.type !== channelFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      return (msg.contactName || '').toLowerCase().includes(q) || (msg.lastMessage || '').toLowerCase().includes(q);
+      return String(msg.contactName || '').toLowerCase().includes(q) || String(msg.lastMessage || '').toLowerCase().includes(q);
     }
     return true;
   });

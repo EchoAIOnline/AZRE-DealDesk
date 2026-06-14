@@ -1129,7 +1129,7 @@ export default function App() {
       if (activeSearch) { 
           const query = activeSearch.toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
-          filtered = filtered.filter(b => (b.name && b.name.toLowerCase().includes(query)) || (b.companyName && b.companyName.toLowerCase().includes(query)) || (b.email && b.email.toLowerCase().includes(query)) || (b.phone && (b.phone.includes(query) || (cleanQuery.length > 0 && b.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+          filtered = filtered.filter(b => (b.name && String(b.name).toLowerCase().includes(query)) || (b.companyName && String(b.companyName).toLowerCase().includes(query)) || (b.email && String(b.email).toLowerCase().includes(query)) || (b.phone && (String(b.phone).includes(query) || (cleanQuery.length > 0 && String(b.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
       if (buyerStage !== 'All Buyers') {
           filtered = filtered.filter(b => b.status && b.status.includes(buyerStage));
@@ -1160,7 +1160,7 @@ export default function App() {
       if (activeSearch) { 
           const query = activeSearch.toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
-          filtered = filtered.filter(b => (b.name && b.name.toLowerCase().includes(query)) || (b.companyName && b.companyName.toLowerCase().includes(query)) || (b.email && b.email.toLowerCase().includes(query)) || (b.phone && (b.phone.includes(query) || (cleanQuery.length > 0 && b.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+          filtered = filtered.filter(b => (b.name && String(b.name).toLowerCase().includes(query)) || (b.companyName && String(b.companyName).toLowerCase().includes(query)) || (b.email && String(b.email).toLowerCase().includes(query)) || (b.phone && (String(b.phone).includes(query) || (cleanQuery.length > 0 && String(b.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
       return filtered;
   }, [buyers, globalSearchQuery, buyerSearch]);
@@ -1594,7 +1594,7 @@ export default function App() {
       if (activeSearch) { 
           const query = activeSearch.toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
-          filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (a.phone.includes(query) || (cleanQuery.length > 0 && a.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+          filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (String(a.phone).includes(query) || (cleanQuery.length > 0 && String(a.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
       if (agentStage !== 'All Agents') {
           switch (agentStage) {
@@ -1633,7 +1633,7 @@ export default function App() {
     if (activeSearch) { 
         const query = activeSearch.toLowerCase(); 
         const cleanQuery = query.replace(/\D/g, '');
-        filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (a.phone.includes(query) || (cleanQuery.length > 0 && a.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+        filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (String(a.phone).includes(query) || (cleanQuery.length > 0 && String(a.phone).replace(/\D/g, '').includes(cleanQuery))))); 
     }
     return filtered;
   }, [agents, globalSearchQuery, agentSearch]);
@@ -1644,7 +1644,7 @@ export default function App() {
       if (activeSearch) { 
           const query = activeSearch.toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
-          filtered = filtered.filter(w => (w.name && w.name.toLowerCase().includes(query)) || (w.companyName && w.companyName.toLowerCase().includes(query)) || (w.email && w.email.toLowerCase().includes(query)) || (w.phone && (w.phone.includes(query) || (cleanQuery.length > 0 && w.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+          filtered = filtered.filter(w => (w.name && String(w.name).toLowerCase().includes(query)) || (w.companyName && String(w.companyName).toLowerCase().includes(query)) || (w.email && String(w.email).toLowerCase().includes(query)) || (w.phone && (String(w.phone).includes(query) || (cleanQuery.length > 0 && String(w.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
       if (wholesalerStage !== 'All Wholesalers') {
           filtered = filtered.filter(w => w.status === wholesalerStage);
@@ -1667,7 +1667,7 @@ export default function App() {
       if (activeSearch) { 
           const query = activeSearch.toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
-          filtered = filtered.filter(w => (w.name && w.name.toLowerCase().includes(query)) || (w.companyName && w.companyName.toLowerCase().includes(query)) || (w.email && w.email.toLowerCase().includes(query)) || (w.phone && (w.phone.includes(query) || (cleanQuery.length > 0 && w.phone.replace(/\D/g, '').includes(cleanQuery))))); 
+          filtered = filtered.filter(w => (w.name && String(w.name).toLowerCase().includes(query)) || (w.companyName && String(w.companyName).toLowerCase().includes(query)) || (w.email && String(w.email).toLowerCase().includes(query)) || (w.phone && (String(w.phone).includes(query) || (cleanQuery.length > 0 && String(w.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
       return filtered;
   }, [wholesalers, globalSearchQuery, wholesalerSearch]);
