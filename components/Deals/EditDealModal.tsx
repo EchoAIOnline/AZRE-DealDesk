@@ -290,7 +290,7 @@ const AgentSlot: React.FC<{
     }, [slotIndex, agent, customNameValue]);
 
     const filteredAgents = searchTerm.length > 0 
-        ? allAgents.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        ? allAgents.filter(a => (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
 
     const handleSearchChange = (val: string) => {
@@ -354,7 +354,7 @@ const AgentSlot: React.FC<{
                                 >
                                     <Send size={12} /> Send LOI
                                 </button>
-                                {(deal?.dispo?.loiSentAgents?.includes(agent.id) || (deal?.loiSent && deal?.agentName && agent?.name && deal.agentName.toLowerCase() === agent.name.toLowerCase())) && (
+                                {(deal?.dispo?.loiSentAgents?.includes(agent.id) || (deal?.loiSent && deal?.agentName && agent?.name && (deal.agentName || '').toLowerCase() === (agent.name || '').toLowerCase())) && (
                                     <div className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 px-3 py-1.5 rounded-lg font-bold flex flex-col justify-center leading-tight w-fit">
                                         <div className="flex items-center gap-1.5 whitespace-nowrap text-[11px]">
                                             <CheckCircle size={12} className="shrink-0" /> 
@@ -933,7 +933,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         fetchEmails();
     }, [currentUser]);
 
-    const agent1 = agents.find(a => a.name.toLowerCase() === (deal.agentName || '').toLowerCase());
+    const agent1 = agents.find(a => (a.name || '').toLowerCase() === (deal.agentName || '').toLowerCase());
     const agent2 = agents.find(a => a.id === deal.secondAgentId);
     
     const daysToInsp = calculateDaysRemaining(deal.inspectionDate);

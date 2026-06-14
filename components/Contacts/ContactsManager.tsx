@@ -44,9 +44,9 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({ contacts, setC
     const filteredContacts = useMemo(() => {
         return contacts.filter(contact => {
             const matchesSearch = 
-                contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                contact.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                contact.type.toLowerCase().includes(searchQuery.toLowerCase());
+                (contact.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (contact.company || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (contact.type || "").toLowerCase().includes(searchQuery.toLowerCase());
             
             const matchesFilter = filterType === "All" || contact.type === filterType;
 

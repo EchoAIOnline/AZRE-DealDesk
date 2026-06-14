@@ -388,7 +388,7 @@ export default function App() {
 
   const checkAndSaveBrokerage = async (name: string, phone: string, email: string) => {
       if (!name) return;
-      const exists = brokerages.some(b => b.name.toLowerCase() === name.toLowerCase());
+      const exists = brokerages.some(b => (b.name || '').toLowerCase() === name.toLowerCase());
       if (exists === false) {
           const newBrokerage: Brokerage = { id: generateId(), name: name, phone: phone || '', email: email || '', createdAt: new Date().toISOString() };
           await api.save(newBrokerage, 'Brokerages');
@@ -411,7 +411,7 @@ export default function App() {
       const cleanName = deal.agentName.trim();
       if (!cleanName) return;
       checkAndSaveBrokerage(deal.agentBrokerage || '', '', '');
-      const existingAgentIndex = agents.findIndex(a => a.name.toLowerCase() === cleanName.toLowerCase());
+      const existingAgentIndex = agents.findIndex(a => (a.name || '').toLowerCase() === cleanName.toLowerCase());
       const newNote = `${getLogTimestamp()}: Added from deal: ${deal.address}`;
       if (existingAgentIndex === -1) {
           const newAgent: Agent = { 
@@ -1048,7 +1048,7 @@ export default function App() {
   const handleViewAgentProfile = (agentNameOrId: string) => {
       if (!agentNameOrId) return;
       let agent = agents.find(a => a.id === agentNameOrId);
-      if (!agent) agent = agents.find(a => a.name.toLowerCase() === agentNameOrId.toLowerCase());
+      if (!agent) agent = agents.find(a => (a.name || '').toLowerCase() === agentNameOrId.toLowerCase());
       if (agent) {
           setAgentModalZIndex('z-[160]');
           setViewingAgent(agent);
@@ -1061,9 +1061,9 @@ export default function App() {
       }
   };
 
-  const handleAgentLookup = (val: string) => { const query = val.toLowerCase(); const filtered = agents.filter(a => a.name.toLowerCase().includes(query)); setAgentSuggestions(filtered); setShowAgentSuggestions(true); };
-  const handleWholesalerLookup = (val: string) => { const query = val.toLowerCase(); const filtered = wholesalers.filter(a => a.name.toLowerCase().includes(query)); setWholesalerSuggestions(filtered); setShowWholesalerSuggestions(true); };
-  const handleBrokerageLookup = (val: string) => { const query = val.toLowerCase(); const filtered = brokerages.filter(b => b.name.toLowerCase().includes(query)); setBrokerageSuggestions(filtered); setShowBrokerageSuggestions(true); };
+  const handleAgentLookup = (val: string) => { const query = val.toLowerCase(); const filtered = agents.filter(a => (a.name || '').toLowerCase().includes(query)); setAgentSuggestions(filtered); setShowAgentSuggestions(true); };
+  const handleWholesalerLookup = (val: string) => { const query = val.toLowerCase(); const filtered = wholesalers.filter(a => (a.name || '').toLowerCase().includes(query)); setWholesalerSuggestions(filtered); setShowWholesalerSuggestions(true); };
+  const handleBrokerageLookup = (val: string) => { const query = val.toLowerCase(); const filtered = brokerages.filter(b => (b.name || '').toLowerCase().includes(query)); setBrokerageSuggestions(filtered); setShowBrokerageSuggestions(true); };
   const selectAgent = (agent: Agent) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentName: agent.name, agentPhone: agent.phone, agentEmail: agent.email, agentBrokerage: agent.brokerage }); setShowAgentSuggestions(false); };
   const selectWholesaler = (wholesaler: Wholesaler) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentName: wholesaler.name, agentPhone: wholesaler.phone, agentEmail: wholesaler.email, agentBrokerage: wholesaler.companyName }); setShowWholesalerSuggestions(false); };
   const selectBrokerage = (brokerage: Brokerage) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentBrokerage: brokerage.name }); setShowBrokerageSuggestions(false); };
@@ -1137,7 +1137,7 @@ export default function App() {
       if (filterConfig.type === 'Buyer Status' && filterConfig.value) filtered = filtered.filter(b => b.status && b.status.includes(filterConfig.value));
       if (filterConfig.type === 'Target Location' && filterConfig.value) {
           const query = filterConfig.value.toLowerCase();
-          filtered = filtered.filter(b => b.buyBox?.locations?.toLowerCase().includes(query));
+          filtered = filtered.filter(b => (b.buyBox?.locations || '').toLowerCase().includes(query));
       }
       return filtered.sort((a, b) => {
           if (buyerSort === 'A-Z') return (a.name || a.companyName || '').localeCompare(b.name || b.companyName || '');

@@ -186,6 +186,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                 }
 
                 if (item.email) {
+                    if (!item.email) return;
                     const emailKey = item.email.toLowerCase().trim();
                     if (!recipientMap.has(emailKey)) {
                         recipientMap.set(emailKey, {
