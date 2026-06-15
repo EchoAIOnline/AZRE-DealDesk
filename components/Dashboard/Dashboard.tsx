@@ -197,10 +197,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     const [offersDeclinedTimeframe, setOffersDeclinedTimeframe] = useState<'week' | 'month' | 'year'>('week');
     const [dealCanceledTimeframe, setDealCanceledTimeframe] = useState<'week' | 'month' | 'year'>('week');
 
+    const [totalAgentTextsTimeframe, setTotalAgentTextsTimeframe] = useState<'week' | 'month' | 'year'>('week');
+    const [userAgentTextsTimeframe, setUserAgentTextsTimeframe] = useState<'week' | 'month' | 'year'>('week');
+    const [agentConvosTimeframe, setAgentConvosTimeframe] = useState<'week' | 'month' | 'year'>('week');
+    const [selectedUserForAgentTexts, setSelectedUserForAgentTexts] = useState<string>(currentUser?.name || 'All');
+
     const hasSetInitialUser = useRef(false);
     useEffect(() => {
         if (currentUser?.name && !hasSetInitialUser.current) {
             setSelectedUserForLoi(currentUser.name);
+            setSelectedUserForAgentTexts(currentUser.name);
             hasSetInitialUser.current = true;
         }
     }, [currentUser]);
@@ -315,6 +321,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
         const startDate = getStartDateForTimeframe(dealCanceledTimeframe);
         return deals.filter(d => d.offerDecision === 'Deal Canceled' && new Date(d.createdAt || new Date()) >= startDate).length;
     }, [deals, dealCanceledTimeframe]);
+
+    const totalAgentTextsSent = useMemo(() => {
+        const startDate = getStartDateForTimeframe(totalAgentTextsTimeframe);
+        return agents.filter(a => {
+            const dateStr = a.agentRelationshipDates?.sentTextToAgent;
+            if (!dateStr) return false;
+            return new Date(dateStr) >= startDate;
+        }).length;
+    }, [agents, totalAgentTextsTimeframe]);
+
+    const agentTextsSentByUser = useMemo(() => {
+        const startDate = getStartDateForTimeframe(userAgentTextsTimeframe);
+        const counts: Record<string, number> = {};
+        
+        allUsers.forEach(u => {
+            counts[u.name] = 0;
+        });
+
+        agents.forEach(a => {
+            const dateStr = a.agentRelationshipDates?.sentTextToAgent;
+            if (!dateStr) return;
+            const dateToUse = new Date(dateStr);
+            let sentBy = a.acquisitionManager || 'Unknown User';
+            if (dateToUse >= startDate) {
+                if (counts[sentBy] === undefined) counts[sentBy] = 0;
+                counts[sentBy] += 1;
+            }
+        });
+        
+        return counts;
+    }, [agents, userAgentTextsTimeframe, allUsers]);
+
+    const agentConversationsCount = useMemo(() => {
+        const startDate = getStartDateForTimeframe(agentConvosTimeframe);
+        return agents.filter(a => {
+            const dateStr = a.agentRelationshipDates?.spokeWithAgent;
+            if (!dateStr) return false;
+            return new Date(dateStr) >= startDate;
+        }).length;
+    }, [agents, agentConvosTimeframe]);
 
     const renderTrend = (trend: number, isCurrency = false) => {
         const isPositive = trend >= 0;
@@ -594,6 +640,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                         </select>
                     </div>
                     <div className="text-3xl font-bold text-white">{dealsAddedCount}</div>
+                </div>
+                {/* Total Agent Text Messages Sent */}
+                <div className="bg-[#DB2777] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Total Agent Text Messages Sent</h3>
+                        <select 
+                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                            value={totalAgentTextsTimeframe}
+                            onChange={(e) => setTotalAgentTextsTimeframe(e.target.value as any)}
+                        >
+                            <option value="week" className="text-gray-900">This Week</option>
+                            <option value="month" className="text-gray-900">This Month</option>
+                            <option value="year" className="text-gray-900">This Year</option>
+                        </select>
+                    </div>
+                    <div className="text-3xl font-bold text-white">{totalAgentTextsSent}</div>
+                </div>
+                {/* Agent Text Messages Sent By User */}
+                <div className="bg-[#4F46E5] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Agent Text Messages Sent By User</h3>
+                        <div className="flex flex-col gap-2 items-end">
+                            <select 
+                                className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                                value={selectedUserForAgentTexts}
+                                onChange={(e) => setSelectedUserForAgentTexts(e.target.value)}
+                            >
+                                <option value="All" className="text-gray-900">All Users</option>
+                                {Object.keys(agentTextsSentByUser).map(user => (
+                                    <option key={user} value={user} className="text-gray-900">{user}</option>
+                                ))}
+                            </select>
+                            <select 
+                                className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                                value={userAgentTextsTimeframe}
+                                onChange={(e) => setUserAgentTextsTimeframe(e.target.value as any)}
+                            >
+                                <option value="week" className="text-gray-900">This Week</option>
+                                <option value="month" className="text-gray-900">This Month</option>
+                                <option value="year" className="text-gray-900">This Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="text-3xl font-bold text-white mt-auto">
+                        {selectedUserForAgentTexts === 'All' ? Object.values(agentTextsSentByUser).reduce((a: number, b: number) => a + b, 0) : (agentTextsSentByUser[selectedUserForAgentTexts] || 0)}
+                    </div>
+                </div>
+                {/* Agent Conversations */}
+                <div className="bg-[#EA580C] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Agent Conversations</h3>
+                        <select 
+                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                            value={agentConvosTimeframe}
+                            onChange={(e) => setAgentConvosTimeframe(e.target.value as any)}
+                        >
+                            <option value="week" className="text-gray-900">This Week</option>
+                            <option value="month" className="text-gray-900">This Month</option>
+                            <option value="year" className="text-gray-900">This Year</option>
+                        </select>
+                    </div>
+                    <div className="text-3xl font-bold text-white">{agentConversationsCount}</div>
                 </div>
                 {/* Listings Removed */}
                 <div className="bg-[#F59E0B] rounded-2xl p-6 shadow-xl">
