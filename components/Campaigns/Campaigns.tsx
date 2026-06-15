@@ -110,8 +110,8 @@ export const Campaigns: React.FC<CampaignsProps> = ({
 
     const agentSegments = [
         { id: 'all_agents', name: 'All Agents', type: 'Main List', icon: <Users size={16} className="text-purple-400" />, filter: (a: Agent) => true },
-        { id: 'contacted', name: 'Agents Contacted Already', type: 'Segment', icon: <PhoneForwarded size={14} className="text-orange-500" />, filter: (a: Agent) => a.hasBeenContacted, indent: true },
-        { id: 'investor_friendly', name: 'Investor Friendly', type: 'Segment', icon: <Heart size={14} className="text-pink-500" />, filter: (a: Agent) => a.handlesInvestments, indent: true },
+        { id: 'contacted', name: 'Agents Contacted Already', type: 'Segment', icon: <PhoneForwarded size={14} className="text-orange-500" />, filter: (a: Agent) => a.spokeWithAgent, indent: true },
+        { id: 'investor_friendly', name: 'Investor Friendly', type: 'Segment', icon: <Heart size={14} className="text-pink-500" />, filter: (a: Agent) => a.investorFriendly, indent: true },
         { id: 'agreed_to_send', name: 'Agreed to Send Deals', type: 'Segment', icon: <Handshake size={14} className="text-indigo-500" />, filter: (a: Agent) => a.agreedToSend, indent: true },
         { id: 'closed_azre', name: 'Closed With AZRE', type: 'Segment', icon: <CheckSquare size={14} className="text-green-500" />, filter: (a: Agent) => a.hasClosedDeals || (a.closedDealIds && a.closedDealIds.length > 0), indent: true },
     ];
@@ -131,8 +131,8 @@ export const Campaigns: React.FC<CampaignsProps> = ({
             if (rule === 'repeat') return (b: Buyer) => b.status?.includes('Repeat Buyer');
             return (b: Buyer) => true;
         } else {
-            if (rule === 'contacted') return (a: Agent) => a.hasBeenContacted;
-            if (rule === 'investor_friendly') return (a: Agent) => a.handlesInvestments;
+            if (rule === 'contacted') return (a: Agent) => a.spokeWithAgent;
+            if (rule === 'investor_friendly') return (a: Agent) => a.investorFriendly;
             if (rule === 'closed') return (a: Agent) => a.hasClosedDeals;
             return (a: Agent) => true;
         }

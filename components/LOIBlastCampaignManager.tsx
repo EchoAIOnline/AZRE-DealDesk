@@ -171,8 +171,8 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                 if (type === 'buyer') {
                     filtered = source.filter(b => b.status && b.status.includes(filter));
                 } else if (type === 'agent') {
-                    if (filter === 'contacted') filtered = source.filter(a => a.hasBeenContacted);
-                    else if (filter === 'investor_friendly') filtered = source.filter(a => a.handlesInvestments);
+                    if (filter === 'contacted') filtered = source.filter(a => a.spokeWithAgent);
+                    else if (filter === 'investor_friendly') filtered = source.filter(a => a.investorFriendly);
                     else if (filter === 'agreed_to_send') filtered = source.filter(a => a.agreedToSend);
                     else if (filter === 'closed') filtered = source.filter(a => a.hasClosedDeals);
                 } else if (type === 'wholesaler') {
@@ -562,8 +562,8 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
             label: "Agent Database",
             items: [
                 { id: 'agent:all', name: 'All Agents', count: (agents || []).length },
-                { id: 'agent:contacted', name: 'Contacted Already', count: (agents || []).filter(a => a.hasBeenContacted).length },
-                { id: 'agent:investor_friendly', name: 'Investor Friendly', count: (agents || []).filter(a => a.handlesInvestments).length },
+                { id: 'agent:contacted', name: 'Contacted Already', count: (agents || []).filter(a => a.spokeWithAgent).length },
+                { id: 'agent:investor_friendly', name: 'Investor Friendly', count: (agents || []).filter(a => a.investorFriendly).length },
                 { id: 'agent:agreed_to_send', name: 'Agreed to Send', count: (agents || []).filter(a => a.agreedToSend).length },
                 { id: 'agent:closed', name: 'Closed With AZRE', count: (agents || []).filter(a => a.hasClosedDeals).length },
             ]

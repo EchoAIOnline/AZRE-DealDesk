@@ -36,7 +36,27 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
 }) => {
     const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
     const [isFetchingInfo, setIsFetchingInfo] = useState(false);
-    const [formData, setFormData] = useState<Agent>({ ...agent });
+    const cleanAgentNotes = (inputAgent: Agent): Agent => {
+        const cleanedAgent = { ...inputAgent };
+        if (cleanedAgent.notes && cleanedAgent.notes.length > 0) {
+            const cleanedNotes: string[] = [];
+            let hasAddedNote = false;
+            cleanedAgent.notes.forEach(note => {
+                if (note.includes('Added from deal')) {
+                    if (!hasAddedNote) {
+                        cleanedNotes.push(note);
+                        hasAddedNote = true;
+                    }
+                } else {
+                    cleanedNotes.push(note);
+                }
+            });
+            cleanedAgent.notes = cleanedNotes;
+        }
+        return cleanedAgent;
+    };
+
+    const [formData, setFormData] = useState<Agent>(() => cleanAgentNotes(agent));
     const [newNote, setNewNote] = useState("");
     const [dealSearch, setDealSearch] = useState("");
     const [showDealSearch, setShowDealSearch] = useState(false);
@@ -105,9 +125,18 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
 
     // Update internal state when agent prop changes (navigation)
     useEffect(() => {
-        setFormData({ ...agent });
-        formDataRef.current = { ...agent };
-        initialAgentJson.current = JSON.stringify(agent);
+        const cleanedAgent = cleanAgentNotes(agent);
+        setFormData(cleanedAgent);
+        formDataRef.current = cleanedAgent;
+        initialAgentJson.current = JSON.stringify(cleanedAgent);
+        
+        // If the cleaned agent is different from the original agent, save it back
+        if (JSON.stringify(cleanedAgent.notes) !== JSON.stringify(agent.notes)) {
+            if (onUpdateAgent) {
+                onUpdateAgent(cleanedAgent.id, { notes: cleanedAgent.notes });
+            }
+        }
+        
         setPendingNavigation(null);
         setIsDeleting(false);
         setEditingNoteIndex(null);
@@ -318,19 +347,37 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
         updateAndSave({ closedDealIds: currentIds.filter(id => id !== dealId) });
     };
 
+    const handleRelationshipToggle = (field: keyof Agent, dateField: string) => {
+        const newValue = !formData[field];
+        const dates = { ...(formData.agentRelationshipDates || {}) };
+        if (newValue) {
+            dates[dateField] = new Date().toISOString();
+        } else {
+            delete dates[dateField];
+        }
+        updateAndSave({ [field]: newValue, agentRelationshipDates: dates });
+    };
+
     // Helper for Relationship Buttons
-    const RelationshipButton = ({ label, active, onClick, colorClass }: { label: string, active: boolean, onClick: () => void, colorClass: string }) => (
+    const RelationshipButton = ({ label, active, onClick, colorClass, date }: { label: string, active: boolean, onClick: () => void, colorClass: string, date?: string }) => (
         <button 
             type="button"
             onClick={onClick}
-            className={`flex-1 py-3 px-2 rounded-lg text-xs md:text-sm font-bold border transition-all shadow-sm active:scale-95 flex flex-col md:flex-row items-center justify-center gap-2 ${
+            className={`w-full h-full flex-1 py-3 px-2 rounded-lg text-xs md:text-sm font-bold border transition-all shadow-sm active:scale-95 flex flex-col items-center justify-center text-center gap-1 ${
                 active ? colorClass : 'bg-gray-50 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
         >
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${active ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
-                {active && <CheckCircle size={14} />}
-            </span>
-            {label}
+            <div className="flex flex-col md:flex-row items-center justify-center text-center gap-2">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0 ${active ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
+                    {active && <CheckCircle size={14} />}
+                </span>
+                <span>{label}</span>
+            </div>
+            {active && date && (
+                <span className="text-[10px] opacity-80 font-normal mt-1">
+                    {new Date(date).toLocaleDateString()}
+                </span>
+            )}
         </button>
     );
 
@@ -511,31 +558,56 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
                                     <User size={16}/> Agent Relationship
                                 </h3>
-                                <div className="flex flex-col md:flex-row gap-3">
-                                    <RelationshipButton 
-                                        label="Contacted Already" 
-                                        active={!!formData.hasBeenContacted} 
-                                        onClick={() => updateAndSave({ hasBeenContacted: !formData.hasBeenContacted })}
-                                        colorClass="bg-orange-600 text-white border-orange-600 hover:bg-orange-500"
-                                    />
-                                    <RelationshipButton 
-                                        label="Investor Friendly" 
-                                        active={!!formData.handlesInvestments} 
-                                        onClick={() => updateAndSave({ handlesInvestments: !formData.handlesInvestments })}
-                                        colorClass="bg-blue-600 text-white border-blue-600 hover:bg-blue-500"
-                                    />
-                                    <RelationshipButton 
-                                        label="Agreed to Send Deals" 
-                                        active={!!formData.agreedToSend} 
-                                        onClick={() => updateAndSave({ agreedToSend: !formData.agreedToSend })}
-                                        colorClass="bg-purple-600 text-white border-purple-600 hover:bg-purple-500"
-                                    />
-                                    <RelationshipButton 
-                                        label="Closed With AZRE" 
-                                        active={!!formData.hasClosedDeals} 
-                                        onClick={() => updateAndSave({ hasClosedDeals: !formData.hasClosedDeals })}
-                                        colorClass="bg-green-600 text-white border-green-600 hover:bg-green-500"
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-fr gap-3">
+                                        <RelationshipButton 
+                                            label="Sent Text To Agent" 
+                                            active={!!formData.sentTextToAgent} 
+                                            date={formData.agentRelationshipDates?.sentTextToAgent}
+                                            onClick={() => handleRelationshipToggle('sentTextToAgent', 'sentTextToAgent')}
+                                            colorClass="bg-pink-600 text-white border-pink-600 hover:bg-pink-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agent Responded To Text" 
+                                            active={!!formData.agentRespondedToText} 
+                                            date={formData.agentRelationshipDates?.agentRespondedToText}
+                                            onClick={() => handleRelationshipToggle('agentRespondedToText', 'agentRespondedToText')}
+                                            colorClass="bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Investor Friendly" 
+                                            active={!!formData.investorFriendly} 
+                                            date={formData.agentRelationshipDates?.investorFriendly}
+                                            onClick={() => handleRelationshipToggle('investorFriendly', 'investorFriendly')}
+                                            colorClass="bg-blue-600 text-white border-blue-600 hover:bg-blue-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agreed To Send Deals" 
+                                            active={!!formData.agreedToSend} 
+                                            date={formData.agentRelationshipDates?.agreedToSend}
+                                            onClick={() => handleRelationshipToggle('agreedToSend', 'agreedToSend')}
+                                            colorClass="bg-purple-600 text-white border-purple-600 hover:bg-purple-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Spoke With Agent" 
+                                            active={!!formData.spokeWithAgent} 
+                                            date={formData.agentRelationshipDates?.spokeWithAgent}
+                                            onClick={() => handleRelationshipToggle('spokeWithAgent', 'spokeWithAgent')}
+                                            colorClass="bg-orange-600 text-white border-orange-600 hover:bg-orange-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agent Sent Deal" 
+                                            active={!!formData.agentSentDeal} 
+                                            date={formData.agentRelationshipDates?.agentSentDeal}
+                                            onClick={() => handleRelationshipToggle('agentSentDeal', 'agentSentDeal')}
+                                            colorClass="bg-teal-600 text-white border-teal-600 hover:bg-teal-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Closed With AZRE" 
+                                            active={!!formData.hasClosedDeals} 
+                                            date={formData.agentRelationshipDates?.hasClosedDeals}
+                                            onClick={() => handleRelationshipToggle('hasClosedDeals', 'hasClosedDeals')}
+                                            colorClass="bg-green-600 text-white border-green-600 hover:bg-green-500"
+                                        />
                                 </div>
                             </section>
 

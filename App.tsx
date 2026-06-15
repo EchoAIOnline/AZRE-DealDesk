@@ -454,12 +454,13 @@ export default function App() {
           }
       } else {
           const existingAgent = agents[existingAgentIndex];
+          const hasAddedNote = (existingAgent.notes || []).some(n => n.includes('Added from deal'));
           const updatedAgent = { 
               ...existingAgent, 
               phone: deal.agentPhone || existingAgent.phone, 
               email: deal.agentEmail || existingAgent.email, 
               brokerage: deal.agentBrokerage || existingAgent.brokerage,
-              notes: [newNote, ...(existingAgent.notes || [])]
+              notes: hasAddedNote ? existingAgent.notes : [newNote, ...(existingAgent.notes || [])]
           };
           const saved = await api.save(updatedAgent, 'Agents');
           if(saved) {
@@ -1587,7 +1588,12 @@ export default function App() {
             }
         }
     }
-    return (filteredDeals || []).filter(d => d && statusesToShow.includes(d.offerDecision));
+    const filtered = (filteredDeals || []).filter(d => d && statusesToShow.includes(d.offerDecision));
+    const groupedDeals: Deal[] = [];
+    statusesToShow.forEach(status => {
+        groupedDeals.push(...filtered.filter(d => d.offerDecision === status));
+    });
+    return groupedDeals;
   };
   const orderedDeals = getOrderedDeals();
   const getSortedAgents = () => {
@@ -1600,8 +1606,8 @@ export default function App() {
       }
       if (agentStage !== 'All Agents') {
           switch (agentStage) {
-              case 'Contacted': filtered = filtered.filter(a => a.hasBeenContacted); break;
-              case 'Investor Friendly': filtered = filtered.filter(a => a.handlesInvestments); break;
+              case 'Contacted': filtered = filtered.filter(a => a.spokeWithAgent); break;
+              case 'Investor Friendly': filtered = filtered.filter(a => a.investorFriendly); break;
               case 'Agreed to Send': filtered = filtered.filter(a => a.agreedToSend); break;
               case 'Closed Deals': filtered = filtered.filter(a => a.hasClosedDeals); break;
           }
@@ -1609,8 +1615,8 @@ export default function App() {
       if (filterConfig.type === 'Brokerage' && filterConfig.value) filtered = filtered.filter(a => a.brokerage === filterConfig.value);
       if (filterConfig.type === 'Relationship' && filterConfig.value) {
           switch (filterConfig.value as any) {
-              case 'Contacted': filtered = filtered.filter(a => a.hasBeenContacted); break;
-              case 'Investor Friendly': filtered = filtered.filter(a => a.handlesInvestments); break;
+              case 'Contacted': filtered = filtered.filter(a => a.spokeWithAgent); break;
+              case 'Investor Friendly': filtered = filtered.filter(a => a.investorFriendly); break;
               case 'Agreed to Send': filtered = filtered.filter(a => a.agreedToSend); break;
               case 'Closed Deals': filtered = filtered.filter(a => a.hasClosedDeals); break;
           }

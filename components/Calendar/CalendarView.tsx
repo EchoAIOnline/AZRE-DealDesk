@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, User, Users, Briefcase, Trash2, Plus } from 'lucide-react';
-import { Agent, Buyer } from '../../types';
+import { Agent, Buyer, User as UserType } from '../../types';
 import { formatPhoneNumber } from '../../services/utils';
+import { api } from '../../services/api';
 import { CalendarEventModal } from './CalendarEventModal';
 
 interface CalendarViewProps {
@@ -18,6 +19,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
     const [viewMode, setViewMode] = useState<'agents' | 'buyers'>('agents');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedAcqManager, setSelectedAcqManager] = useState<string>('All');
+    const [users, setUsers] = useState<UserType[]>([]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const fetchedUsers = await api.load('Users') as UserType[];
+                setUsers(fetchedUsers);
+            } catch (e) {
+                console.error("Failed to load users for acquisition manager dropdown", e);
+            }
+        };
+        fetchUsers();
+    }, []);
 
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
     const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -49,9 +64,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
     const getEventsForDay = (day: number) => {
         const dateStr = formatDbDate(year, month, day);
         if (viewMode === 'agents') {
-            return agents.filter(a => a.nextFollowUpDate && a.nextFollowUpDate === dateStr);
+            let filtered = agents.filter(a => a.nextFollowUpDate && a.nextFollowUpDate === dateStr);
+            if (selectedAcqManager !== 'All') {
+                filtered = filtered.filter(a => a.acquisitionManager === selectedAcqManager);
+            }
+            return filtered;
         } else {
-            return buyers.filter(b => b.nextFollowUpDate && b.nextFollowUpDate === dateStr);
+            let filtered = buyers.filter(b => b.nextFollowUpDate && b.nextFollowUpDate === dateStr);
+            if (selectedAcqManager !== 'All') {
+                filtered = filtered.filter(b => (b as any).acquisitionManager === selectedAcqManager);
+            }
+            return filtered;
         }
     };
 
@@ -111,36 +134,49 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
                     </h2>
                     
                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                        <div className="flex flex-col sm:flex-row bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
+                        <div className="flex flex-col sm:flex-row bg-white dark:bg-gray-800 rounded-md p-1.5 border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
                             <button 
                                 onClick={() => setViewMode('agents')}
-                                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 whitespace-nowrap ${viewMode === 'agents' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                className={`flex-1 md:flex-none px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${viewMode === 'agents' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
-                                <User size={16} /> Agent Follow-Ups
+                                <User size={14} /> Agent Follow-Ups
                             </button>
                             <button 
                                 onClick={() => setViewMode('buyers')}
-                                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 whitespace-nowrap ${viewMode === 'buyers' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                className={`flex-1 md:flex-none px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${viewMode === 'buyers' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
-                                <Users size={16} /> Buyer Follow-Ups
+                                <Users size={14} /> Buyer Follow-Ups
                             </button>
                         </div>
                         
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-md p-1 border border-gray-200 dark:border-gray-700">
+                            <Briefcase size={14} className="text-gray-500 ml-1.5" />
+                            <select 
+                                className="bg-transparent text-xs font-medium outline-none text-gray-700 dark:text-gray-300 py-1 pr-1.5 focus:ring-0"
+                                value={selectedAcqManager}
+                                onChange={(e) => setSelectedAcqManager(e.target.value)}
+                            >
+                                <option value="All">All Managers</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.name}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <button 
                             onClick={() => setSelectedDate(new Date())}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg shadow-lg flex items-center justify-center gap-2 text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md shadow-sm flex items-center justify-center gap-1.5 text-xs font-bold transition-all flex-1 md:flex-none whitespace-nowrap"
                         >
-                            <Plus size={18} /> 
+                            <Plus size={14} /> 
                             <span className="">Add Follow-Up</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between w-full md:w-auto gap-4 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronLeft size={24} /></button>
-                    <span className="text-lg font-bold flex-1 text-center select-none whitespace-nowrap">{monthName} {year}</span>
-                    <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronRight size={24} /></button>
-                    <button onClick={goToToday} className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 py-1.5 rounded-md font-medium transition">Today</button>
+                <div className="flex items-center justify-between w-full md:w-auto gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronLeft size={20} /></button>
+                    <span className="text-sm font-bold flex-1 text-center select-none whitespace-nowrap min-w-[120px]">{monthName} {year}</span>
+                    <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronRight size={20} /></button>
+                    <button onClick={goToToday} className="text-[10px] bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-1 rounded font-medium transition">Today</button>
                 </div>
             </div>
 
@@ -177,44 +213,42 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
                                     <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium ${today ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                                         {day}
                                     </div>
-                                    {events.length > 0 && (
-                                        <div className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] px-1.5 py-0.5 rounded font-bold">
-                                            {events.length}
-                                        </div>
-                                    )}
                                 </div>
                                 
                                 {/* Desktop View: List */}
                                 <div className="hidden md:block flex-1 overflow-y-auto custom-scrollbar space-y-1.5 min-h-0 pr-1">
-                                    {events.map((item, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            onClick={(e) => { e.stopPropagation(); handleEventClick(item); }}
-                                            className={`group/item relative text-xs p-1.5 rounded border border-l-4 shadow-sm cursor-pointer transition hover:scale-[1.02] active:scale-95 pr-6 ${
-                                                viewMode === 'agents' 
-                                                ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-200 dark:border-blue-900 border-l-blue-500 text-blue-700 dark:text-blue-200' 
-                                                : 'bg-purple-50 dark:bg-purple-900/40 border-purple-200 dark:border-purple-900 border-l-purple-500 text-purple-700 dark:text-purple-200'
-                                            }`}
-                                            title={item.name}
-                                        >
-                                            <div className="font-bold truncate">{item.name}</div>
-                                            {/* Removed Brokerage Display */}
-                                            {viewMode === 'buyers' && (item as Buyer).phone && (
-                                                <div className="text-[10px] opacity-70 truncate">{formatPhoneNumber((item as Buyer).phone)}</div>
-                                            )}
-                                            
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => handleRemoveDirectly(e, item)}
-                                                onMouseDown={(e) => e.stopPropagation()}
-                                                onMouseUp={(e) => e.stopPropagation()}
-                                                className="absolute top-1 right-1 p-1.5 rounded opacity-0 group-hover/item:opacity-100 hover:bg-white dark:hover:bg-gray-700 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all z-20 pointer-events-auto"
-                                                title="Remove"
+                                    {viewMode === 'agents' ? (
+                                        events.length > 0 && (
+                                            <div className="text-xs p-2 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-900 font-medium text-center shadow-sm">
+                                                {events.length} Agent Follow-Ups Scheduled
+                                            </div>
+                                        )
+                                    ) : (
+                                        events.map((item, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                onClick={(e) => { e.stopPropagation(); handleEventClick(item); }}
+                                                className={`group/item relative text-xs p-1.5 rounded border border-l-4 shadow-sm cursor-pointer transition hover:scale-[1.02] active:scale-95 pr-6 bg-purple-50 dark:bg-purple-900/40 border-purple-200 dark:border-purple-900 border-l-purple-500 text-purple-700 dark:text-purple-200`}
+                                                title={item.name}
                                             >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <div className="font-bold truncate">{item.name}</div>
+                                                {viewMode === 'buyers' && (item as Buyer).phone && (
+                                                    <div className="text-[10px] opacity-70 truncate">{formatPhoneNumber((item as Buyer).phone)}</div>
+                                                )}
+                                                
+                                                <button 
+                                                    type="button"
+                                                    onClick={(e) => handleRemoveDirectly(e, item)}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onMouseUp={(e) => e.stopPropagation()}
+                                                    className="absolute top-1 right-1 p-1.5 rounded opacity-0 group-hover/item:opacity-100 hover:bg-white dark:hover:bg-gray-700 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all z-20 pointer-events-auto"
+                                                    title="Remove"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
 
                                 {/* Mobile View: 'View' Button */}

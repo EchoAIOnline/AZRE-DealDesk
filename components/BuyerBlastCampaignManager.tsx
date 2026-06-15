@@ -171,8 +171,8 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                 if (type === 'buyer') {
                     filtered = source.filter(b => b.status && b.status.includes(filter));
                 } else if (type === 'agent') {
-                    if (filter === 'contacted') filtered = source.filter(a => a.hasBeenContacted);
-                    else if (filter === 'investor_friendly') filtered = source.filter(a => a.handlesInvestments);
+                    if (filter === 'contacted') filtered = source.filter(a => a.spokeWithAgent);
+                    else if (filter === 'investor_friendly') filtered = source.filter(a => a.investorFriendly);
                     else if (filter === 'agreed_to_send') filtered = source.filter(a => a.agreedToSend);
                     else if (filter === 'closed') filtered = source.filter(a => a.hasClosedDeals);
                 } else if (type === 'wholesaler') {

@@ -44,7 +44,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                 searchPlaceholder="Search agents by name or brokerage..." 
                 tabs={AGENT_STATUS_TABS.map(tab => ({ 
                     ...tab, 
-                    count: tab.id === 'All Agents' ? filteredAgentsBySearch.length : (tab.id === 'Contacted' ? filteredAgentsBySearch.filter(a => a.hasBeenContacted).length : (tab.id === 'Investor Friendly' ? filteredAgentsBySearch.filter(a => a.handlesInvestments).length : (tab.id === 'Agreed to Send' ? filteredAgentsBySearch.filter(a => a.agreedToSend).length : filteredAgentsBySearch.filter(a => a.hasClosedDeals).length))) 
+                    count: tab.id === 'All Agents' ? filteredAgentsBySearch.length : (tab.id === 'Contacted' ? filteredAgentsBySearch.filter(a => a.spokeWithAgent).length : (tab.id === 'Investor Friendly' ? filteredAgentsBySearch.filter(a => a.investorFriendly).length : (tab.id === 'Agreed to Send' ? filteredAgentsBySearch.filter(a => a.agreedToSend).length : filteredAgentsBySearch.filter(a => a.hasClosedDeals).length))) 
                 }))} 
                 activeTab={agentStage} 
                 onTabChange={setAgentStage} 

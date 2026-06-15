@@ -184,10 +184,14 @@ export interface Agent {
   photo?: string;
   
   // New Relationship Fields
-  hasBeenContacted?: boolean;
-  handlesInvestments?: boolean;
+  spokeWithAgent?: boolean;
+  investorFriendly?: boolean;
   agreedToSend?: boolean;
   hasClosedDeals?: boolean;
+  sentTextToAgent?: boolean;
+  agentRespondedToText?: boolean;
+  agentSentDeal?: boolean;
+  agentRelationshipDates?: Record<string, string>;
   closedDealIds?: string[];
   subscriptionStatus?: 'Subscribed' | 'Unsubscribed'; // New Field
   acquisitionManager?: string;
