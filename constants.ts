@@ -6,18 +6,12 @@ export const GOOGLE_MAPS_API_KEY = "AIzaSyASuyXz6R-QrKgqeiaHF_JYfmF2c88agy0";
 export const POTENTIAL_STATUSES = [
   'No Offer Made Yet', 
   'Monitoring Pending Status Before Offer', 
-  'Monitoring Pending Status - Before Offer', 
   'Requires A Buyers Agent', 
   'Made Verbal Offer On Property', 
   'Made Written Offer On Property', 
-  'Seller Counter-Offered', // Moved to be directly under Written Offer
   'Monitoring Pending Status After Offer', 
-  'Monitoring Pending Status - After Offer', 
   'Monitoring Offer After Seller Declined', 
-  'Agent Responded To Offer',
-  'Analyzing',
-  'Available',
-  'Offer Submitted'
+  'Analyzing'
 ];
 
 export const UNDER_CONTRACT_STATUSES = [
@@ -32,21 +26,18 @@ export const COUNTER_STATUSES = [
 
 export const DECLINED_STATUSES = [
   'Listing Removed - Now Off Market', 
-  'Listing Removed - Now Off-Market', 
   'Offer Declined', 
   'Offer Declined and Sold', 
   'Sold To Another Investor', 
   'Deal Canceled', 
   'Priced Too High To Buy', 
-  'No Longer Interested In Property',
   'No Longer Interested In Buying',
   'Declined',
   'Deal No Longer Available'
 ];
 
 export const CLOSED_STATUSES = [
-  'Deal Successfully Closed',
-  'Closed - Sold'
+  'Deal Successfully Closed'
 ];
 
 export const JV_PIPELINE_STATUSES = [

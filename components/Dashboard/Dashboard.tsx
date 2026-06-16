@@ -190,16 +190,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     const [loiLogs, setLoiLogs] = useState<ActivityLog[]>([]);
     const [allUsers, setAllUsers] = useState<UserType[]>([]);
     const [selectedUserForLoi, setSelectedUserForLoi] = useState<string>(currentUser?.name || 'All');
-    const [totalLoisTimeframe, setTotalLoisTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [userLoisTimeframe, setUserLoisTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [dealsAddedTimeframe, setDealsAddedTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [listingsRemovedTimeframe, setListingsRemovedTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [offersDeclinedTimeframe, setOffersDeclinedTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [dealCanceledTimeframe, setDealCanceledTimeframe] = useState<'week' | 'month' | 'year'>('week');
+    const [totalLoisTimeframe, setTotalLoisTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [userLoisTimeframe, setUserLoisTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [dealsAddedTimeframe, setDealsAddedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [listingsRemovedTimeframe, setListingsRemovedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [offersDeclinedTimeframe, setOffersDeclinedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [dealCanceledTimeframe, setDealCanceledTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
 
-    const [totalAgentTextsTimeframe, setTotalAgentTextsTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [userAgentTextsTimeframe, setUserAgentTextsTimeframe] = useState<'week' | 'month' | 'year'>('week');
-    const [agentConvosTimeframe, setAgentConvosTimeframe] = useState<'week' | 'month' | 'year'>('week');
+    const [totalAgentTextsTimeframe, setTotalAgentTextsTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [userAgentTextsTimeframe, setUserAgentTextsTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [agentConvosTimeframe, setAgentConvosTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
     const [selectedUserForAgentTexts, setSelectedUserForAgentTexts] = useState<string>(currentUser?.name || 'All');
 
     const hasSetInitialUser = useRef(false);
@@ -233,10 +233,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
         return () => clearInterval(interval);
     }, []);
 
-    const getStartDateForTimeframe = (timeframe: 'week' | 'month' | 'year') => {
+    const getStartDateForTimeframe = (timeframe: 'today' | 'week' | 'month' | 'year') => {
         const now = new Date();
         const startDate = new Date();
-        if (timeframe === 'week') {
+        if (timeframe === 'today') {
+            startDate.setHours(0, 0, 0, 0);
+        } else if (timeframe === 'week') {
             const day = startDate.getDay();
             const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
             startDate.setDate(diff);
@@ -325,7 +327,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     const totalAgentTextsSent = useMemo(() => {
         const startDate = getStartDateForTimeframe(totalAgentTextsTimeframe);
         return agents.filter(a => {
-            const dateStr = a.agentRelationshipDates?.sentTextToAgent;
+            const dateStr = a.agentRelationshipDates?.sentTextToAgent || (a as any).sentTextToAgentDate;
             if (!dateStr) return false;
             return new Date(dateStr) >= startDate;
         }).length;
@@ -340,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
         });
 
         agents.forEach(a => {
-            const dateStr = a.agentRelationshipDates?.sentTextToAgent;
+            const dateStr = a.agentRelationshipDates?.sentTextToAgent || (a as any).sentTextToAgentDate;
             if (!dateStr) return;
             const dateToUse = new Date(dateStr);
             let sentBy = a.acquisitionManager || 'Unknown User';
@@ -356,7 +358,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     const agentConversationsCount = useMemo(() => {
         const startDate = getStartDateForTimeframe(agentConvosTimeframe);
         return agents.filter(a => {
-            const dateStr = a.agentRelationshipDates?.spokeWithAgent;
+            const dateStr = a.agentRelationshipDates?.spokeWithAgent || (a as any).spokeWithAgentDate;
             if (!dateStr) return false;
             return new Date(dateStr) >= startDate;
         }).length;
@@ -588,6 +590,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={totalLoisTimeframe}
                             onChange={(e) => setTotalLoisTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -615,6 +618,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                                 value={userLoisTimeframe}
                                 onChange={(e) => setUserLoisTimeframe(e.target.value as any)}
                             >
+                                <option value="today" className="text-gray-900">Today</option>
                                 <option value="week" className="text-gray-900">This Week</option>
                                 <option value="month" className="text-gray-900">This Month</option>
                                 <option value="year" className="text-gray-900">This Year</option>
@@ -634,6 +638,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={dealsAddedTimeframe}
                             onChange={(e) => setDealsAddedTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -650,6 +655,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={totalAgentTextsTimeframe}
                             onChange={(e) => setTotalAgentTextsTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -677,6 +683,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                                 value={userAgentTextsTimeframe}
                                 onChange={(e) => setUserAgentTextsTimeframe(e.target.value as any)}
                             >
+                                <option value="today" className="text-gray-900">Today</option>
                                 <option value="week" className="text-gray-900">This Week</option>
                                 <option value="month" className="text-gray-900">This Month</option>
                                 <option value="year" className="text-gray-900">This Year</option>
@@ -696,6 +703,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={agentConvosTimeframe}
                             onChange={(e) => setAgentConvosTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -712,6 +720,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={listingsRemovedTimeframe}
                             onChange={(e) => setListingsRemovedTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -728,6 +737,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={offersDeclinedTimeframe}
                             onChange={(e) => setOffersDeclinedTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>
@@ -744,6 +754,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                             value={dealCanceledTimeframe}
                             onChange={(e) => setDealCanceledTimeframe(e.target.value as any)}
                         >
+                            <option value="today" className="text-gray-900">Today</option>
                             <option value="week" className="text-gray-900">This Week</option>
                             <option value="month" className="text-gray-900">This Month</option>
                             <option value="year" className="text-gray-900">This Year</option>

@@ -137,5 +137,33 @@ export const activityLogService = {
         }
 
         return data as ActivityLog[];
+    },
+
+    getAgentTextLogs: async (): Promise<ActivityLog[]> => {
+        const currentOrgId = getCurrentOrgId();
+        let query = supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('action_type', 'UPDATE')
+            .eq('entity_type', 'AGENT');
+            
+        if (currentOrgId) {
+            query = query.eq('organization_id', currentOrgId);
+        }
+            
+        const { data, error } = await query
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching agent text logs:', error);
+            return [];
+        }
+
+        // Filter logs where sentTextToAgent is present in metadata
+        const textLogs = (data as ActivityLog[]).filter(log => 
+            log.metadata && log.metadata.sentTextToAgent === true
+        );
+
+        return textLogs;
     }
 };

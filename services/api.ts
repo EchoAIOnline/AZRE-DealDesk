@@ -62,6 +62,23 @@ const processIncomingItem = (item: any, tableName: string) => {
     }
     
     if (tableName === 'Deals' || tableName === 'JVDeals') {
+        // Map deprecated offerDecisions to remaining corresponding statuses
+        if (processed.offerDecision === 'Monitoring Pending Status - Before Offer') {
+            processed.offerDecision = 'Monitoring Pending Status Before Offer';
+        } else if (processed.offerDecision === 'Monitoring Pending Status - After Offer') {
+            processed.offerDecision = 'Monitoring Pending Status After Offer';
+        } else if (processed.offerDecision === 'Agent Responded To Offer' || processed.offerDecision === 'Offer Submitted') {
+            processed.offerDecision = 'Made Written Offer On Property';
+        } else if (tableName === 'Deals' && processed.offerDecision === 'Available') {
+            processed.offerDecision = 'No Offer Made Yet';
+        } else if (processed.offerDecision === 'Listing Removed - Now Off-Market') {
+            processed.offerDecision = 'Listing Removed - Now Off Market';
+        } else if (processed.offerDecision === 'No Longer Interested In Property') {
+            processed.offerDecision = 'No Longer Interested In Buying';
+        } else if (processed.offerDecision === 'Closed - Sold') {
+            processed.offerDecision = 'Deal Successfully Closed';
+        }
+        
         processed.photos = cleanArrayField(processed.photos, false).filter(Boolean);
         
         // Map Documents (from Supabase) back to documents for the frontend

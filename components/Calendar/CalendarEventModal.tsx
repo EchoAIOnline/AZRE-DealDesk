@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plus, User, Briefcase, Calendar, Trash2, ChevronDown } from 'lucide-react';
-import { Agent, Buyer } from '../../types';
+import { Agent, Buyer, User as UserType } from '../../types';
 
 interface CalendarEventModalProps {
     isOpen: boolean;
@@ -14,10 +14,14 @@ interface CalendarEventModalProps {
     onView: (item: Agent | Buyer) => void;
     onRemove?: (item: Agent | Buyer) => void;
     onDateChange: (date: Date) => void;
+    users?: UserType[];
+    selectedManager?: string;
+    onManagerChange?: (manager: string) => void;
 }
 
 export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({ 
-    isOpen, onClose, date, type, events, allItems, onAdd, onView, onRemove, onDateChange 
+    isOpen, onClose, date, type, events, allItems, onAdd, onView, onRemove, onDateChange,
+    users = [], selectedManager = 'All', onManagerChange
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,12 +68,19 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
         onDateChange(new Date(y, m - 1, d));
     };
 
+    const displayEvents = selectedManager === 'All' 
+        ? events 
+        : events.filter(e => {
+            const manager = 'acquisitionManager' in e ? e.acquisitionManager : (e as any).acquisitionManager;
+            return manager === selectedManager;
+        });
+
     return (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
             <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] h-[85vh]" onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800 shrink-0">
+                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start bg-gray-50 dark:bg-gray-800 shrink-0">
                     <div>
                         <div className="relative group w-fit">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -84,9 +95,23 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                                 onChange={handleDateInput}
                             />
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Manage {type === 'agents' ? 'Agent' : 'Buyer'} Follow-Ups
-                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Manage {type === 'agents' ? 'Agent' : 'Buyer'} Follow-Ups
+                            </p>
+                            {onManagerChange && users.length > 0 && (
+                                <select 
+                                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs px-2 py-1 text-gray-700 dark:text-gray-300 outline-none focus:border-blue-500 transition-colors"
+                                    value={selectedManager}
+                                    onChange={(e) => onManagerChange(e.target.value)}
+                                >
+                                    <option value="All">All Managers</option>
+                                    {users.map(u => (
+                                        <option key={u.id} value={u.name}>{u.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                         <X size={20}/>
@@ -153,13 +178,13 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                                 <Calendar size={14} className="text-purple-500"/> Scheduled Follow-Ups
                             </label>
                             <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full font-bold">
-                                {events.length}
+                                {displayEvents.length}
                             </span>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/30 p-2 space-y-2">
-                            {events.length > 0 ? (
-                                events.map((item, idx) => (
+                            {displayEvents.length > 0 ? (
+                                displayEvents.map((item, idx) => (
                                     <div 
                                         key={idx} 
                                         className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-blue-400 dark:hover:border-blue-500 transition-all group flex items-center justify-between shadow-sm cursor-pointer"

@@ -286,6 +286,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
                     onView={(item) => { handleEventClick(item); }}
                     onRemove={handleRemoveFollowUp}
                     onDateChange={setSelectedDate}
+                    users={users}
+                    selectedManager={selectedAcqManager}
+                    onManagerChange={setSelectedAcqManager}
                 />
             )}
         </div>
