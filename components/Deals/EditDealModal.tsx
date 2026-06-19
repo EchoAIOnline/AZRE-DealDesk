@@ -252,14 +252,13 @@ const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
 }
 
 const MOTIVATION_SIGNALS_LIST = [
-    "60+ Days on Market",
+    "90 Days on Market",
     "Price drops / relisted",
     "Distressed language in listing",
     "Visible property distress",
     "Vacant / carrying costs",
     "Motivated seller (estate, REO, etc.)",
-    "Agent engaged / responsive",
-    "Strong ARV disparity"
+    "Agent engaged / responsive"
 ];
 
 const AgentSlot: React.FC<{
