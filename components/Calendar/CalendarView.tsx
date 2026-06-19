@@ -126,33 +126,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
 
     return (
         <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-6 overflow-hidden">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full xl:w-auto">
-                    <h2 className="text-3xl font-bold flex items-center gap-3 shrink-0">
-                        <CalendarIcon className="text-blue-500" size={32} />
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full lg:w-auto">
+                    <h2 className="text-2xl font-bold flex items-center gap-2 shrink-0">
+                        <CalendarIcon className="text-blue-500" size={24} />
                         Calendar
                     </h2>
                     
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                        <div className="flex flex-col sm:flex-row bg-white dark:bg-gray-800 rounded-md p-1.5 border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
+                    <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
+                        <div className="flex flex-col sm:flex-row bg-white dark:bg-gray-800 rounded-md p-1 border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
                             <button 
                                 onClick={() => setViewMode('agents')}
-                                className={`flex-1 md:flex-none px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${viewMode === 'agents' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                className={`flex-1 md:flex-none px-2.5 py-1 rounded text-[10px] uppercase font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${viewMode === 'agents' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
-                                <User size={14} /> Agent Follow-Ups
+                                <User size={12} /> Agent Follow-Ups
                             </button>
                             <button 
                                 onClick={() => setViewMode('buyers')}
-                                className={`flex-1 md:flex-none px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${viewMode === 'buyers' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                className={`flex-1 md:flex-none px-2.5 py-1 rounded text-[10px] uppercase font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${viewMode === 'buyers' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
-                                <Users size={14} /> Buyer Follow-Ups
+                                <Users size={12} /> Buyer Follow-Ups
                             </button>
                         </div>
                         
-                        <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-md p-1 border border-gray-200 dark:border-gray-700">
-                            <Briefcase size={14} className="text-gray-500 ml-1.5" />
+                        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-700">
+                            <Briefcase size={12} className="text-gray-500 ml-1.5" />
                             <select 
-                                className="bg-transparent text-xs font-medium outline-none text-gray-700 dark:text-gray-300 py-1 pr-1.5 focus:ring-0"
+                                className="bg-transparent text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 pr-1 focus:ring-0"
                                 value={selectedAcqManager}
                                 onChange={(e) => setSelectedAcqManager(e.target.value)}
                             >
@@ -164,19 +164,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
                         </div>
                         <button 
                             onClick={() => setSelectedDate(new Date())}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md shadow-sm flex items-center justify-center gap-1.5 text-xs font-bold transition-all flex-1 md:flex-none whitespace-nowrap"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-md shadow-sm flex items-center justify-center gap-1 text-[10px] uppercase font-bold transition-all flex-1 md:flex-none whitespace-nowrap"
                         >
-                            <Plus size={14} /> 
+                            <Plus size={12} /> 
                             <span className="">Add Follow-Up</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between w-full md:w-auto gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronLeft size={20} /></button>
-                    <span className="text-sm font-bold flex-1 text-center select-none whitespace-nowrap min-w-[120px]">{monthName} {year}</span>
-                    <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronRight size={20} /></button>
-                    <button onClick={goToToday} className="text-[10px] bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-1 rounded font-medium transition">Today</button>
+                <div className="flex items-center justify-between w-full md:w-auto gap-2 bg-white dark:bg-gray-800 p-1 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronLeft size={16} /></button>
+                    <span className="text-xs font-bold flex-1 text-center select-none whitespace-nowrap min-w-[100px] uppercase">{monthName} {year}</span>
+                    <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white transition"><ChevronRight size={16} /></button>
+                    <button onClick={goToToday} className="text-[10px] uppercase font-bold bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-0.5 rounded transition">Today</button>
                 </div>
             </div>
 
