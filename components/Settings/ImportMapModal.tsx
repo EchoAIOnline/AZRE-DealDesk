@@ -41,7 +41,7 @@ const FIELD_DEFINITIONS: { key: string, label: string, aliases: string[], type: 
     { key: 'listingDescription', label: 'Description', aliases: ['description', 'desc', 'remarks', 'notes', 'public remarks'], type: 'string' },
     { key: 'propertyType', label: 'Property Type', aliases: ['property type', 'prop type', 'dwelling type'], type: 'string' },
     { key: 'forSaleBy', label: 'For Sale By', aliases: ['for sale by', 'fsbo', 'listed by'], type: 'string' },
-    { key: 'arv', label: 'ARV', aliases: ['arv', 'after repair value', 'est value'], type: 'number' },
+    { key: 'renovationARV', label: 'ARV', aliases: ['arv', 'after repair value', 'est value'], type: 'number' },
     { key: 'renovationEstimate', label: 'Reno Estimate', aliases: ['reno', 'renovation', 'repairs', 'repair cost', 'rehab'], type: 'number' },
     // Detailed Comparables
     { key: 'comp1_address', label: 'Comp 1 Address', aliases: ['comp 1 address', 'comp 1 addr', 'comparable 1 address'], type: 'string' },

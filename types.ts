@@ -152,12 +152,17 @@ export interface Deal {
   zoning?: string;
   lockBoxCode?: string;
   dateListed?: string | null;
-  arv?: number;
+  renovationARV?: number;
+  newConstructionARV?: number;
+  newConstructionEstimate?: number;
   renovationEstimate?: number;
   motivationSignals?: string[];
-  comparable1?: Comparable;
-  comparable2?: Comparable;
-  comparable3?: Comparable;
+  renovationComparable1?: Comparable;
+  renovationComparable2?: Comparable;
+  renovationComparable3?: Comparable;
+  newConstructionComparable1?: Comparable;
+  newConstructionComparable2?: Comparable;
+  newConstructionComparable3?: Comparable;
   photos?: string[];
   picturesFolderId?: string; // New Field for Drive Folder ID
   excludeStreetView?: boolean;

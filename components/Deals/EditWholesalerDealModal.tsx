@@ -620,15 +620,19 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
         return price - (price * (percent / 100));
     };
 
-    const updateComp = (key: 'comparable1' | 'comparable2' | 'comparable3', field: keyof Comparable, value: any) => {
+    const updateComp = (key: 'renovationComparable1' | 'renovationComparable2' | 'renovationComparable3' | 'newConstructionComparable1' | 'newConstructionComparable2' | 'newConstructionComparable3', field: keyof Comparable, value: any) => {
         const currentComp = deal[key] || { address: '', saleDate: '', salePrice: 0 };
         const updatedComp = { ...currentComp, [field]: value };
         
-        let newArv = deal.arv;
+        const isNewConstruction = key.includes('newConstruction');
+        let newArv = isNewConstruction ? deal.newConstructionARV : deal.renovationARV;
+
         if (field === 'salePrice' || field === 'softenerPercent') {
-            const comp1 = key === 'comparable1' ? updatedComp : deal.comparable1;
-            const comp2 = key === 'comparable2' ? updatedComp : deal.comparable2;
-            const comp3 = key === 'comparable3' ? updatedComp : deal.comparable3;
+            const getCompValue = (compKey: string) => key === compKey ? updatedComp : deal[compKey as keyof Deal];
+            
+            const comp1 = getCompValue(isNewConstruction ? 'newConstructionComparable1' : 'renovationComparable1') as Comparable | undefined;
+            const comp2 = getCompValue(isNewConstruction ? 'newConstructionComparable2' : 'renovationComparable2') as Comparable | undefined;
+            const comp3 = getCompValue(isNewConstruction ? 'newConstructionComparable3' : 'renovationComparable3') as Comparable | undefined;
 
             const arv1 = getSoftenerArv(comp1);
             const arv2 = getSoftenerArv(comp2);
@@ -642,10 +646,14 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
             }
         }
 
-        updateDealState({ [key]: updatedComp, arv: newArv });
+        if (isNewConstruction) {
+            updateDealState({ [key]: updatedComp, newConstructionARV: newArv });
+        } else {
+            updateDealState({ [key]: updatedComp, renovationARV: newArv });
+        }
     };
 
-    const safeOfferAmount = Math.round((deal.arv || 0) * 0.40);
+    const safeOfferAmount = Math.round((deal.renovationARV || 0) * 0.40);
     const sureCashOfferAmount = Math.round((deal.listPrice || 0) - 70000);
 
     const priceDrop = (deal.originalAskingPrice || 0) - (deal.listPrice || 0);
@@ -1237,7 +1245,9 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
                             <div className="h-px bg-gray-200 dark:bg-gray-700/50 w-full my-6"></div>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><TrendingUp size={12}/> Valuation & Comparables</h4></div>
-                                <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.arv) || ''} onChange={e => updateDealState({arv: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationEstimate) || ''} onChange={e => updateDealState({renovationEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div></div>
+                                <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationARV) || ''} onChange={e => updateDealState({renovationARV: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationEstimate) || ''} onChange={e => updateDealState({renovationEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div></div>
+                                <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">New Construction ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.newConstructionARV) || ''} onChange={e => updateDealState({newConstructionARV: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">New Construction Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.newConstructionEstimate) || ''} onChange={e => updateDealState({newConstructionEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} /></div></div></div>
+                                <label className="text-xs text-gray-500 block mb-1 font-bold uppercase tracking-wider">Renovation Comps</label>
                                 <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded border border-gray-200 dark:border-gray-800">
                                     <div className="grid grid-cols-12 gap-2 text-[10px] text-gray-500 uppercase font-bold">
                                             <div className="col-span-1 flex items-center">#</div>
@@ -1249,7 +1259,7 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
                                             <div className="col-span-2">Softener ARV</div>
                                     </div>
                                     {[1, 2, 3].map((num) => { 
-                                        const compKey = `comparable${num}` as 'comparable1' | 'comparable2' | 'comparable3'; 
+                                        const compKey = `renovationComparable${num}` as 'renovationComparable1' | 'renovationComparable2' | 'renovationComparable3'; 
                                         const comp = deal[compKey] || { address: '', saleDate: '', salePrice: 0, sqft: 0, softenerPercent: 0 }; 
                                         const softenerArv = Math.round(getSoftenerArv(comp));
                                         return (

@@ -80,7 +80,7 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
 
             // Deal Props
             const dealPrice = deal.listPrice || 0;
-            const dealArv = deal.arv || 0;
+            const dealArv = deal.renovationARV || 0;
             const dealReno = deal.renovationEstimate || 0;
             const dealSqft = deal.sqft || 0;
             const dealYear = deal.yearBuilt || 0;
