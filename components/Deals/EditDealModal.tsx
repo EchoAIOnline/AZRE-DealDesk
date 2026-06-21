@@ -65,7 +65,7 @@ interface EditDealModalProps {
 const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
     const listPrice = deal.listPrice || 0;
     const offerPrice = deal.offerPrice || 0;
-    const arv = deal.renovationARV || 0;
+    const arv = deal.renovationARV || deal.newConstructionARV || 0;
     const signalCount = deal.motivationSignals?.length || 0;
 
     let listPercent = listPrice > 0 ? (offerPrice / listPrice) * 100 : 0;
