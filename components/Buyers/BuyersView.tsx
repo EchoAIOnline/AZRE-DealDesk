@@ -59,6 +59,7 @@ export const BuyersView: React.FC<BuyersViewProps> = ({
                                 <option value="Repeat Buyer">Repeat Buyer</option>
                                 <option value="Vetted Buyer">Vetted Buyer</option>
                                 <option value="New Lead">New Lead</option>
+                                <option value="Deactivated">Deactivated</option>
                             </select>
                         </div>
                         <div className="space-y-1">

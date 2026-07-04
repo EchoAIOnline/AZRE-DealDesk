@@ -57,7 +57,8 @@ export const BUYER_STATUS_TABS = [
   { id: 'New Lead', label: 'New Lead', activeColorClass: 'text-yellow-600 dark:text-yellow-400 border-yellow-600 dark:border-yellow-400' },
   { id: 'Vetted Buyer', label: 'Vetted Buyers', activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
   { id: 'Repeat Buyer', label: 'Repeat Buyers', activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
-  { id: 'VIP Buyer', label: 'VIP Buyers', activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }
+  { id: 'VIP Buyer', label: 'VIP Buyers', activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' },
+  { id: 'Deactivated', label: 'Deactivated Buyers', activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
 ];
 
 export const AGENT_STATUS_TABS = [
