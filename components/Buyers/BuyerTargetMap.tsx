@@ -11,7 +11,9 @@ const MAP_ID = 'af9f1e180df0a12509417f9f';
 export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
+    const shapesRef = useRef<any[]>([]);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const locationsString = JSON.stringify(locations);
 
     useEffect(() => {
         // Load the script if it's not already there
@@ -80,9 +82,13 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                 let hasBounds = false;
                 
                 // Clear existing circles (if we had a state for them, but we are inside useEffect so it's fresh)
+                shapesRef.current.forEach(shape => shape.setMap(null));
+                shapesRef.current = [];
                 
+                const parsedLocationsStr = JSON.parse(locationsString);
+
                 // Parse location strings into type and value
-                const parsedLocations = locations.map(loc => {
+                const parsedLocations = parsedLocationsStr.map((loc: string) => {
                     const parts = loc.split(':');
                     if (parts.length > 1) {
                         return { type: parts[0].trim(), value: parts.slice(1).join(':').trim() };
@@ -127,7 +133,7 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                                     if (loc.type === 'Neighborhood') radius = 1500;
                                     
                                     // Draw Circle
-                                    new google.maps.Circle({
+                                    const circle = new google.maps.Circle({
                                         strokeColor: '#3b82f6',
                                         strokeOpacity: 0.8,
                                         strokeWeight: 2,
@@ -137,9 +143,10 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                                         center: geometry.location,
                                         radius: radius,
                                     });
+                                    shapesRef.current.push(circle);
                                     
                                     // Add a small marker label
-                                    new google.maps.Marker({
+                                    const marker = new google.maps.Marker({
                                         position: geometry.location,
                                         map: map,
                                         icon: {
@@ -153,6 +160,7 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                                             fontSize: '11px'
                                         }
                                     });
+                                    shapesRef.current.push(marker);
                                 }
                             }
                             resolve();
@@ -174,7 +182,7 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
 
             processLocations();
 
-    }, [isMapLoaded, locations]);
+    }, [isMapLoaded, locationsString]);
 
     return (
         <div ref={mapRef} className="w-full h-full rounded-xl" />
