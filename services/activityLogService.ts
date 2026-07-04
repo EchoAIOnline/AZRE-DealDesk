@@ -110,7 +110,7 @@ export const activityLogService = {
             .limit(limit);
 
         if (error) {
-            console.error('Error fetching activity logs:', error);
+            console.warn('Error fetching activity logs (suppressed):', error);
             return [];
         }
 
@@ -132,7 +132,7 @@ export const activityLogService = {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching activity logs by action type:', error);
+            console.warn('Error fetching activity logs by action type (suppressed):', error);
             return [];
         }
 

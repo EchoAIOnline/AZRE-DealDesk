@@ -342,22 +342,44 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
         inputRef.current?.focus();
     };
 
+    const WIDGET_ORDER: Record<string, number> = {
+        'Zip Code': 1,
+        'City': 2,
+        'State': 3,
+        'County': 4,
+        'Neighborhood': 5
+    };
+
+    const sortLocationsArray = (locs: string[]) => {
+        return [...locs].sort((a, b) => {
+            const typeA = parseWidget(a).type;
+            const typeB = parseWidget(b).type;
+            const orderA = WIDGET_ORDER[typeA] || 99;
+            const orderB = WIDGET_ORDER[typeB] || 99;
+            if (orderA !== orderB) return orderA - orderB;
+            const valA = parseWidget(a).value.toLowerCase();
+            const valB = parseWidget(b).value.toLowerCase();
+            return valA.localeCompare(valB);
+        });
+    };
+
     const addWidget = () => {
         if (!widgetValue) return;
         const currentLocs = formData.buyBox?.locations ? formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s) : [];
         const newEntry = `${widgetType}: ${widgetValue}`;
         
         if (!currentLocs.includes(newEntry)) {
-            const newLocs = [...currentLocs, newEntry].join(', ');
-            updateBuyBoxAndSave('locations', newLocs);
+            const newLocsArray = [...currentLocs, newEntry];
+            const sortedLocs = sortLocationsArray(newLocsArray);
+            updateBuyBoxAndSave('locations', sortedLocs.join(', '));
         }
         setWidgetValue('');
         setShowSuggestions(false);
     };
 
-    const removeWidget = (index: number) => {
+    const removeWidget = (valToRemove: string) => {
         const currentLocs = formData.buyBox?.locations ? formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s) : [];
-        const newLocs = currentLocs.filter((_, i) => i !== index).join(', ');
+        const newLocs = currentLocs.filter(loc => loc !== valToRemove).join(', ');
         updateBuyBoxAndSave('locations', newLocs);
     };
 
@@ -446,83 +468,83 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                 
                 <SavedNotification show={showSavedNotification} />
 
-                {/* Header */}
-                <div className="h-32 bg-gray-100 dark:bg-gray-800 relative shrink-0">
-                    <div className="absolute inset-0 overflow-hidden">
-                        {formData.photo ? (
-                            <img src={processPhotoUrl(formData.photo)} className="w-full h-full object-cover opacity-50 blur-sm scale-110" alt="Background" />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-r from-blue-900 to-gray-900 opacity-50"></div>
-                        )}
-                    </div>
-                    
-                    <button onClick={handleCloseClick} className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-colors backdrop-blur-md z-10"><X size={20}/></button>
+                <button onClick={handleCloseClick} className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors backdrop-blur-md z-50"><X size={20}/></button>
 
-                    {deals && deals.length > 0 && (
-                        <button 
-                            type="button" 
-                            onClick={() => setShowDealMatcher(true)}
-                            className="absolute top-2 left-2 md:top-4 md:left-auto md:right-16 bg-blue-600 hover:bg-blue-50 text-white font-bold transition-all flex items-center justify-center backdrop-blur-md border border-white/20 active:scale-95 z-10
-                                       w-14 h-14 rounded-xl text-[9px] text-center p-1 leading-tight shadow-lg
-                                       md:w-auto md:h-auto md:py-1.5 md:px-4 md:rounded-lg md:gap-2 md:text-xs md:shadow-md"
-                        >
-                            <LayoutGrid size={16} className="hidden md:block" /> 
-                            <span>Deal Matcher</span>
-                        </button>
-                    )}
+                {deals && deals.length > 0 && (
+                    <button 
+                        type="button" 
+                        onClick={() => setShowDealMatcher(true)}
+                        className="absolute top-4 right-16 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex items-center justify-center backdrop-blur-md border border-white/20 active:scale-95 z-50
+                                   py-1.5 px-4 rounded-lg gap-2 text-xs shadow-md"
+                    >
+                        <LayoutGrid size={16} /> 
+                        <span>Deal Matcher</span>
+                    </button>
+                )}
 
-                    <div className="absolute -bottom-12 left-8 flex items-end gap-4">
-                        <div className="w-24 h-24 rounded-xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-lg overflow-hidden relative group">
+                <div className="flex-1 overflow-y-auto">
+                    {/* Header */}
+                    <div className="h-32 bg-gray-100 dark:bg-gray-800 relative shrink-0 z-20">
+                        <div className="absolute inset-0 overflow-hidden">
                             {formData.photo ? (
-                                <img src={processPhotoUrl(formData.photo)} className="w-full h-full object-cover" alt="Logo" />
+                                <img src={processPhotoUrl(formData.photo)} className="w-full h-full object-cover opacity-50 blur-sm scale-110" alt="Background" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-400">
-                                    <Building size={32} />
-                                </div>
+                                <div className="w-full h-full bg-gradient-to-r from-blue-900 to-gray-900 opacity-50"></div>
                             )}
-
-                            {isUploadingPhoto && (
-                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
-                                    <div className="relative">
-                                        <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-blue-500 animate-spin"></div>
-                                        <Loader2 className="absolute inset-0 m-auto text-blue-500 animate-pulse" size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest mt-2">Uploading</span>
-                                </div>
-                            )}
-
-                            <label className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity cursor-pointer ${isUploadingPhoto ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
-                                <Upload size={20} className="text-white"/>
-                                <input type="file" className="hidden" accept="image/*" onChange={handlePhotoChange} disabled={isUploadingPhoto} />
-                            </label>
                         </div>
-                        <div className="mb-12 text-white drop-shadow-md">
-                            <h2 className="text-2xl font-bold">{formData.name || 'New Buyer'}</h2>
-                            {formData.companyName && <div className="text-lg font-medium opacity-90">{formData.companyName}</div>}
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {currentStatuses.length > 0 ? currentStatuses.map(s => {
-                                     let colorClass = 'bg-gray-500/80 border-gray-400';
-                                     if (s === 'New Lead') colorClass = 'bg-yellow-500 border-yellow-400';
-                                     else if (s === 'Vetted Buyer') colorClass = 'bg-blue-600 border-blue-500';
-                                     else if (s === 'Repeat Buyer') colorClass = 'bg-green-600 border-green-500';
-                                     else if (s === 'VIP Buyer') colorClass = 'bg-purple-600 border-purple-500';
-                                     else if (s === 'Deactivated') colorClass = 'bg-red-600 border-red-500';
-                                     
-                                     return (
-                                        <span key={s} className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm border ${colorClass} text-white`}>
-                                            {s}
-                                        </span>
-                                     );
-                                }) : (
-                                     <p className="text-white/80 text-sm font-medium">No Status</p>
+
+                        <div className="absolute -bottom-12 left-8 flex items-end gap-4 z-30">
+                            <div className="w-24 h-24 rounded-xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-lg overflow-hidden relative group shrink-0">
+                                {formData.photo ? (
+                                    <img src={processPhotoUrl(formData.photo)} className="w-full h-full object-cover" alt="Logo" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-400">
+                                        <Building size={32} />
+                                    </div>
                                 )}
+
+                                {isUploadingPhoto && (
+                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20">
+                                        <div className="relative">
+                                            <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-blue-500 animate-spin"></div>
+                                            <Loader2 className="absolute inset-0 m-auto text-blue-500 animate-pulse" size={24} />
+                                        </div>
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest mt-2">Uploading</span>
+                                    </div>
+                                )}
+
+                                <label className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity cursor-pointer ${isUploadingPhoto ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
+                                    <Upload size={20} className="text-white"/>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handlePhotoChange} disabled={isUploadingPhoto} />
+                                </label>
+                            </div>
+                            <div className="mb-12 text-white drop-shadow-md pb-2">
+                                <h2 className="text-2xl font-bold">{formData.name || 'New Buyer'}</h2>
+                                {formData.companyName && <div className="text-lg font-medium opacity-90">{formData.companyName}</div>}
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                    {currentStatuses.length > 0 ? currentStatuses.map(s => {
+                                         let colorClass = 'bg-gray-500/80 border-gray-400';
+                                         if (s === 'New Lead') colorClass = 'bg-yellow-500 border-yellow-400';
+                                         else if (s === 'Vetted Buyer') colorClass = 'bg-blue-600 border-blue-500';
+                                         else if (s === 'Repeat Buyer') colorClass = 'bg-green-600 border-green-500';
+                                         else if (s === 'VIP Buyer') colorClass = 'bg-purple-600 border-purple-500';
+                                         else if (s === 'Deactivated') colorClass = 'bg-red-600 border-red-500';
+                                         
+                                         return (
+                                            <span key={s} className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm border ${colorClass} text-white`}>
+                                                {s}
+                                            </span>
+                                         );
+                                    }) : (
+                                         <p className="text-white/80 text-sm font-medium">No Status</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex-1 overflow-y-auto p-8 pt-16">
-                    <form onSubmit={(e) => { e.preventDefault(); triggerSave(); }} className="space-y-8">
+                    <div className="p-8 pt-16">
+                        <form onSubmit={(e) => { e.preventDefault(); triggerSave(); }} className="space-y-8">
                         
                         {/* Sections remain unchanged for brevity, focusing on footer structure */}
                         <section className="grid md:grid-cols-2 gap-8">
@@ -719,12 +741,12 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                     <div className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-3 text-sm focus-within:border-blue-500 transition-colors min-h-[525px] flex flex-col gap-3 relative">
                                         <div className="flex flex-wrap gap-2 flex-1 content-start overflow-y-auto max-h-[460px] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                                             {formData.buyBox?.locations ? (
-                                                formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s).map((loc, idx) => {
+                                                sortLocationsArray(formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s)).map((loc, idx) => {
                                                     const { type, value } = parseWidget(loc);
                                                     return (
                                                         <span key={idx} className={`px-2 py-1 rounded text-xs font-bold border flex items-center gap-1 shrink-0 ${getWidgetColor(type)}`}>
                                                             {value}
-                                                            <button type="button" onClick={() => removeWidget(idx)} className="hover:text-red-500 ml-1"><X size={12}/></button>
+                                                            <button type="button" onClick={() => removeWidget(loc)} className="hover:text-red-500 ml-1"><X size={12}/></button>
                                                         </span>
                                                     );
                                                 })
@@ -981,6 +1003,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
                     </form>
                 </div>
+            </div>
 
                 <ModalFooter 
                     onClose={handleCloseClick} 

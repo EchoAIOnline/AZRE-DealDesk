@@ -55,7 +55,7 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
         // Feature Layers
         const localityLayer = map.getFeatureLayer('LOCALITY');
         const postalCodeLayer = map.getFeatureLayer('POSTAL_CODE');
-        const countyLayer = map.getFeatureLayer('ADMINISTRATIVE_AREA_LEVEL_2');
+        // ADMINISTRATIVE_AREA_LEVEL_2 is not enabled on this Map ID, so we skip it to prevent errors
 
         // Helper to fetch Place ID
         const getPlaceId = (query: string): Promise<string | null> => {
@@ -74,111 +74,105 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
             });
         };
 
-        // Process locations and apply styles
-        const processLocations = async () => {
-            const localityPlaceIds: string[] = [];
-            const postalCodePlaceIds: string[] = [];
-            const countyPlaceIds: string[] = [];
-            
-            // Parse location strings into type and value
-            const parsedLocations = locations.map(loc => {
-                const parts = loc.split(':');
-                if (parts.length > 1) {
-                    return { type: parts[0].trim(), value: parts.slice(1).join(':').trim() };
-                }
-                return { type: 'Location', value: loc };
-            });
-
-            const bounds = new google.maps.LatLngBounds();
-            let hasBounds = false;
-
-            for (const loc of parsedLocations) {
-                let query = loc.value;
-                let targetLayer = null;
-
-                if (loc.type === 'Zip Code') {
-                    targetLayer = 'postal';
-                } else if (loc.type === 'City') {
-                    query += ', GA'; 
-                    targetLayer = 'locality';
-                } else if (loc.type === 'County') {
-                    query += ', GA';
-                    targetLayer = 'county';
-                } else if (loc.type === 'Neighborhood') {
-                    query += ', Atlanta, GA';
-                    targetLayer = 'locality'; // Neighborhoods often map to localities or sub-localities
-                } else {
-                    // Default fallback
-                    query += ', GA';
-                }
-
-                // Get Place ID
-                const request = {
-                    query: query,
-                    fields: ['place_id', 'geometry'],
-                };
+            // Process locations and apply markers/circles
+            const processLocations = async () => {
+                const bounds = new google.maps.LatLngBounds();
+                let hasBounds = false;
                 
-                await new Promise<void>((resolve) => {
-                     placesService.findPlaceFromQuery(request, (results: any[], status: any) => {
-                        if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-                            const placeId = results[0].place_id;
-                            if (placeId) {
-                                if (targetLayer === 'locality') localityPlaceIds.push(placeId);
-                                else if (targetLayer === 'postal') postalCodePlaceIds.push(placeId);
-                                else if (targetLayer === 'county') countyPlaceIds.push(placeId);
-                                else {
-                                    // Try to guess based on type if unknown
-                                    if (loc.type === 'City') localityPlaceIds.push(placeId);
-                                    else if (loc.type === 'Zip Code') postalCodePlaceIds.push(placeId);
-                                    else countyPlaceIds.push(placeId);
+                // Clear existing circles (if we had a state for them, but we are inside useEffect so it's fresh)
+                
+                // Parse location strings into type and value
+                const parsedLocations = locations.map(loc => {
+                    const parts = loc.split(':');
+                    if (parts.length > 1) {
+                        return { type: parts[0].trim(), value: parts.slice(1).join(':').trim() };
+                    }
+                    return { type: 'Location', value: loc };
+                });
+
+                for (const loc of parsedLocations) {
+                    let query = loc.value;
+
+                    if (loc.type === 'Zip Code') {
+                        query += ' Zip Code, GA';
+                    } else if (loc.type === 'City') {
+                        query += ', GA'; 
+                    } else if (loc.type === 'County') {
+                        query += ' County, GA';
+                    } else if (loc.type === 'Neighborhood') {
+                        query += ', Atlanta, GA';
+                    } else {
+                        query += ', GA';
+                    }
+
+                    const request = {
+                        query: query,
+                        fields: ['geometry', 'name'],
+                    };
+                    
+                    await new Promise<void>((resolve) => {
+                         placesService.findPlaceFromQuery(request, (results: any[], status: any) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+                                const geometry = results[0].geometry;
+                                
+                                if (geometry && geometry.location) {
+                                    bounds.extend(geometry.location);
+                                    hasBounds = true;
+                                    
+                                    // Determine radius based on type
+                                    let radius = 4000; // default 4km
+                                    if (loc.type === 'Zip Code') radius = 3000;
+                                    if (loc.type === 'City') radius = 8000;
+                                    if (loc.type === 'County') radius = 15000;
+                                    if (loc.type === 'Neighborhood') radius = 1500;
+                                    
+                                    // Draw Circle
+                                    new google.maps.Circle({
+                                        strokeColor: '#3b82f6',
+                                        strokeOpacity: 0.8,
+                                        strokeWeight: 2,
+                                        fillColor: '#3b82f6',
+                                        fillOpacity: 0.25,
+                                        map: map,
+                                        center: geometry.location,
+                                        radius: radius,
+                                    });
+                                    
+                                    // Add a small marker label
+                                    new google.maps.Marker({
+                                        position: geometry.location,
+                                        map: map,
+                                        icon: {
+                                            path: google.maps.SymbolPath.CIRCLE,
+                                            scale: 0
+                                        },
+                                        label: {
+                                            text: loc.value,
+                                            color: '#1e3a8a',
+                                            fontWeight: 'bold',
+                                            fontSize: '11px'
+                                        }
+                                    });
                                 }
                             }
-                            
-                            if (results[0].geometry && results[0].geometry.viewport) {
-                                bounds.union(results[0].geometry.viewport);
-                                hasBounds = true;
-                            } else if (results[0].geometry && results[0].geometry.location) {
-                                bounds.extend(results[0].geometry.location);
-                                hasBounds = true;
-                            }
-                        }
-                        resolve();
+                            resolve();
+                        });
                     });
-                });
-            }
+                }
 
-            if (hasBounds) {
-                map.fitBounds(bounds);
-            }
-
-            // Apply styles
-            const styleOptions = {
-                fillColor: '#3b82f6', // Blue-500
-                fillOpacity: 0.3,
-                strokeColor: '#2563eb', // Blue-600
-                strokeWeight: 2,
-            };
-
-            localityLayer.style = (feature: any) => {
-                if (localityPlaceIds.includes(feature.placeId)) {
-                    return styleOptions;
+                if (hasBounds) {
+                    map.fitBounds(bounds);
+                    // Add a little padding to the bounds
+                    const zoom = map.getZoom();
+                    if (zoom) {
+                        setTimeout(() => {
+                             map.setZoom(map.getZoom()! - 1);
+                        }, 100);
+                    }
                 }
             };
 
-            postalCodeLayer.style = (feature: any) => {
-                if (postalCodePlaceIds.includes(feature.placeId)) {
-                    return styleOptions;
-                }
-            };
-
-            countyLayer.style = (feature: any) => {
-                if (countyPlaceIds.includes(feature.placeId)) {
-                    return styleOptions;
-                }
-            };
-        };
-
-        processLocations();
+            processLocations();
 
     }, [isMapLoaded, locations]);
 

@@ -11,6 +11,7 @@ DROP FUNCTION IF EXISTS remove_jv_deal_from_wholesaler() CASCADE;
 -- 1. Create the JVDeals table
 CREATE TABLE IF NOT EXISTS public."JVDeals" (
     id TEXT PRIMARY KEY,
+    "organization_id" TEXT,
     "pipelineType" TEXT DEFAULT 'jv',
     "createdAt" TEXT,
     "address" TEXT,

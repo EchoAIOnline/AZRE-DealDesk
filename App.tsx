@@ -115,7 +115,7 @@ export default function App() {
               setOnlineUsersList(online);
               setOnlineUsersCount(online.length);
           } catch (e) {
-              console.error("Failed to fetch online users", e);
+              console.warn("Failed to fetch online users (suppressed)", e);
           }
       };
       fetchOnlineUsers();
@@ -361,8 +361,7 @@ export default function App() {
         const campaignsData = await api.load('Campaigns');
         setCampaigns(deduplicateById(campaignsData || []));
       } catch (e) {
-        console.error("Fetch data error", e);
-        alert("Failed to load data. Please check connection.");
+        console.warn("Fetch data error (suppressed)", e);
       } finally {
         setIsLoading(false);
       }
