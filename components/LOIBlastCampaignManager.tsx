@@ -145,6 +145,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
     const [testEmail, setTestEmail] = useState("");
     const [showTestModal, setShowTestModal] = useState(false);
     const [isSendingTest, setIsSendingTest] = useState(false);
+    const [testEmailResult, setTestEmailResult] = useState<{type: 'success' | 'error', message: string} | null>(null);
      
     // Resolve List IDs to actual Recipients
     const resolveRecipients = (listIds: string[]): Recipient[] => {
@@ -450,9 +451,10 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
     };
 
     const handleSendPreview = async () => {
+        setTestEmailResult(null);
         const targetEmail = testEmail.trim();
         if (!targetEmail) {
-            alert("Please enter a target email address.");
+            setTestEmailResult({type: 'error', message: "Please enter a target email address."});
             return;
         }
         setIsSendingTest(true);
@@ -468,11 +470,14 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                 finalBody, 
                 fromAddress
             );
-            setShowTestModal(false);
-            alert(`Test email sent to ${targetEmail} from ${fromAddress}`);
+            setTestEmailResult({type: 'success', message: `Test email sent to ${targetEmail} from ${fromAddress}`});
+            setTimeout(() => {
+                setShowTestModal(false);
+                setTestEmailResult(null);
+            }, 3000);
         } catch (e: any) {
             console.error(e);
-            alert("Test send failed: " + (e.message || "Unknown error"));
+            setTestEmailResult({type: 'error', message: "Test send failed: " + (e.message || "Unknown error")});
         } finally {
             setIsSendingTest(false);
         }
@@ -739,7 +744,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                             </button>
                             <button 
                                 onClick={executeCampaign}
-                                className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-7000 font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
                             >
                                 <Send size={16} /> Send Now
                             </button>
@@ -866,7 +871,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                                 <button 
                                     onClick={handleGenerateSubjectAI}
                                     disabled={!selectedDealId || isGeneratingAI}
-                                    className="bg-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-tight shadow-xl flex items-center gap-2 transition-all h-[42px]"
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-tight shadow-xl flex items-center gap-2 transition-all h-[42px]"
                                 >
                                     {isGeneratingAI ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                     GENERATE SUBJECT LINE
@@ -1218,7 +1223,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                             <button 
                                 onClick={handleSaveSignature}
                                 disabled={isSavingSignature || !signatureTargetUser}
-                                className="bg-blue-600 hover:bg-blue-50 disabled:opacity-50 text-white px-8 py-2 rounded-xl font-black text-xs shadow-xl active:scale-95 transition-all flex items-center gap-2"
+                                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-2 rounded-xl font-black text-xs shadow-xl active:scale-95 transition-all flex items-center gap-2"
                             >
                                 {isSavingSignature ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                 SAVE SIGNATURE
@@ -1247,11 +1252,16 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                                     onChange={(e) => setTestEmail(e.target.value)}
                                 />
                             </div>
+                            {testEmailResult && (
+                                <div className={`p-3 rounded-lg text-sm ${testEmailResult.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                                    {testEmailResult.message}
+                                </div>
+                            )}
                             <button 
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); handleSendPreview(); }}
                                 disabled={isSendingTest || !testEmail}
-                                className="w-full bg-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-black text-sm shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-black text-sm shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2"
                             >
                                 {isSendingTest ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 {isSendingTest ? 'Sending...' : 'Send Preview'}

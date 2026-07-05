@@ -152,12 +152,10 @@ export const sendEmail = async (email: string, subject: string, body: string) =>
 };
 
 export const sendBulkEmailGAS = async (recipients: any[], subject: string, body: string, fromAddress?: string) => {
-    if (!GOOGLE_SCRIPT_URL) throw new Error("Script URL missing");
-    
     try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
+        const response = await fetch('/api/send-email', {
             method: 'POST',
-            headers: { "Content-Type": "text/plain" },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 action: 'send_bulk_email',
                 data: {
@@ -169,20 +167,25 @@ export const sendBulkEmailGAS = async (recipients: any[], subject: string, body:
             })
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Ignore JSON parse errors for non-JSON responses
         }
         
-        try {
-            const data = await response.json();
-            return data;
-        } catch (parseError) {
-            console.error("Could not parse GAS response. The script might require authentication or the URL is incorrect.", parseError);
-            throw new Error("Invalid response from Google Apps Script. Ensure the script is deployed to execute as 'Me' and accessible to 'Anyone'.");
+        if (!response.ok) {
+            throw new Error(data?.message || `HTTP error! status: ${response.status}`);
         }
+        
+        if (data && data.status === 'error') {
+            throw new Error(data.message || 'Server Error');
+        }
+        
+        return data;
     } catch (e: any) {
         console.error("sendBulkEmailGAS error:", e);
-        return { status: 'error', message: e.message || String(e) };
+        throw e;
     }
 };
 
