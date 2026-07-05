@@ -35,7 +35,20 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     onMoveToAgent, onMoveToWholesaler,
     zIndex = 'z-[140]'
 }) => {
-    const [formData, setFormData] = useState<Buyer>({ ...buyer });
+    const [formData, _setFormData] = useState<Buyer>({ ...buyer });
+    const formDataRef = useRef<Buyer>({ ...buyer });
+
+    const setFormData = useCallback((newData: Buyer | ((prev: Buyer) => Buyer)) => {
+        if (typeof newData === 'function') {
+            const updated = newData(formDataRef.current);
+            formDataRef.current = updated;
+            _setFormData(updated);
+        } else {
+            formDataRef.current = newData;
+            _setFormData(newData);
+        }
+    }, []);
+
     const [newNote, setNewNote] = useState("");
     const [tempPhone, setTempPhone] = useState("");
     const [showDealMatcher, setShowDealMatcher] = useState(false);
@@ -76,15 +89,25 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
         setShowNameSuggestions(false);
     }, [buyer.id]);
 
-    const { triggerSave, showSavedNotification, setShowSavedNotification, handleAutoSave } = useAutoSave({
+    const { triggerSave, showSavedNotification, setShowSavedNotification, showErrorNotification, errorMessage,  handleAutoSave: hookHandleAutoSave } = useAutoSave({
         onSave: async () => {
-            await Promise.resolve(onSave(formData, false));
-            initialBuyerJson.current = JSON.stringify(formData);
+            await Promise.resolve(onSave(formDataRef.current, false));
+            initialBuyerJson.current = JSON.stringify(formDataRef.current);
         }
     });
 
+    const handleAutoSave = useCallback(() => {
+        setTimeout(() => {
+            hookHandleAutoSave();
+        }, 0);
+    }, [hookHandleAutoSave]);
+
+    const handleChange = (field: keyof Buyer, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     const updateAndSave = (updates: Partial<Buyer>) => {
-        const newData = { ...formData, ...updates };
+        const newData = { ...formDataRef.current, ...updates };
         setFormData(newData);
         onSave(newData, false);
         initialBuyerJson.current = JSON.stringify(newData);
@@ -466,7 +489,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
             <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-6xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative" onClick={e => e.stopPropagation()}>
                 
-                <SavedNotification show={showSavedNotification} />
+                <SavedNotification show={showSavedNotification} error={showErrorNotification} errorMessage={errorMessage} />
 
                 <button onClick={handleCloseClick} className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors backdrop-blur-md z-50"><X size={20}/></button>
 
@@ -589,7 +612,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                 <div>
                                     <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Company Name</label>
                                     <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" 
-                                        value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} onBlur={handleAutoSave} placeholder="Company LLC" />
+                                        value={formData.companyName || ''} onChange={e => handleChange('companyName', e.target.value)} onBlur={handleAutoSave} placeholder="Company LLC" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -649,7 +672,21 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                         <div>
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email</label>
                                             <input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" 
-                                                value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} onBlur={handleAutoSave} placeholder="email@example.com" />
+                                                value={formData.email || ''} onChange={e => handleChange('email', e.target.value)} onBlur={handleAutoSave} placeholder="email@example.com" />
+                                {errorMessage?.includes('already exists') && (
+                                    <label className="flex items-center gap-2 mt-2 text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-200 dark:border-red-900/50">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={(formData as any).overrideDuplicate || false}
+                                            onChange={e => {
+                                                handleChange('overrideDuplicate', e.target.checked);
+                                                if (e.target.checked) setTimeout(() => triggerSave(), 50);
+                                            }}
+                                            className="rounded"
+                                        />
+                                        Save despite duplicate email
+                                    </label>
+                                )}
                                         </div>
                                         <div>
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Subscription Status</label>
@@ -697,7 +734,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                     <div>
                                         <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Properties Bought</label>
                                         <input type="number" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" 
-                                            value={formData.propertiesBought} onChange={e => setFormData({...formData, propertiesBought: Number(e.target.value)})} onBlur={handleAutoSave} />
+                                            value={formData.propertiesBought} onChange={e => handleChange('propertiesBought', Number(e.target.value))} onBlur={handleAutoSave} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -715,7 +752,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                     <div>
                                         <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Next Follow-Up</label>
                                         <input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" 
-                                            value={formData.nextFollowUpDate || ''} onChange={e => setFormData({...formData, nextFollowUpDate: e.target.value})} onBlur={handleAutoSave} />
+                                            value={formData.nextFollowUpDate || ''} onChange={e => handleChange('nextFollowUpDate', e.target.value)} onBlur={handleAutoSave} />
                                         <div className={`mt-2 p-3 rounded border flex flex-col items-center justify-center text-center ${
                                             daysUntilFollowUp !== null && daysUntilFollowUp < 0 
                                             ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' 
@@ -931,7 +968,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                 className="w-full bg-gray-50 dark:bg-black/20 rounded border border-gray-200 dark:border-gray-700 p-4 h-64 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none resize-none shadow-inner"
                                 placeholder="Enter background details..."
                                 value={formData.about || ''}
-                                onChange={e => setFormData({...formData, about: e.target.value})}
+                                onChange={e => handleChange('about', e.target.value)}
                                 onBlur={handleAutoSave}
                             />
                          </section>

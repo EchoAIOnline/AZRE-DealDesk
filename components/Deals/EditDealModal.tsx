@@ -571,7 +571,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     }, [onSave]);
 
     // --- 3. AUTO-SAVE HOOK ---
-    const { triggerSave, showSavedNotification, setShowSavedNotification, isSaving } = useAutoSave({
+    const { triggerSave, showSavedNotification, setShowSavedNotification, showErrorNotification, errorMessage,  isSaving } = useAutoSave({
         onSave: saveCurrentDeal
     });
 
@@ -1422,7 +1422,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
 
           <div className="bg-white dark:bg-gray-900 w-full max-w-6xl border-x border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col h-full relative" onClick={(e) => e.stopPropagation()}>
               
-              <SavedNotification show={showSavedNotification} />
+              <SavedNotification show={showSavedNotification} error={showErrorNotification} errorMessage={errorMessage} />
               {isSaving && <div className="absolute top-20 right-8 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-xl z-[90] flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Saving...</div>}
 
               <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 relative">

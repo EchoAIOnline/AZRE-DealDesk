@@ -175,6 +175,7 @@ export interface Deal {
 }
 
 export interface Agent {
+    overrideDuplicate?: boolean;
   id: string;
   name: string;
   phone: string;
@@ -209,6 +210,7 @@ export interface WholesalerProperty {
 }
 
 export interface Wholesaler {
+    overrideDuplicate?: boolean;
   id: string;
   name: string;
   companyName: string; // Renamed from company to match DB convention
@@ -257,6 +259,7 @@ export interface BuyBox {
 }
 
 export interface Buyer {
+    overrideDuplicate?: boolean;
   id: string;
   createdAt?: string; // Legacy field
   dateAdded?: string; // Database field

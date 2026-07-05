@@ -56,7 +56,20 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
         return cleanedAgent;
     };
 
-    const [formData, setFormData] = useState<Agent>(() => cleanAgentNotes(agent));
+    const [formData, _setFormData] = useState<Agent>(() => cleanAgentNotes(agent));
+    const formDataRef = useRef(formData);
+
+    const setFormData = useCallback((newData: Agent | ((prev: Agent) => Agent)) => {
+        if (typeof newData === 'function') {
+            const updated = newData(formDataRef.current);
+            formDataRef.current = updated;
+            _setFormData(updated);
+        } else {
+            formDataRef.current = newData;
+            _setFormData(newData);
+        }
+    }, []);
+
     const [newNote, setNewNote] = useState("");
     const [dealSearch, setDealSearch] = useState("");
     const [showDealSearch, setShowDealSearch] = useState(false);
@@ -87,10 +100,6 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
     const [pendingNavigation, setPendingNavigation] = useState<'prev' | 'next' | null>(null);
 
     // --- STATE REF PATTERN FOR AUTO-SAVE ---
-    // We use a ref to track formData so auto-save callbacks always have the latest state
-    const formDataRef = useRef(formData);
-    useEffect(() => { formDataRef.current = formData; }, [formData]);
-
     // Helper to save specific data immediately (avoiding stale state closure issues)
     const saveData = useCallback(async (dataToSave: Agent) => {
         if (onUpdateAgent) {
@@ -100,27 +109,17 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
     }, [agent.id, onUpdateAgent]);
 
     // Auto-Save Hook
-    const { triggerSave, showSavedNotification, setShowSavedNotification } = useAutoSave({
+    const { triggerSave, showSavedNotification, setShowSavedNotification, showErrorNotification, errorMessage,  handleAutoSave } = useAutoSave({
         onSave: () => saveData(formDataRef.current)
     });
 
-    // Custom blur handler with 0ms delay to ensure state updates propagate to ref before saving
-    const handleAutoSave = () => {
-        setTimeout(() => {
-            triggerSave();
-        }, 0);
-    };
-
     // Helper to update state AND save immediately (for buttons/toggles)
     const updateAndSave = (updates: Partial<Agent>) => {
-        setFormData(prev => {
-            const newData = { ...prev, ...updates };
-            formDataRef.current = newData; // Update ref immediately
-            saveData(newData);
-            setShowSavedNotification(true);
-            setTimeout(() => setShowSavedNotification(false), 1000);
-            return newData;
-        });
+        const newData = { ...formDataRef.current, ...updates };
+        setFormData(newData);
+        saveData(newData);
+        setShowSavedNotification(true);
+        setTimeout(() => setShowSavedNotification(false), 1000);
     };
 
     // Update internal state when agent prop changes (navigation)
@@ -442,7 +441,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
 
             <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-6xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col h-[90vh] relative" onClick={e => e.stopPropagation()}>
                 
-                <SavedNotification show={showSavedNotification} />
+                <SavedNotification show={showSavedNotification} error={showErrorNotification} errorMessage={errorMessage} />
 
                 {/* Header Section */}
                 <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex flex-col md:flex-row items-center gap-6 shrink-0">
@@ -522,6 +521,20 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email Address</label>
                                             <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
                                                 value={formData.email || ''} onChange={e => handleChange('email', e.target.value)} onBlur={handleAutoSave} placeholder="agent@example.com" />
+                                {errorMessage?.includes('already exists') && (
+                                    <label className="flex items-center gap-2 mt-2 text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-200 dark:border-red-900/50">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={(formData as any).overrideDuplicate || false}
+                                            onChange={e => {
+                                                handleChange('overrideDuplicate', e.target.checked);
+                                                if (e.target.checked) setTimeout(() => triggerSave(), 50);
+                                            }}
+                                            className="rounded"
+                                        />
+                                        Save despite duplicate email
+                                    </label>
+                                )}
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email List Subscription Status</label>

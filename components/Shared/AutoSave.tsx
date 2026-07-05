@@ -8,6 +8,7 @@ interface UseAutoSaveProps {
 export const useAutoSave = ({ onSave }: UseAutoSaveProps) => {
     const [showSavedNotification, setShowSavedNotification] = useState(false);
     const [showErrorNotification, setShowErrorNotification] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const isSavingRef = useRef(false);
     const isDirtyRef = useRef(false);
@@ -28,13 +29,15 @@ export const useAutoSave = ({ onSave }: UseAutoSaveProps) => {
         setIsSaving(true);
         setShowSavedNotification(false);
         setShowErrorNotification(false);
+        setErrorMessage(null);
 
         try {
             await onSaveRef.current();
             setShowSavedNotification(true);
             setTimeout(() => setShowSavedNotification(false), 2000);
-        } catch (error) {
-            console.error("Auto-save failed:", error);
+        } catch (error: any) {
+            console.warn("Auto-save failed:", error);
+            setErrorMessage(error.message || "Please check connection");
             setShowErrorNotification(true);
             setTimeout(() => setShowErrorNotification(false), 4000);
         } finally {
@@ -56,7 +59,6 @@ export const useAutoSave = ({ onSave }: UseAutoSaveProps) => {
     const handleKeyDown = useCallback((e: React.KeyboardEvent | KeyboardEvent) => {
         const target = e.target as HTMLElement;
         const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable;
-
         if (e.key === 'Enter' && isInput) {
             // Ignore for Textareas to allow multi-line input
             if (target.tagName === 'TEXTAREA') return; 
@@ -67,7 +69,7 @@ export const useAutoSave = ({ onSave }: UseAutoSaveProps) => {
             e.preventDefault();
             target.blur(); // Triggers onBlur which should call handleAutoSave/triggerSave
             triggerSave(); 
-        }
+         }
         
         // Save Shortcut (S or Ctrl+S)
         if ((e.key.toLowerCase() === 's' && (e.metaKey || e.ctrlKey))) {
@@ -82,11 +84,13 @@ export const useAutoSave = ({ onSave }: UseAutoSaveProps) => {
         handleKeyDown,
         showSavedNotification,
         setShowSavedNotification,
+        showErrorNotification,
+        errorMessage,
         isSaving
     };
 };
 
-export const SavedNotification: React.FC<{ show: boolean, error?: boolean }> = ({ show, error }) => {
+export const SavedNotification: React.FC<{ show: boolean, error?: boolean, errorMessage?: string | null }> = ({ show, error, errorMessage }) => {
     if (!show && !error) return null;
     
     if (error) {
@@ -95,7 +99,7 @@ export const SavedNotification: React.FC<{ show: boolean, error?: boolean }> = (
                 <AlertCircle size={20} className="text-white" />
                 <div>
                     <div className="font-bold text-sm">Save Failed</div>
-                    <div className="text-xs text-red-100">Please check connection</div>
+                    <div className="text-xs text-red-100">{errorMessage || "Please check connection"}</div>
                 </div>
             </div>
         );

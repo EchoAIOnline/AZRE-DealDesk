@@ -478,9 +478,31 @@ export default function App() {
       }
   };
 
-  const handleUpdateAgent = async (agentId: string, updates: Partial<Agent>) => {
+  const handleUpdateAgent = async (agentId: string, updates: Partial<Agent>, shouldClose: boolean = true) => {
       const agent = agents.find(a => a.id === agentId);
       const merged = agent ? { ...agent, ...updates } : { id: agentId, ...updates } as Agent;
+      
+      const cleanEmail = merged.email ? merged.email.trim().toLowerCase() : '';
+      const otherAgents = agents.filter(a => a.id !== merged.id);
+      const duplicate = otherAgents.find(a => {
+          const aEmail = a.email ? a.email.trim().toLowerCase() : '';
+          if (cleanEmail && aEmail === cleanEmail) return true;
+          return false;
+      });
+      
+      if (duplicate && !merged.overrideDuplicate) {
+          const msg = `Cannot save agent: A record with this email already exists (${duplicate.name}).`;
+          if (shouldClose) {
+              if (window.confirm(`${msg}\n\nDo you want to save anyway?`)) {
+                  merged.overrideDuplicate = true;
+              } else {
+                  return;
+              }
+          } else {
+              throw new Error(msg);
+          }
+      }
+      
       const saved = await api.save(merged, 'Agents');
       if (saved) {
           if (agent) {
@@ -534,10 +556,32 @@ export default function App() {
       }
   };
 
-  const handleUpdateWholesaler = async (wholesalerId: string, updates: Partial<Wholesaler>) => {
+  const handleUpdateWholesaler = async (wholesalerId: string, updates: Partial<Wholesaler>, shouldClose: boolean = true) => {
       const wholesaler = wholesalers.find(w => w.id === wholesalerId);
       if (!wholesaler) return;
-      const merged = { ...wholesaler, ...updates };
+      const merged = { ...wholesaler, ...updates } as Wholesaler;
+      
+      const cleanEmail = merged.email ? merged.email.trim().toLowerCase() : '';
+      const otherWholesalers = wholesalers.filter(w => w.id !== merged.id);
+      const duplicate = otherWholesalers.find(w => {
+          const wEmail = w.email ? w.email.trim().toLowerCase() : '';
+          if (cleanEmail && wEmail === cleanEmail) return true;
+          return false;
+      });
+      
+      if (duplicate && !merged.overrideDuplicate) {
+          const msg = `Cannot save wholesaler: A record with this email already exists (${duplicate.name}).`;
+          if (shouldClose) {
+              if (window.confirm(`${msg}\n\nDo you want to save anyway?`)) {
+                  merged.overrideDuplicate = true;
+              } else {
+                  return;
+              }
+          } else {
+              throw new Error(msg);
+          }
+      }
+      
       const saved = await api.save(merged, 'Wholesalers');
       if (saved) {
           setWholesalers(prev => prev.map(w => w.id === wholesalerId ? saved : w));
@@ -575,10 +619,32 @@ export default function App() {
       }
   };
 
-  const handleUpdateBuyer = async (buyerId: string, updates: Partial<Buyer>) => {
+  const handleUpdateBuyer = async (buyerId: string, updates: Partial<Buyer>, shouldClose: boolean = true) => {
       const buyer = buyers.find(b => b.id === buyerId);
       if (!buyer) return;
-      const merged = { ...buyer, ...updates };
+      const merged = { ...buyer, ...updates } as Buyer;
+      
+      const cleanEmail = merged.email ? merged.email.trim().toLowerCase() : '';
+      const otherBuyers = buyers.filter(b => b.id !== merged.id);
+      const duplicate = otherBuyers.find(b => {
+          const bEmail = b.email ? b.email.trim().toLowerCase() : '';
+          if (cleanEmail && bEmail === cleanEmail) return true;
+          return false;
+      });
+      
+      if (duplicate && !merged.overrideDuplicate) {
+          const msg = `Cannot save buyer: A record with this email already exists (${duplicate.name}).`;
+          if (shouldClose) {
+              if (window.confirm(`${msg}\n\nDo you want to save anyway?`)) {
+                  merged.overrideDuplicate = true;
+              } else {
+                  return;
+              }
+          } else {
+              throw new Error(msg);
+          }
+      }
+      
       const saved = await api.save(merged, 'Buyers');
       if (saved) {
           setBuyers(prev => prev.map(b => b.id === buyerId ? saved : b));
@@ -603,28 +669,36 @@ export default function App() {
       }
   };
 
-  const handleUpdateContact = async (type: 'buyer' | 'agent', updatedContact: any) => {
+  const handleUpdateContact = async (type: 'buyer' | 'agent', updatedContact: any, shouldClose: boolean = true) => {
       if (type === 'buyer') {
-          await handleUpdateBuyer(updatedContact.id, updatedContact);
+          await handleUpdateBuyer(updatedContact.id, updatedContact, shouldClose);
       } else {
-          await handleUpdateAgent(updatedContact.id, updatedContact);
+          await handleUpdateAgent(updatedContact.id, updatedContact, shouldClose);
       }
   };
 
   const handleSaveBuyer = async (buyer: Buyer, shouldClose: boolean = true) => {
+      console.log("handleSaveBuyer called with:", buyer);
       const cleanEmail = buyer.email ? buyer.email.trim().toLowerCase() : '';
       const cleanName = buyer.name ? buyer.name.trim().toLowerCase() : '';
       const otherBuyers = buyers.filter(b => b.id !== buyer.id);
       const duplicate = otherBuyers.find(b => {
           const bEmail = b.email ? b.email.trim().toLowerCase() : '';
-          const bName = b.name ? b.name.trim().toLowerCase() : '';
           if (cleanEmail && bEmail === cleanEmail) return true;
-          if (cleanName && bName === cleanName) return true;
           return false;
       });
-      if (duplicate) {
-          if (shouldClose) alert(`Cannot save buyer: A record with this name or email already exists (${duplicate.name}).`);
-          return; 
+      if (duplicate && !buyer.overrideDuplicate) {
+          console.warn("DUPLICATE FOUND:", duplicate);
+          const msg = `Cannot save buyer: A record with this email already exists (${duplicate.name}).`;
+          if (shouldClose) {
+              if (window.confirm(`${msg}\n\nDo you want to save anyway?`)) {
+                  buyer.overrideDuplicate = true;
+              } else {
+                  return;
+              }
+          } else {
+              throw new Error(msg);
+          }
       }
       const saved = await api.save(buyer, 'Buyers');
       if (saved) {
@@ -712,14 +786,20 @@ export default function App() {
       const otherWholesalers = wholesalers.filter(w => w.id !== wholesaler.id);
       const duplicate = otherWholesalers.find(w => {
           const wEmail = w.email ? w.email.trim().toLowerCase() : '';
-          const wName = w.name ? w.name.trim().toLowerCase() : '';
           if (cleanEmail && wEmail === cleanEmail) return true;
-          if (cleanName && wName === cleanName) return true;
           return false;
       });
-      if (duplicate) {
-          if (shouldClose) alert(`Cannot save: Duplicate record (${duplicate.name}).`);
-          return;
+      if (duplicate && !wholesaler.overrideDuplicate) {
+          const msg = `Cannot save: A record with this email already exists (${duplicate.name}).`;
+          if (shouldClose) {
+              if (window.confirm(`${msg}\n\nDo you want to save anyway?`)) {
+                  wholesaler.overrideDuplicate = true;
+              } else {
+                  return;
+              }
+          } else {
+              throw new Error(msg);
+          }
       }
       const saved = await api.save(wholesaler, 'Wholesalers');
       if (saved) {

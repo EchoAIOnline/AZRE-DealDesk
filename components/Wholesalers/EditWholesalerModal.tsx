@@ -33,7 +33,20 @@ export const EditWholesalerModal: React.FC<EditWholesalerModalProps> = ({
     zIndex = 'z-[140]',
     onMoveToBuyer, onMoveToAgent
 }) => {
-    const [formData, setFormData] = useState<Wholesaler>({ ...wholesaler });
+    const [formData, _setFormData] = useState<Wholesaler>({ ...wholesaler });
+    const formDataRef = useRef<Wholesaler>({ ...wholesaler });
+
+    const setFormData = useCallback((newData: Wholesaler | ((prev: Wholesaler) => Wholesaler)) => {
+        if (typeof newData === 'function') {
+            const updated = newData(formDataRef.current);
+            formDataRef.current = updated;
+            _setFormData(updated);
+        } else {
+            formDataRef.current = newData;
+            _setFormData(newData);
+        }
+    }, []);
+
     const [newNote, setNewNote] = useState("");
     const [dealSearch, setDealSearch] = useState("");
     const [showDealSearch, setShowDealSearch] = useState(false);
@@ -55,34 +68,22 @@ export const EditWholesalerModal: React.FC<EditWholesalerModalProps> = ({
     const [pendingNavigation, setPendingNavigation] = useState<'prev' | 'next' | null>(null);
 
     // --- STATE REF PATTERN FOR AUTO-SAVE ---
-    const formDataRef = useRef(formData);
-    useEffect(() => { formDataRef.current = formData; }, [formData]);
-
     const saveData = useCallback(async (dataToSave: Wholesaler) => {
         await Promise.resolve(onSave(dataToSave, false));
         initialJson.current = JSON.stringify(dataToSave);
     }, [onSave]);
 
     // Auto-Save Hook
-    const { triggerSave, showSavedNotification, setShowSavedNotification } = useAutoSave({
+    const { triggerSave, showSavedNotification, setShowSavedNotification, showErrorNotification, errorMessage,  handleAutoSave } = useAutoSave({
         onSave: () => saveData(formDataRef.current)
     });
 
-    const handleAutoSave = () => {
-        setTimeout(() => {
-            triggerSave();
-        }, 0);
-    };
-
     const updateAndSave = (updates: Partial<Wholesaler>) => {
-        setFormData(prev => {
-            const newData = { ...prev, ...updates };
-            formDataRef.current = newData; 
-            saveData(newData);
-            setShowSavedNotification(true);
-            setTimeout(() => setShowSavedNotification(false), 1000);
-            return newData;
-        });
+        const newData = { ...formDataRef.current, ...updates };
+        setFormData(newData);
+        saveData(newData);
+        setShowSavedNotification(true);
+        setTimeout(() => setShowSavedNotification(false), 1000);
     };
 
     useEffect(() => {
@@ -366,7 +367,7 @@ export const EditWholesalerModal: React.FC<EditWholesalerModalProps> = ({
 
             <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-6xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden flex flex-col h-[90vh] relative" onClick={e => e.stopPropagation()}>
                 
-                <SavedNotification show={showSavedNotification} />
+                <SavedNotification show={showSavedNotification} error={showErrorNotification} errorMessage={errorMessage} />
 
                 {/* Header Section */}
                 <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex flex-col md:flex-row items-center gap-6 shrink-0">
@@ -427,6 +428,20 @@ export const EditWholesalerModal: React.FC<EditWholesalerModalProps> = ({
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email Address</label>
                                             <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
                                                 value={formData.email} onChange={e => handleChange('email', e.target.value)} onBlur={handleAutoSave} placeholder="wholesaler@example.com" />
+                                {errorMessage?.includes('already exists') && (
+                                    <label className="flex items-center gap-2 mt-2 text-xs text-red-500 font-bold bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-200 dark:border-red-900/50">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={(formData as any).overrideDuplicate || false}
+                                            onChange={e => {
+                                                handleChange('overrideDuplicate', e.target.checked);
+                                                if (e.target.checked) setTimeout(() => triggerSave(), 50);
+                                            }}
+                                            className="rounded"
+                                        />
+                                        Save despite duplicate email
+                                    </label>
+                                )}
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Email List Subscription Status</label>
