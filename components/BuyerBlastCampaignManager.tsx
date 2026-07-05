@@ -187,7 +187,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
 
                 if (item.email) {
                     if (!item.email) return;
-                    const emailKey = item.email.toLowerCase().trim();
+                    const emailKey = (item.email || "").toLowerCase().trim();
                     if (!recipientMap.has(emailKey)) {
                         recipientMap.set(emailKey, {
                             email: emailKey,
@@ -553,7 +553,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
     };
 
     const filteredDeals = useMemo(() => 
-        deals.filter(d => d.address.toLowerCase().includes(propertySearch.toLowerCase())),
+        deals.filter(d => (d.address || "").toLowerCase().includes((propertySearch || "").toLowerCase())),
     [deals, propertySearch]);
 
     // Construct List Groups for Dropdown (Same as before)

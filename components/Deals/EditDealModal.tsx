@@ -818,7 +818,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         
         // 1. Check for Internal Duplicates
         if (val.trim().length > 4 && allDeals) {
-            const normalizedInput = val.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const normalizedInput = (val || "").trim().toLowerCase().replace(/[^a-z0-9]/g, '');
             const matches = allDeals.filter(d => {
                 if (d.id === deal.id) return false; 
                 const normalizedExisting = (d.address || "").toLowerCase().replace(/[^a-z0-9]/g, '');

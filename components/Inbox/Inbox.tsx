@@ -11,7 +11,7 @@ export const Inbox: React.FC<{ title?: string, initialMessages?: InboxMessage[] 
   const filteredMessages = messages.filter(msg => {
     if (channelFilter !== 'all' && msg.type !== channelFilter) return false;
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const q = (searchQuery || "").toLowerCase();
       return String(msg.contactName || '').toLowerCase().includes(q) || String(msg.lastMessage || '').toLowerCase().includes(q);
     }
     return true;

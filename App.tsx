@@ -389,7 +389,7 @@ export default function App() {
 
   const checkAndSaveBrokerage = async (name: string, phone: string, email: string) => {
       if (!name) return;
-      const exists = brokerages.some(b => (b.name || '').toLowerCase() === name.toLowerCase());
+      const exists = brokerages.some(b => (b.name || '').toLowerCase() === (name || '').toLowerCase());
       if (exists === false) {
           const newBrokerage: Brokerage = { id: generateId(), name: name, phone: phone || '', email: email || '', createdAt: new Date().toISOString() };
           await api.save(newBrokerage, 'Brokerages');
@@ -412,7 +412,7 @@ export default function App() {
       const cleanName = deal.agentName.trim();
       if (!cleanName) return;
       checkAndSaveBrokerage(deal.agentBrokerage || '', '', '');
-      const existingAgentIndex = agents.findIndex(a => (a.name || '').toLowerCase() === cleanName.toLowerCase());
+      const existingAgentIndex = agents.findIndex(a => (a.name || '').toLowerCase() === (cleanName || '').toLowerCase());
       const newNote = `${getLogTimestamp()}: Added from deal: ${deal.address}`;
       if (existingAgentIndex === -1) {
           const newAgent: Agent = { 
@@ -518,7 +518,7 @@ export default function App() {
           
           // Sync the updated agent details across deals
           setDeals(prevDeals => prevDeals.map(d => {
-              if (d.agentName && d.agentName.toLowerCase() === saved.name.toLowerCase()) {
+              if (d.agentName && (d.agentName || '').toLowerCase() === (saved.name || '').toLowerCase()) {
                   const updatedDeal = {
                       ...d,
                       agentPhone: saved.phone || d.agentPhone,
@@ -532,7 +532,7 @@ export default function App() {
           }));
 
           setEditingDeal(prev => {
-              if (prev && prev.agentName && prev.agentName.toLowerCase() === saved.name.toLowerCase()) {
+              if (prev && prev.agentName && (prev.agentName || '').toLowerCase() === (saved.name || '').toLowerCase()) {
                   return {
                       ...prev,
                       agentPhone: saved.phone || prev.agentPhone,
@@ -588,7 +588,7 @@ export default function App() {
           if (editingWholesaler && editingWholesaler.id === wholesalerId) setEditingWholesaler(saved);
           
           setEditingDeal(prev => {
-              if (prev && prev.agentName && prev.agentName.toLowerCase() === saved.name.toLowerCase() && prev.pipelineType === 'jv') {
+              if (prev && prev.agentName && (prev.agentName || '').toLowerCase() === (saved.name || '').toLowerCase() && prev.pipelineType === 'jv') {
                   return {
                       ...prev,
                       agentPhone: saved.phone || prev.agentPhone,
@@ -916,9 +916,6 @@ export default function App() {
           
           setEditingBuyer(null);
           setShowAddBuyerModal(false);
-          navigate('/agents');
-          setEditingAgent(saved);
-          setAgentModalZIndex('z-[160]');
           setMoveNotification({message: 'Contact Moved To Agent Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -956,9 +953,6 @@ export default function App() {
           
           setEditingBuyer(null);
           setShowAddBuyerModal(false);
-          navigate('/wholesalers');
-          setEditingWholesaler(saved);
-          setShowAddWholesalerModal(true);
           setMoveNotification({message: 'Contact Moved To Wholesaler Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -1000,9 +994,6 @@ export default function App() {
           
           setViewingAgent(null);
           setEditingAgent(null);
-          navigate('/buyers');
-          setEditingBuyer(saved);
-          setShowAddBuyerModal(true);
           setMoveNotification({message: 'Contact Moved To Buyer Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -1041,9 +1032,6 @@ export default function App() {
           
           setViewingAgent(null);
           setEditingAgent(null);
-          navigate('/wholesalers');
-          setEditingWholesaler(saved);
-          setShowAddWholesalerModal(true);
           setMoveNotification({message: 'Contact Moved To Wholesaler Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -1084,9 +1072,6 @@ export default function App() {
           
           setEditingWholesaler(null);
           setShowAddWholesalerModal(false);
-          navigate('/buyers');
-          setEditingBuyer(saved);
-          setShowAddBuyerModal(true);
           setMoveNotification({message: 'Contact Moved To Buyer Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -1119,9 +1104,6 @@ export default function App() {
           
           setEditingWholesaler(null);
           setShowAddWholesalerModal(false);
-          navigate('/agents');
-          setEditingAgent(saved);
-          setAgentModalZIndex('z-[160]');
           setMoveNotification({message: 'Contact Moved To Agent Database', show: true});
           setTimeout(() => setMoveNotification({message: '', show: false}), 3000);
       }
@@ -1130,7 +1112,7 @@ export default function App() {
   const handleViewAgentProfile = (agentNameOrId: string) => {
       if (!agentNameOrId) return;
       let agent = agents.find(a => a.id === agentNameOrId);
-      if (!agent) agent = agents.find(a => (a.name || '').toLowerCase() === agentNameOrId.toLowerCase());
+      if (!agent) agent = agents.find(a => (a.name || '').toLowerCase() === (agentNameOrId || '').toLowerCase());
       if (agent) {
           setAgentModalZIndex('z-[160]');
           setViewingAgent(agent);
@@ -1143,9 +1125,9 @@ export default function App() {
       }
   };
 
-  const handleAgentLookup = (val: string) => { const query = val.toLowerCase(); const filtered = agents.filter(a => (a.name || '').toLowerCase().includes(query)); setAgentSuggestions(filtered); setShowAgentSuggestions(true); };
-  const handleWholesalerLookup = (val: string) => { const query = val.toLowerCase(); const filtered = wholesalers.filter(a => (a.name || '').toLowerCase().includes(query)); setWholesalerSuggestions(filtered); setShowWholesalerSuggestions(true); };
-  const handleBrokerageLookup = (val: string) => { const query = val.toLowerCase(); const filtered = brokerages.filter(b => (b.name || '').toLowerCase().includes(query)); setBrokerageSuggestions(filtered); setShowBrokerageSuggestions(true); };
+  const handleAgentLookup = (val: string) => { const query = (val || "").toLowerCase(); const filtered = agents.filter(a => (a.name || '').toLowerCase().includes(query)); setAgentSuggestions(filtered); setShowAgentSuggestions(true); };
+  const handleWholesalerLookup = (val: string) => { const query = (val || "").toLowerCase(); const filtered = wholesalers.filter(a => (a.name || '').toLowerCase().includes(query)); setWholesalerSuggestions(filtered); setShowWholesalerSuggestions(true); };
+  const handleBrokerageLookup = (val: string) => { const query = (val || "").toLowerCase(); const filtered = brokerages.filter(b => (b.name || '').toLowerCase().includes(query)); setBrokerageSuggestions(filtered); setShowBrokerageSuggestions(true); };
   const selectAgent = (agent: Agent) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentName: agent.name, agentPhone: agent.phone, agentEmail: agent.email, agentBrokerage: agent.brokerage }); setShowAgentSuggestions(false); };
   const selectWholesaler = (wholesaler: Wholesaler) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentName: wholesaler.name, agentPhone: wholesaler.phone, agentEmail: wholesaler.email, agentBrokerage: wholesaler.companyName }); setShowWholesalerSuggestions(false); };
   const selectBrokerage = (brokerage: Brokerage) => { if (editingDeal) setEditingDeal({ ...editingDeal, agentBrokerage: brokerage.name }); setShowBrokerageSuggestions(false); };
@@ -1209,7 +1191,7 @@ export default function App() {
       let filtered = [...buyers];
       const activeSearch = globalSearchQuery.trim() || buyerSearch.trim();
       if (activeSearch) { 
-          const query = activeSearch.toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
           filtered = filtered.filter(b => (b.name && String(b.name).toLowerCase().includes(query)) || (b.companyName && String(b.companyName).toLowerCase().includes(query)) || (b.email && String(b.email).toLowerCase().includes(query)) || (b.phone && (String(b.phone).includes(query) || (cleanQuery.length > 0 && String(b.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
@@ -1218,7 +1200,7 @@ export default function App() {
       }
       if (filterConfig.type === 'Buyer Status' && filterConfig.value) filtered = filtered.filter(b => b.status && b.status.includes(filterConfig.value));
       if (filterConfig.type === 'Target Location' && filterConfig.value) {
-          const query = filterConfig.value.toLowerCase();
+          const query = (filterConfig.value || "").toLowerCase();
           filtered = filtered.filter(b => (b.buyBox?.locations || '').toLowerCase().includes(query));
       }
       return filtered.sort((a, b) => {
@@ -1240,7 +1222,7 @@ export default function App() {
       let filtered = [...buyers];
       const activeSearch = globalSearchQuery.trim() || buyerSearch.trim();
       if (activeSearch) { 
-          const query = activeSearch.toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
           filtered = filtered.filter(b => (b.name && String(b.name).toLowerCase().includes(query)) || (b.companyName && String(b.companyName).toLowerCase().includes(query)) || (b.email && String(b.email).toLowerCase().includes(query)) || (b.phone && (String(b.phone).includes(query) || (cleanQuery.length > 0 && String(b.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
@@ -1625,7 +1607,7 @@ export default function App() {
     }
     const activeSearch = globalSearchQuery.trim() || pipelineSearch.trim();
     if (activeSearch) {
-        const query = activeSearch.toLowerCase().trim();
+        const query = (activeSearch || "").toLowerCase().trim();
         filtered = filtered.filter(d => ( (d.address && String(d.address).toLowerCase().includes(query)) || (d.mls && String(d.mls).toLowerCase().includes(query)) || (d.agentName && String(d.agentName).toLowerCase().includes(query)) ));
     }
     if (filterConfig.type !== 'All') {
@@ -1684,7 +1666,7 @@ export default function App() {
       let filtered = [...agents];
       const activeSearch = globalSearchQuery.trim() || agentSearch.trim();
       if (activeSearch) { 
-          const query = activeSearch.toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
           filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (String(a.phone).includes(query) || (cleanQuery.length > 0 && String(a.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
@@ -1723,7 +1705,7 @@ export default function App() {
     let filtered = [...agents];
     const activeSearch = globalSearchQuery.trim() || agentSearch.trim();
     if (activeSearch) { 
-        const query = activeSearch.toLowerCase(); 
+        const query = (activeSearch || "").toLowerCase(); 
         const cleanQuery = query.replace(/\D/g, '');
         filtered = filtered.filter(a => String(a.name).toLowerCase().includes(query) || (a.brokerage && String(a.brokerage).toLowerCase().includes(query)) || (a.phone && (String(a.phone).includes(query) || (cleanQuery.length > 0 && String(a.phone).replace(/\D/g, '').includes(cleanQuery))))); 
     }
@@ -1734,7 +1716,7 @@ export default function App() {
       let filtered = [...wholesalers];
       const activeSearch = globalSearchQuery.trim() || wholesalerSearch.trim();
       if (activeSearch) { 
-          const query = activeSearch.toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
           filtered = filtered.filter(w => (w.name && String(w.name).toLowerCase().includes(query)) || (w.companyName && String(w.companyName).toLowerCase().includes(query)) || (w.email && String(w.email).toLowerCase().includes(query)) || (w.phone && (String(w.phone).includes(query) || (cleanQuery.length > 0 && String(w.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
@@ -1757,7 +1739,7 @@ export default function App() {
       let filtered = [...wholesalers];
       const activeSearch = globalSearchQuery.trim() || wholesalerSearch.trim();
       if (activeSearch) { 
-          const query = activeSearch.toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase(); 
           const cleanQuery = query.replace(/\D/g, '');
           filtered = filtered.filter(w => (w.name && String(w.name).toLowerCase().includes(query)) || (w.companyName && String(w.companyName).toLowerCase().includes(query)) || (w.email && String(w.email).toLowerCase().includes(query)) || (w.phone && (String(w.phone).includes(query) || (cleanQuery.length > 0 && String(w.phone).replace(/\D/g, '').includes(cleanQuery))))); 
       }
