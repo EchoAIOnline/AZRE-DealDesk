@@ -444,8 +444,8 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
     const handleDeactivate = () => {
         if (window.confirm("Are you sure you want to deactivate this buyer? They will be moved to the Deactivated list.")) {
-            // Replace all statuses with 'Deactivated'
-            const newData = { ...formData, status: 'Deactivated' };
+            // Replace all statuses with 'Deactivated' and unsubscribe
+            const newData = { ...formData, status: 'Deactivated', subscriptionStatus: 'Unsubscribed' as any };
             setFormData(newData); // Optimistic
             onSave(newData, false); // Save
             onClose(); // Close
