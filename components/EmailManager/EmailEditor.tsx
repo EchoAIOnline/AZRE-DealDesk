@@ -264,6 +264,40 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                     <button onClick={() => execCommand('undo')} className="p-1.5 text-slate-400 hover:text-gray-900 dark:text-white hover:bg-slate-800 rounded transition-colors" title="Undo"><Undo size={16}/></button>
                     <button onClick={() => execCommand('redo')} className="p-1.5 text-slate-400 hover:text-gray-900 dark:text-white hover:bg-slate-800 rounded transition-colors" title="Redo"><Redo size={16}/></button>
                     <div className="w-px h-5 bg-slate-700 mx-1.5"></div>
+                    <select 
+                        className="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded focus:outline-none cursor-pointer hover:bg-slate-800"
+                        onChange={(e) => {
+                            if(e.target.value) execCommand('fontName', e.target.value);
+                            e.target.value = "";
+                        }}
+                        title="Font Family"
+                    >
+                        <option value="" disabled selected>Font</option>
+                        <option value="Inter, sans-serif">Inter</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Times New Roman, serif">Times New Roman</option>
+                        <option value="Verdana, sans-serif">Verdana</option>
+                        <option value="Courier New, monospace">Courier</option>
+                    </select>
+                    <select 
+                        className="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded focus:outline-none cursor-pointer hover:bg-slate-800"
+                        onChange={(e) => {
+                            if(e.target.value) execCommand('fontSize', e.target.value);
+                            e.target.value = "";
+                        }}
+                        title="Font Size"
+                    >
+                        <option value="" disabled selected>Size</option>
+                        <option value="1">Small</option>
+                        <option value="2">Medium</option>
+                        <option value="3">Normal</option>
+                        <option value="4">Large</option>
+                        <option value="5">X-Large</option>
+                        <option value="6">XX-Large</option>
+                        <option value="7">Huge</option>
+                    </select>
+                    <div className="w-px h-5 bg-slate-700 mx-1.5"></div>
                     <button onClick={() => execCommand('bold')} className="p-1.5 text-slate-100 hover:bg-slate-700 rounded transition-colors" title="Bold"><Bold size={16}/></button>
                     <button onClick={() => execCommand('italic')} className="p-1.5 text-slate-400 hover:text-gray-900 dark:text-white hover:bg-slate-800 rounded transition-colors" title="Italic"><Italic size={16}/></button>
                     <button onClick={() => execCommand('underline')} className="p-1.5 text-slate-400 hover:text-gray-900 dark:text-white hover:bg-slate-800 rounded transition-colors" title="Underline"><Underline size={16}/></button>
