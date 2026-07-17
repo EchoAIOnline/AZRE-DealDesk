@@ -28,6 +28,7 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({ contacts, setC
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingContact, setEditingContact] = useState<Contact | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
+    const [isCustomType, setIsCustomType] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<Contact>({
@@ -58,6 +59,7 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({ contacts, setC
         if (contact) {
             setEditingContact(contact);
             setFormData({ ...contact });
+            setIsCustomType(!availableTypes.includes(contact.type || ''));
         } else {
             setEditingContact(null);
             setFormData({
@@ -70,6 +72,7 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({ contacts, setC
                 address: '',
                 notes: ''
             });
+            setIsCustomType(false);
         }
         setIsModalOpen(true);
     };
@@ -309,16 +312,44 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({ contacts, setC
                                 </div>
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase font-bold mb-1 block">Role / Type</label>
-                                    <input 
-                                        list="contact-types"
-                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm outline-none focus:border-blue-500" 
-                                        value={formData.type} 
-                                        onChange={e => setFormData({...formData, type: e.target.value})} 
-                                        placeholder="Select or type new role..."
-                                    />
-                                    <datalist id="contact-types">
-                                        {availableTypes.map(t => <option key={t} value={t} />)}
-                                    </datalist>
+                                    {isCustomType ? (
+                                        <div className="flex gap-2">
+                                            <input 
+                                                className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm outline-none focus:border-blue-500" 
+                                                value={formData.type} 
+                                                onChange={e => setFormData({...formData, type: e.target.value})} 
+                                                placeholder="Type new role..."
+                                                autoFocus
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsCustomType(false);
+                                                    setFormData({...formData, type: ''});
+                                                }}
+                                                className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 rounded"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm outline-none focus:border-blue-500"
+                                            value={formData.type}
+                                            onChange={e => {
+                                                if (e.target.value === 'ADD_NEW') {
+                                                    setIsCustomType(true);
+                                                    setFormData({...formData, type: ''});
+                                                } else {
+                                                    setFormData({...formData, type: e.target.value});
+                                                }
+                                            }}
+                                        >
+                                            <option value="" disabled>Select or type new role...</option>
+                                            {availableTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                            <option value="ADD_NEW" className="font-bold text-blue-500">Add New...</option>
+                                        </select>
+                                    )}
                                 </div>
                             </div>
 
