@@ -20,16 +20,24 @@ function sanitizeRegion(region: string): string {
 
 function getSESClient(): SESClient {
   if (!sesClient) {
+    const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "us-east-2";
     const config: any = {
-      region: sanitizeRegion(process.env.AWS_REGION || "us-east-2"),
+      region: sanitizeRegion(region),
     };
     
-    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+    
+    if (accessKeyId && secretAccessKey) {
       config.credentials = {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
       };
-      if (process.env.AWS_SESSION_TOKEN) {
+      // Only use session token if it's explicitly provided via APP_ env var to avoid picking up Vercel's token
+      if (process.env.APP_AWS_SESSION_TOKEN) {
+        config.credentials.sessionToken = process.env.APP_AWS_SESSION_TOKEN;
+      } else if (process.env.AWS_SESSION_TOKEN && !process.env.APP_AWS_ACCESS_KEY_ID) {
+        // If falling back to AWS_ACCESS_KEY_ID, also fallback to AWS_SESSION_TOKEN
         config.credentials.sessionToken = process.env.AWS_SESSION_TOKEN;
       }
     } else {
