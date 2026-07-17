@@ -16,16 +16,23 @@ function sanitizeRegion(region: string): string {
 
 function getSESClient(): SESClient {
   if (!sesClient) {
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      console.warn("AWS credentials missing. Email sending will fail.");
-    }
-    sesClient = new SESClient({
+    const config: any = {
       region: sanitizeRegion(process.env.AWS_REGION || "us-east-2"),
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    };
+    
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      config.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      };
+      if (process.env.AWS_SESSION_TOKEN) {
+        config.credentials.sessionToken = process.env.AWS_SESSION_TOKEN;
       }
-    });
+    } else {
+      console.warn("AWS credentials missing from environment variables. Relying on default AWS provider chain.");
+    }
+    
+    sesClient = new SESClient(config);
   }
   return sesClient;
 }
