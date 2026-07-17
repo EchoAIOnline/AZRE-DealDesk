@@ -1320,7 +1320,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     triggerSave();
                 }
             } else {
-                alert(`Upload failed: ${response?.error || response?.message || 'Unknown error from Google Apps Script. Be sure your Google Apps Script is updated to the latest version.'}`);
+                const errorMsg = response?.error || (response?.message === 'DealDesk Utility Service' ? 'Action Required: Please update your Google Apps Script with the latest version from backend/GOOGLE_APPS_SCRIPT.gs.' : response?.message) || 'Unknown error from Google Apps Script.'; alert(`Upload failed: ${errorMsg}`);
             }
         } catch (e: any) {
             console.error("Document upload exception:", e);
