@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Home, Wrench, PhoneOutgoing, DollarSign, User, Clock, ArrowRight, Save, X, Activity, Briefcase, Calendar, MapPin, FileText, TrendingUp, AlertTriangle, CheckCircle, Search, Phone, Mail, Send, Copy, Plus, ChevronLeft, ChevronRight, TrendingDown, Loader2, LayoutGrid, Image as ImageIcon, Link as LinkIcon, Users, Pencil, Trash2, ArrowRightLeft, Check, Upload, File as FileIcon } from 'lucide-react';
+import { Home, Wrench, PhoneOutgoing, DollarSign, User, Clock, ArrowRight, Save, X, Activity, Briefcase, Calendar, MapPin, FileText, TrendingUp, AlertTriangle, CheckCircle, Search, Phone, Mail, Send, Copy, Plus, ChevronLeft, ChevronRight, TrendingDown, Loader2, LayoutGrid, Image as ImageIcon, Link as LinkIcon, Users, Pencil, Trash2, ArrowRightLeft, Check, Upload, File as FileIcon, Download, ExternalLink } from 'lucide-react';
 import { api, sendBulkEmailGAS } from '../../services/api';
 import { Deal, Agent, Brokerage, Comparable, User as UserType, Buyer } from '../../types';
 import { formatNumberWithCommas, parseNumberFromCurrency, formatPhoneNumber, getLogTimestamp, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
@@ -247,9 +247,11 @@ const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
                 {recIcon && <div className="shrink-0">{recIcon}</div>}
                 <span className="font-bold text-sm">{recText}</span>
             </div>
+
         </div>
     );
 }
+
 
 const MOTIVATION_SIGNALS_LIST = [
     "90 Days on Market",
@@ -455,6 +457,23 @@ const AgentSlot: React.FC<{
 };
 
 
+
+const getPreviewUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('drive.google.com/uc?')) {
+        const idMatch = url.match(/id=([^&]+)/);
+        if (idMatch) {
+            return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+        }
+    } else if (url.includes('drive.google.com/file/d/')) {
+        return url.replace(/\/view.*$/, '/preview');
+    }
+    
+    if (url.includes('/preview')) return url;
+
+    return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+};
+
 export const EditDealModal: React.FC<EditDealModalProps> = ({ 
     deal, setDeal, onSave, onClose, onViewAgent, 
     agentSuggestions, brokerageSuggestions, showAgentSuggestions, showBrokerageSuggestions,
@@ -473,6 +492,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
 
     const [showBuyerMatch, setShowBuyerMatch] = useState(false);
+    const [previewDocument, setPreviewDocument] = useState<{name: string, url: string} | null>(null);
     
     const [neighborhoodQuery, setNeighborhoodQuery] = useState("");
     const [showNeighborhoodDropdown, setShowNeighborhoodDropdown] = useState(false);
@@ -1329,7 +1349,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     };
 
     const handleRemoveDocument = (docId: string) => {
-        if (!window.confirm("Delete this document?")) return;
+        // window.confirm removed for iframe compatibility
         const newDocs = (deal.documents || []).filter(d => d.id !== docId);
         dealRef.current = { ...dealRef.current, documents: newDocs };
         setDeal(dealRef.current);
@@ -2225,7 +2245,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                                         <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
                                                                     </div>
                                                                     <div className="truncate">
-                                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-red-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block">{doc.name}</a>
+                                                                        <button type="button" onClick={() => setPreviewDocument(doc)} className="text-red-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block text-left">{doc.name}</button>
                                                                         <span className="text-gray-500 text-[11px] mt-0.5 block">Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                                                                     </div>
                                                                 </div>
@@ -2295,7 +2315,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                                         <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
                                                                     </div>
                                                                     <div className="truncate">
-                                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-green-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block">{doc.name}</a>
+                                                                        <button type="button" onClick={() => setPreviewDocument(doc)} className="text-green-700 dark:text-[#4ADE80] font-medium text-[14px] hover:underline truncate block text-left">{doc.name}</button>
                                                                         <span className="text-gray-500 text-[11px] mt-0.5 block">Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                                                                     </div>
                                                                 </div>
@@ -2354,7 +2374,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                                 <FileIcon size={14} className="text-gray-500 dark:text-gray-400" />
                                                             </div>
                                                             <div>
-                                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 font-medium text-[13px] hover:text-gray-900 dark:hover:text-white truncate block max-w-[300px]">{doc.name}</a>
+                                                                <button type="button" onClick={() => setPreviewDocument(doc)} className="text-gray-700 dark:text-gray-300 font-medium text-[13px] hover:text-gray-900 dark:hover:text-white truncate block max-w-[300px] text-left">{doc.name}</button>
                                                                 <span className="text-gray-500 text-[11px]">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
                                                             </div>
                                                         </div>
@@ -2561,6 +2581,37 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 </div>
             </div>
         )}
-        </div>
+        
+        {previewDocument && (
+            <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm z-[9999]" onClick={() => setPreviewDocument(null)}>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-6xl w-full flex flex-col h-[90vh] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate pr-4">{previewDocument.name}</h3>
+                        <div className="flex items-center gap-3">
+                            <a href={previewDocument.url} download target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md flex items-center gap-1.5 transition-colors">
+                                <Download size={16} />
+                                Download
+                            </a>
+                            <a href={previewDocument.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center gap-1.5 transition-colors">
+                                <ExternalLink size={16} />
+                                Open
+                            </a>
+                            <button onClick={() => setPreviewDocument(null)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 ml-2 transition-colors">
+                                <X size={20}/>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden relative bg-gray-100 dark:bg-gray-800 rounded-b-xl">
+                        <iframe 
+                            src={getPreviewUrl(previewDocument.url)} 
+                            className="w-full h-full border-0" 
+                            title="Document Preview"
+                            allow="autoplay"
+                        ></iframe>
+                    </div>
+                </div>
+            </div>
+        )}
+</div>
     );
 }

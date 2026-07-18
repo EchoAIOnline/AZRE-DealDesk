@@ -284,11 +284,18 @@ export const api = {
                 payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
             }
             
+            
+            
             // motivationSignals and documents are now native JSONB columns in Supabase
             // Do not stringify them. PostgREST handles JS arrays seamlessly.
         }
         
-        let { data, error } = await supabase.from(table).upsert(payload).select().single();
+        
+let { data, error } = await supabase.from(table).upsert(payload).select().single();
+if (table === 'Deals') {
+    console.log("Upsert response data:", data);
+}
+
         
         let missingColumns: string[] = [];
         let retryCount = 0;
@@ -298,8 +305,14 @@ export const api = {
              if (match && match[1]) {
                  const missingColumn = match[1];
                  console.warn(`Table ${table} does not have column ${missingColumn}. Stripping it and retrying.`);
-                 missingColumns.push(missingColumn);
-                 delete payload[missingColumn];
+                 
+    if (missingColumn === 'documents') {
+        console.error("FATAL: Supabase is complaining about missing 'documents' column. Schema cache needs reload.");
+        break; // Do not strip documents, let it fail so user knows
+    }
+    missingColumns.push(missingColumn);
+    delete payload[missingColumn];
+    
                  const retry = await supabase.from(table).upsert(payload).select().single();
                  data = retry.data;
                  error = retry.error;
@@ -363,6 +376,8 @@ export const api = {
                 if (payload.buyersWhoPassed && typeof payload.buyersWhoPassed === 'object') {
                     payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
                 }
+                
+                
                 
                 // motivationSignals and documents are natively JSONB, do not map to strings
             }

@@ -1,5 +1,6 @@
 
 import { GOOGLE_SCRIPT_URL, GOOGLE_MAPS_API_KEY } from '../constants';
+import { useUploadStore } from '../store/useUploadStore';
 
 // --- HELPER FUNCTIONS ---
 
@@ -238,6 +239,8 @@ export const serverFunctions = {
 
   uploadImage: (file: File, address: string): Promise<any> => {
     return new Promise((resolve, reject) => {
+      const uploadId = generateId();
+      useUploadStore.getState().addUpload({ id: uploadId, name: file.name, status: 'uploading' });
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Data = reader.result as string;
@@ -251,8 +254,18 @@ export const serverFunctions = {
           })
         })
         .then(res => res.json())
-        .then(resolve)
-        .catch(reject);
+        .then(res => {
+          if (res.error || res.message) {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: res.error || res.message });
+          } else {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'success', url: res.url });
+          }
+          resolve(res);
+        })
+        .catch(err => {
+          useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: err.message });
+          reject(err);
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -260,6 +273,8 @@ export const serverFunctions = {
 
   uploadDocument: (file: File, address: string, docCategory: string): Promise<any> => {
     return new Promise((resolve, reject) => {
+      const uploadId = generateId();
+      useUploadStore.getState().addUpload({ id: uploadId, name: file.name, status: 'uploading' });
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Data = reader.result as string;
@@ -275,8 +290,18 @@ export const serverFunctions = {
           })
         })
         .then(res => res.json())
-        .then(resolve)
-        .catch(reject);
+        .then(res => {
+          if (res.error || (res.message && res.message !== 'DealDesk Utility Service')) {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: res.error || res.message });
+          } else {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'success', url: res.url });
+          }
+          resolve(res);
+        })
+        .catch(err => {
+          useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: err.message });
+          reject(err);
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -284,6 +309,8 @@ export const serverFunctions = {
 
   uploadBuyerImage: (file: File, buyerName: string): Promise<any> => {
     return new Promise((resolve, reject) => {
+      const uploadId = generateId();
+      useUploadStore.getState().addUpload({ id: uploadId, name: file.name, status: 'uploading' });
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Data = reader.result as string;
@@ -297,14 +324,26 @@ export const serverFunctions = {
           })
         })
         .then(res => res.json())
-        .then(resolve)
-        .catch(reject);
+        .then(res => {
+          if (res.error || res.message) {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: res.error || res.message });
+          } else {
+            useUploadStore.getState().updateUpload(uploadId, { status: 'success', url: res.url });
+          }
+          resolve(res);
+        })
+        .catch(err => {
+          useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: err.message });
+          reject(err);
+        });
       };
       reader.readAsDataURL(file);
     });
   },
 
   uploadDashboardAsset: (base64Data: string, name: string): Promise<any> => {
+    const uploadId = generateId();
+    useUploadStore.getState().addUpload({ id: uploadId, name: name, status: 'uploading' });
     return fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
@@ -314,7 +353,19 @@ export const serverFunctions = {
         address: 'DASHBOARD_ASSETS'
       })
     })
-    .then(res => res.json());
+    .then(res => res.json())
+    .then(res => {
+      if (res.error || res.message) {
+        useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: res.error || res.message });
+      } else {
+        useUploadStore.getState().updateUpload(uploadId, { status: 'success', url: res.url });
+      }
+      return res;
+    })
+    .catch(err => {
+      useUploadStore.getState().updateUpload(uploadId, { status: 'error', error: err.message });
+      throw err;
+    });
   },
 
   getFolderUrl: (address: string): Promise<{ url?: string, folderId?: string, error?: string }> => {

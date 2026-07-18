@@ -35,6 +35,7 @@ import { Inbox } from './components/Inbox/Inbox';
 import { LoiDesigner } from './components/LoiDesigner/LoiDesigner';
 import { MarketOracle } from './components/MarketOracle/MarketOracle';
 import { MessageCenter } from './components/MessageCenter/MessageCenter';
+import { UploadQueue } from './components/UploadQueue';
 import { mockAcquisitionsMessages, mockDispositionsMessages } from './services/mockData';
 import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64 } from './services/utils';
 import { User as UserType, Deal, Agent, Brokerage, FilterConfig, CalcData, Buyer, BuyBox, Wholesaler, Contact, EmailList } from './types';
@@ -2324,6 +2325,7 @@ export default function App() {
               </div>
           </div>
       )}
+      <UploadQueue />
     </div>
   );
 }
