@@ -35,6 +35,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
         id: initialData?.id || generateId(),
         status: initialData?.status || "draft" as "draft" | "scheduled" | "running" | "finished",
         name: initialData?.name || "",
+        type: initialData?.type || "loi_blast",
         subject: initialData?.subject || "",
         from_email: initialData?.from_email || "dispo@asharizakargroup.com", // Updated default
         lists: initialData?.lists || [] as string[],
@@ -123,6 +124,7 @@ export const LOIBlastCampaignManager: React.FC<LOIBlastCampaignManagerProps> = (
                 id: initialData.id,
                 status: initialData.status || "draft",
                 name: initialData.name || "",
+                type: initialData.type || "loi_blast",
                 subject: initialData.subject || "",
                 from_email: initialData.from_email || "dispo@asharizakargroup.com",
                 lists: initialData.lists || [],

@@ -72,7 +72,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     const [editingContact, setEditingContact] = useState<{data: any, type: 'buyer' | 'agent'} | null>(null);
 
     const activeCampaigns = useMemo(() => {
-        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id));
+        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id) && c.type !== 'loi_blast');
     }, [localCampaigns, deletedIds]);
 
     const totalSubscribers = (buyers?.length || 0) + (wholesalers?.length || 0);

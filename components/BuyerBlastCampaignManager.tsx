@@ -35,6 +35,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
         id: initialData?.id || generateId(),
         status: initialData?.status || "draft" as "draft" | "scheduled" | "running" | "finished",
         name: initialData?.name || "",
+        type: initialData?.type || "buyer_blast",
         subject: initialData?.subject || "",
         from_email: initialData?.from_email || "dispo@asharizakargroup.com", // Updated default
         lists: initialData?.lists || [] as string[],
@@ -123,6 +124,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                 id: initialData.id,
                 status: initialData.status || "draft",
                 name: initialData.name || "",
+                type: initialData.type || "buyer_blast",
                 subject: initialData.subject || "",
                 from_email: initialData.from_email || "dispo@asharizakargroup.com",
                 lists: initialData.lists || [],
