@@ -39,6 +39,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
         subject: initialData?.subject || "",
         from_email: initialData?.from_email || "dispo@asharizakargroup.com", // Updated default
         lists: initialData?.lists || [] as string[],
+        excluded_lists: initialData?.excluded_lists || [] as string[],
         tags: initialData?.tags || [] as string[],
         send_at: initialData?.send_at || null as string | null,
         content_type: initialData?.content_type || "richtext" as "richtext" | "html" | "markdown" | "plain",
@@ -64,6 +65,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
     const [emailType, setEmailType] = useState<'Buyer' | 'Wholesaler' | 'Other'>('Buyer');
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [propertySearch, setPropertySearch] = useState("");
+    const [individualSearch, setIndividualSearch] = useState("");
     const [showPropertyDropdown, setShowPropertyDropdown] = useState(false);
 
     // Progress State for Sending
@@ -128,6 +130,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                 subject: initialData.subject || "",
                 from_email: initialData.from_email || "dispo@asharizakargroup.com",
                 lists: initialData.lists || [],
+                excluded_lists: initialData.excluded_lists || [],
                 tags: initialData.tags || [],
                 send_at: initialData.send_at || null,
                 content_type: initialData.content_type || "richtext",
@@ -150,60 +153,112 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
     const [testEmailResult, setTestEmailResult] = useState<{type: 'success' | 'error', message: string} | null>(null);
      
     // Resolve List IDs to actual Recipients
-    const resolveRecipients = (listIds: string[]): Recipient[] => {
-        const recipientMap = new Map<string, Recipient>();
-        
-        listIds.forEach(id => {
-            if (!id || typeof id !== 'string') return;
+    const resolveRecipients = (listIds: string[], excludedIds: string[] = []): Recipient[] => {
+        const recipientMap = new Map<string, Recipient & {id?: string}>();
 
-            const parts = id.split(':');
-            if (parts.length < 2) return;
-            
-            const type = parts[0];
-            const filter = parts[1];
+        const listsByType = {
+            buyer: listIds.filter(l => l.startsWith('buyer:')).map(l => l.split(':')[1]),
+            buyer_type: listIds.filter(l => l.startsWith('buyer_type:')).map(l => l.split(':')[1]),
+            individual_buyer: listIds.filter(l => l.startsWith('individual_buyer:')).map(l => l.split(':')[1]),
+            agent: listIds.filter(l => l.startsWith('agent:')).map(l => l.split(':')[1]),
+            wholesaler: listIds.filter(l => l.startsWith('wholesaler:')).map(l => l.split(':')[1]),
+        };
 
-            // Safety checks for undefined arrays
-            let source: any[] = [];
-            if (type === 'buyer') source = buyers || [];
-            else if (type === 'agent') source = agents || [];
-            else if (type === 'wholesaler') source = wholesalers || [];
-
-            let filtered = source;
-            
-            if (filter !== 'all') {
-                if (type === 'buyer') {
-                    filtered = source.filter(b => b.status && b.status.includes(filter));
-                } else if (type === 'agent') {
-                    if (filter === 'contacted') filtered = source.filter(a => a.spokeWithAgent);
-                    else if (filter === 'investor_friendly') filtered = source.filter(a => a.investorFriendly);
-                    else if (filter === 'agreed_to_send') filtered = source.filter(a => a.agreedToSend);
-                    else if (filter === 'closed') filtered = source.filter(a => a.hasClosedDeals);
-                } else if (type === 'wholesaler') {
-                    filtered = source.filter(w => w.status === filter);
-                }
-            }
-
-            filtered.forEach(item => {
-                if (type === 'buyer') {
-                    if ((item as Buyer).subscriptionStatus === 'Unsubscribed') return;
-                }
-
+        const addItems = (items: any[], typeStr: string) => {
+            items.forEach(item => {
+                if (excludedIds.includes(item.id)) return;
+                if (typeStr === 'buyer' && item.subscriptionStatus === 'Unsubscribed') return;
+                
                 if (item.email) {
-                    if (!item.email) return;
                     const emailKey = (item.email || "").toLowerCase().trim();
                     if (!recipientMap.has(emailKey)) {
                         recipientMap.set(emailKey, {
                             email: emailKey,
                             name: item.name || item.companyName || "there",
-                            city: item.city || (item.buyBox?.locations ? item.buyBox.locations.split(',')[0] : "your area")
-                        });
+                            city: item.city || (item.buyBox?.locations ? item.buyBox.locations.split(',')[0] : "your area"),
+                            id: item.id
+                        } as Recipient & {id?: string});
                     }
                 }
             });
-        });
+        };
+
+        // 1. Buyers (Intersect buyer status and buyer_type)
+        if (listsByType.buyer.length > 0 || listsByType.buyer_type.length > 0) {
+            let validBuyers = buyers || [];
+            
+            // OR within buyer status
+            if (listsByType.buyer.length > 0) {
+                const statusIds = new Set<string>();
+                listsByType.buyer.forEach(filter => {
+                    if (filter === 'all') validBuyers.forEach(b => statusIds.add(b.id));
+                    else validBuyers.filter(b => b.status && b.status.includes(filter)).forEach(b => statusIds.add(b.id));
+                });
+                validBuyers = validBuyers.filter(b => statusIds.has(b.id));
+            }
+
+            // OR within buyer_type (and intersect with above)
+            if (listsByType.buyer_type.length > 0) {
+                const typeIds = new Set<string>();
+                listsByType.buyer_type.forEach(filter => {
+                    if (filter === 'New Build') {
+                        validBuyers.filter(b => b.buyBox?.propertyTypes?.includes('New Build') || b.buyBox?.propertyTypes?.includes('New Construction')).forEach(b => typeIds.add(b.id));
+                    } else {
+                        validBuyers.filter(b => b.buyBox?.propertyTypes?.includes(filter)).forEach(b => typeIds.add(b.id));
+                    }
+                });
+                validBuyers = validBuyers.filter(b => typeIds.has(b.id));
+            }
+
+            addItems(validBuyers, 'buyer');
+        }
+
+        // 2. Individual Buyers
+        if (listsByType.individual_buyer.length > 0) {
+            const indBuyers = (buyers || []).filter(b => listsByType.individual_buyer.includes(b.id));
+            addItems(indBuyers, 'buyer'); 
+        }
+
+        // 3. Agents
+        if (listsByType.agent.length > 0) {
+            const validAgents = new Set<any>();
+            listsByType.agent.forEach(filter => {
+                let filtered = agents || [];
+                if (filter === 'contacted') filtered = filtered.filter(a => a.spokeWithAgent);
+                else if (filter === 'investor_friendly') filtered = filtered.filter(a => a.investorFriendly);
+                else if (filter === 'agreed_to_send') filtered = filtered.filter(a => a.agreedToSend);
+                else if (filter === 'closed') filtered = filtered.filter(a => a.hasClosedDeals);
+                
+                filtered.forEach(a => validAgents.add(a));
+            });
+            addItems(Array.from(validAgents), 'agent');
+        }
+
+        // 4. Wholesalers
+        if (listsByType.wholesaler.length > 0) {
+            const validWholesalers = new Set<any>();
+            listsByType.wholesaler.forEach(filter => {
+                let filtered = wholesalers || [];
+                if (filter !== 'all') filtered = filtered.filter(w => w.status === filter);
+                filtered.forEach(w => validWholesalers.add(w));
+            });
+            addItems(Array.from(validWholesalers), 'wholesaler');
+        }
 
         return Array.from(recipientMap.values());
     };
+
+    const resolvedBuyerIds = useMemo(() => {
+        const recipients = resolveRecipients(campaignData.lists, campaignData.excluded_lists);
+        return new Set(recipients.map((r: any) => r.id).filter(Boolean));
+    }, [campaignData.lists, campaignData.excluded_lists, buyers, agents, wholesalers]);
+
+    const poolBuyerIds = useMemo(() => {
+        const generalLists = campaignData.lists.filter(l => l.startsWith('buyer:') || l.startsWith('buyer_type:'));
+        if (generalLists.length === 0) return new Set<string>();
+        const recipients = resolveRecipients(generalLists, []);
+        return new Set(recipients.map((r: any) => r.id).filter(Boolean));
+    }, [campaignData.lists, buyers]);
 
     const isContentDisabled = useMemo(() => campaignData.lists.length === 0 || !campaignData.subject, [campaignData.lists, campaignData.subject]);
 
@@ -228,10 +283,27 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
     };
 
     const toggleList = (id: string) => {
-        const newLists = campaignData.lists.includes(id) 
-            ? campaignData.lists.filter(l => l !== id)
-            : [...campaignData.lists, id];
-        updateCampaign({ lists: newLists });
+        if (id.startsWith('individual_buyer:')) {
+            const buyerId = id.split(':')[1];
+            if (resolvedBuyerIds.has(buyerId)) {
+                // Buyer is currently receiving the email, so exclude them
+                updateCampaign({ 
+                    excluded_lists: [...campaignData.excluded_lists, buyerId],
+                    lists: campaignData.lists.filter(l => l !== id)
+                });
+            } else {
+                // Buyer is NOT receiving the email, so include them explicitly
+                updateCampaign({
+                    lists: [...campaignData.lists, id],
+                    excluded_lists: campaignData.excluded_lists.filter(e => e !== buyerId)
+                });
+            }
+        } else {
+            const newLists = campaignData.lists.includes(id) 
+                ? campaignData.lists.filter(l => l !== id)
+                : [...campaignData.lists, id];
+            updateCampaign({ lists: newLists });
+        }
     };
 
     const handleSaveDraft = async () => {
@@ -314,7 +386,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             }
             
             StartCampaignButtonLog.add('Resolving Recipients', 'INFO', `Resolving from ${campaignData.lists.length} lists`);
-            const recipients = resolveRecipients(campaignData.lists);
+            const recipients = resolveRecipients(campaignData.lists, campaignData.excluded_lists);
             if (recipients.length === 0) {
                 StartCampaignButtonLog.add('Validation Failed', 'ERROR', 'Lists resolved to 0 valid recipients');
                 return alert("Selected lists contain no valid email addresses.");
@@ -563,8 +635,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
         deals.filter(d => (d.address || "").toLowerCase().includes((propertySearch || "").toLowerCase())),
     [deals, propertySearch]);
 
-    // Construct List Groups for Dropdown (Same as before)
-    const listGroups = [
+    const column1Groups = [
         {
             label: "Buyer Database",
             items: [
@@ -586,14 +657,44 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
         },
     ];
 
+    const activeBuyerStatuses = campaignData.lists
+        .filter(l => l.startsWith('buyer:'))
+        .map(l => l.split(':')[1]);
+
+    const baseBuyersForStrategy = activeBuyerStatuses.length > 0 
+        ? (buyers || []).filter(b => {
+            if (activeBuyerStatuses.includes('all')) return true;
+            return activeBuyerStatuses.some(status => b.status?.includes(status));
+        })
+        : (buyers || []);
+
+    const column2Groups = [
+        {
+            label: "Buyer Strategy",
+            items: [
+                { id: 'buyer_type:Renovation', name: 'Renovation Buyers', count: baseBuyersForStrategy.filter(b => b.buyBox?.propertyTypes?.includes('Renovation')).length },
+                { id: 'buyer_type:New Build', name: 'Builder Buyers', count: baseBuyersForStrategy.filter(b => b.buyBox?.propertyTypes?.includes('New Build') || b.buyBox?.propertyTypes?.includes('New Construction')).length },
+                { id: 'buyer_type:Rental', name: 'Rental Buyers', count: baseBuyersForStrategy.filter(b => b.buyBox?.propertyTypes?.includes('Rental')).length },
+            ]
+        }
+    ];
+
     const getSelectedListNames = () => {
         const selectedNames: string[] = [];
-        listGroups.forEach(group => {
-            group.items.forEach(item => {
-                if (campaignData.lists.includes(item.id)) {
-                    selectedNames.push(item.name);
-                }
-            });
+        campaignData.lists.forEach(id => {
+            if (id.startsWith('individual_buyer:')) {
+                const buyerId = id.split(':')[1];
+                const b = buyers?.find(x => x.id === buyerId);
+                if (b) selectedNames.push(b.name || b.companyName || 'Individual Buyer');
+            } else {
+                [...column1Groups, ...column2Groups].forEach(group => {
+                    group.items.forEach(item => {
+                        if (item.id === id) {
+                            selectedNames.push(item.name);
+                        }
+                    });
+                });
+            }
         });
         return selectedNames;
     };
@@ -945,7 +1046,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                             <span className="text-slate-500 text-sm">Select lists...</span>
                                         ) : (
                                             <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded font-black uppercase">
-                                                {selectedCount} {selectedCount === 1 ? 'List' : 'Lists'} Selected
+                                                {resolvedBuyerIds.size} {resolvedBuyerIds.size === 1 ? 'Recipient' : 'Recipients'} Selected
                                             </span>
                                         )}
                                         <span className="text-xs text-slate-400 truncate">
@@ -958,29 +1059,122 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 {isListDropdownOpen && (
                                     <>
                                         <div className="fixed inset-0 z-[90]" onClick={() => setIsListDropdownOpen(false)}></div>
-                                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[95] animate-in fade-in slide-in-from-top-2 duration-200 max-h-80 overflow-y-auto custom-scrollbar">
-                                            {listGroups.map((group, groupIdx) => (
-                                                <div key={groupIdx} className="border-b border-white/5 last:border-0">
-                                                    <div className="px-3 py-2 bg-slate-900/50 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 backdrop-blur-sm">
-                                                        {group.label}
+                                        <div className="absolute top-full left-0 mt-2 bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[95] animate-in fade-in slide-in-from-top-2 duration-200 w-[900px] max-w-[90vw] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
+                                            {/* Column 1 */}
+                                            <div className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar">
+                                                {column1Groups.map((group, groupIdx) => (
+                                                    <div key={groupIdx} className="flex flex-col shrink-0">
+                                                        <div className="px-3 py-2 bg-slate-900/50 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 backdrop-blur-sm z-10">
+                                                            {group.label}
+                                                        </div>
+                                                        <div className="p-1">
+                                                            {group.items.map((list) => (
+                                                                <button 
+                                                                    key={list.id}
+                                                                    onClick={() => toggleList(list.id)}
+                                                                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        {campaignData.lists.includes(list.id) ? <CheckSquare size={16} className="text-blue-500" /> : <Square size={16} className="text-slate-600 group-hover:text-slate-400" />}
+                                                                        <span className={`text-xs font-bold ${campaignData.lists.includes(list.id) ? 'text-white' : 'text-slate-300'}`}>{list.name}</span>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-mono text-slate-600 bg-black/20 px-1.5 py-0.5 rounded">{list.count}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="p-1">
-                                                        {group.items.map((list) => (
-                                                            <button 
-                                                                key={list.id}
-                                                                onClick={() => toggleList(list.id)}
-                                                                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    {campaignData.lists.includes(list.id) ? <CheckSquare size={16} className="text-blue-500" /> : <Square size={16} className="text-slate-600 group-hover:text-slate-400" />}
-                                                                    <span className={`text-xs font-bold ${campaignData.lists.includes(list.id) ? 'text-white' : 'text-slate-300'}`}>{list.name}</span>
-                                                                </div>
-                                                                <span className="text-[10px] font-mono text-slate-600 bg-black/20 px-1.5 py-0.5 rounded">{list.count}</span>
-                                                            </button>
-                                                        ))}
+                                                ))}
+                                            </div>
+
+                                            {/* Column 2 */}
+                                            <div className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar">
+                                                {column2Groups.map((group, groupIdx) => (
+                                                    <div key={groupIdx} className="flex flex-col shrink-0">
+                                                        <div className="px-3 py-2 bg-slate-900/50 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 backdrop-blur-sm z-10">
+                                                            {group.label}
+                                                        </div>
+                                                        <div className="p-1">
+                                                            {group.items.map((list) => (
+                                                                <button 
+                                                                    key={list.id}
+                                                                    onClick={() => toggleList(list.id)}
+                                                                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        {campaignData.lists.includes(list.id) ? <CheckSquare size={16} className="text-blue-500" /> : <Square size={16} className="text-slate-600 group-hover:text-slate-400" />}
+                                                                        <span className={`text-xs font-bold ${campaignData.lists.includes(list.id) ? 'text-white' : 'text-slate-300'}`}>{list.name}</span>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-mono text-slate-600 bg-black/20 px-1.5 py-0.5 rounded">{list.count}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Column 3: Individual Buyers */}
+                                            <div className="flex flex-col max-h-[400px]">
+                                                <div className="px-3 py-2 bg-slate-900/50 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 backdrop-blur-sm z-10">
+                                                    Individual Buyers
+                                                </div>
+                                                <div className="p-2">
+                                                    <div className="relative mb-2">
+                                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Search buyers..." 
+                                                            value={individualSearch}
+                                                            onChange={(e) => setIndividualSearch(e.target.value)}
+                                                            className="w-full bg-black/20 border border-slate-700/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:border-blue-500 outline-none transition-all"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
                                                     </div>
                                                 </div>
-                                            ))}
+                                                <div className="p-1 overflow-y-auto custom-scrollbar flex-1">
+                                                    {(buyers || [])
+                                                        .filter(b => {
+                                                            if (individualSearch.trim()) {
+                                                                return (b.name || '').toLowerCase().includes(individualSearch.toLowerCase()) || (b.companyName || '').toLowerCase().includes(individualSearch.toLowerCase()) || (b.email || '').toLowerCase().includes(individualSearch.toLowerCase());
+                                                            }
+                                                            const hasBuyerListSelected = campaignData.lists.some(l => l.startsWith('buyer:') || l.startsWith('buyer_type:'));
+                                                            if (hasBuyerListSelected) {
+                                                                return poolBuyerIds.has(b.id) || campaignData.lists.includes(`individual_buyer:${b.id}`);
+                                                            }
+                                                            return true;
+                                                        })
+                                                        .sort((a, b) => {
+                                                            if (individualSearch.trim()) return 0;
+                                                            const aSelected = resolvedBuyerIds.has(a.id);
+                                                            const bSelected = resolvedBuyerIds.has(b.id);
+                                                            if (aSelected && !bSelected) return -1;
+                                                            if (!aSelected && bSelected) return 1;
+                                                            return 0;
+                                                        })
+                                                        .slice(0, individualSearch.trim() ? 50 : Math.max(20, poolBuyerIds.size + 50))
+                                                        .map(b => (
+                                                        <button 
+                                                            key={b.id}
+                                                            onClick={() => toggleList(`individual_buyer:${b.id}`)}
+                                                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                                        >
+                                                            <div className="flex items-center gap-3 overflow-hidden text-left">
+                                                                {resolvedBuyerIds.has(b.id) ? <CheckSquare size={16} className="text-blue-500 shrink-0" /> : <Square size={16} className="text-slate-600 group-hover:text-slate-400 shrink-0" />}
+                                                                <div className="flex flex-col truncate">
+                                                                    <span className={`text-xs font-bold truncate ${resolvedBuyerIds.has(b.id) ? 'text-white' : 'text-slate-300'}`}>
+                                                                        {b.name || 'Unknown Name'} {b.companyName ? `(${b.companyName})` : ''}
+                                                                    </span>
+                                                                    {b.email && <span className="text-[10px] text-slate-500 truncate">{b.email}</span>}
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                    {!individualSearch.trim() && !campaignData.lists.some(l => l.startsWith('buyer:') || l.startsWith('buyer_type:')) && (buyers || []).length > 20 && (
+                                                        <div className="text-center py-2 text-[10px] text-slate-500">
+                                                            Type to search more buyers...
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </>
                                 )}
