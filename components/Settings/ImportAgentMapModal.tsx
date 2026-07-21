@@ -3,30 +3,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, ArrowRight, FileSpreadsheet, AlertCircle, Loader2, Check } from 'lucide-react';
 import { Agent } from '../../types';
 import { generateId, getLogTimestamp, formatPhoneNumber } from '../../services/utils';
+import { api } from '../../services/api';
 
 // Access global XLSX from CDN
 declare const XLSX: any;
 
 interface ImportAgentMapModalProps {
     file: File;
+    existingAgents: Agent[];
     onClose: () => void;
-    onImport: (agents: Agent[]) => void;
+    onImport: (agents: Agent[], skipped: number) => void;
 }
 
 const FIELD_DEFINITIONS: { key: string, label: string, aliases: string[], type: 'string' }[] = [
-    { key: 'name', label: 'Agent Name', aliases: ['name', 'agent', 'full name', 'agent name', 'realtor'], type: 'string' },
-    { key: 'phone', label: 'Phone Number', aliases: ['phone', 'mobile', 'cell', 'contact', 'agent phone'], type: 'string' },
-    { key: 'email', label: 'Email Address', aliases: ['email', 'mail', 'agent email', 'contact email'], type: 'string' },
-    { key: 'brokerage', label: 'Brokerage', aliases: ['brokerage', 'company', 'office', 'agency', 'firm', 'broker'], type: 'string' },
+    { key: 'name', label: 'Agent Name', aliases: ['name', 'agent', 'full name', 'agent name', 'realtor', 'listing agent full name'], type: 'string' },
+    { key: 'first_name', label: 'Agent First Name', aliases: ['first name', 'listing agent first name', 'agent first name'], type: 'string' },
+    { key: 'last_name', label: 'Agent Last Name', aliases: ['last name', 'listing agent last name', 'agent last name'], type: 'string' },
+    { key: 'phone', label: 'Phone Number', aliases: ['phone', 'mobile', 'cell', 'contact', 'agent phone', 'listing agent phone'], type: 'string' },
+    { key: 'email', label: 'Email Address', aliases: ['email', 'mail', 'agent email', 'contact email', 'listing agent email'], type: 'string' },
+    { key: 'brokerage', label: 'Brokerage', aliases: ['brokerage', 'company', 'office', 'agency', 'firm', 'broker', 'listing brokerage name'], type: 'string' },
     { key: 'notes', label: 'Notes', aliases: ['notes', 'remarks', 'comments', 'description'], type: 'string' },
 ];
 
-export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, onClose, onImport }) => {
+export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, existingAgents, onClose, onImport }) => {
     const [step, setStep] = useState<'analyzing' | 'mapping'>('analyzing');
     const [headers, setHeaders] = useState<string[]>([]);
     const [rawData, setRawData] = useState<any[][]>([]);
     const [mapping, setMapping] = useState<Record<string, string>>({}); 
     const [importing, setImporting] = useState(false);
+    const [importProgress, setImportProgress] = useState<{current: number, total: number} | null>(null);
     
     const processedFileRef = useRef<File | null>(null);
 
@@ -91,14 +96,20 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
         }));
     };
 
-    const processImport = () => {
+    const processImport = async () => {
         setImporting(true);
-        setTimeout(() => {
-            const newAgents: Agent[] = rawData.map(row => {
+        try {
+            const newAgents: Agent[] = [];
+            let skipped = 0;
+
+            rawData.forEach(row => {
                 const agent: any = {
                     id: generateId(),
                     notes: [`${getLogTimestamp()}: Imported from ${file.name}`]
                 };
+
+                let firstName = '';
+                let lastName = '';
 
                 // Apply mappings
                 Object.entries(mapping).forEach(([colIdx, key]) => {
@@ -115,11 +126,21 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
                         } else if (fieldKey === 'name') {
                              // Title Case
                              agent[fieldKey] = strVal.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                        } else if (fieldKey === 'first_name') {
+                             firstName = strVal.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                             agent.agentFirstName = firstName;
+                        } else if (fieldKey === 'last_name') {
+                             lastName = strVal.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                             agent.agentLastName = lastName;
                         } else {
                             agent[fieldKey] = strVal;
                         }
                     }
                 });
+
+                if (!agent.name && (firstName || lastName)) {
+                    agent.name = `${firstName} ${lastName}`.trim();
+                }
 
                 // Defaults
                 if (!agent.name) agent.name = 'Unknown Agent';
@@ -127,11 +148,41 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
                 if (!agent.email) agent.email = '';
                 if (!agent.brokerage) agent.brokerage = '';
 
-                return agent as Agent;
+                // Duplicate Check
+                const isDuplicate = existingAgents.some(existing => {
+                    if (agent.email && existing.email && agent.email.toLowerCase() === existing.email.toLowerCase()) return true;
+                    if (agent.phone && existing.phone && agent.phone === existing.phone) return true;
+                    if (agent.name && existing.name && agent.name.toLowerCase() === existing.name.toLowerCase() && agent.name !== 'Unknown Agent') return true;
+                    return false;
+                });
+
+                if (isDuplicate) {
+                    skipped++;
+                } else {
+                    newAgents.push(agent as Agent);
+                }
             });
 
-            onImport(newAgents);
-        }, 500);
+            setImportProgress({ current: 0, total: newAgents.length });
+
+            const chunkSize = 50;
+            let savedAgents: Agent[] = [];
+            for (let i = 0; i < newAgents.length; i += chunkSize) {
+                const chunk = newAgents.slice(i, i + chunkSize);
+                const savedChunk = await api.saveBatch(chunk, 'Agents');
+                if (savedChunk) {
+                    savedAgents = [...savedAgents, ...savedChunk];
+                }
+                setImportProgress({ current: Math.min(i + chunkSize, newAgents.length), total: newAgents.length });
+            }
+
+            onImport(savedAgents, skipped);
+        } catch (error) {
+            console.error("Error processing import:", error);
+            alert("There was an error processing the import data.");
+            setImporting(false);
+            setImportProgress(null);
+        }
     };
 
     if (step === 'analyzing') {
@@ -148,7 +199,7 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-end items-center gap-4 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <FileSpreadsheet className="text-blue-600 dark:text-blue-500" /> 
@@ -211,16 +262,32 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium">Cancel</button>
-                    <button 
-                        onClick={processImport} 
-                        disabled={importing || Object.keys(mapping).length === 0}
-                        className="bg-green-600 hover:bg-green-500 text-white px-8 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {importing ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
-                        Import {rawData.length} Agents
-                    </button>
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end items-center gap-4 shrink-0">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        {importProgress && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Importing... {importProgress.current} / {importProgress.total}</span>
+                            </div>
+                        )}
+                        {!importProgress && importing && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Preparing import...</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} disabled={importing} className="px-4 py-2 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+                        <button 
+                            onClick={processImport} 
+                            disabled={importing || Object.keys(mapping).length === 0}
+                            className="bg-green-600 hover:bg-green-500 text-white px-8 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {importing ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
+                            Import {rawData.length} Agents
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

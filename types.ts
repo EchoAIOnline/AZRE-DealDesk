@@ -178,6 +178,8 @@ export interface Agent {
     overrideDuplicate?: boolean;
   id: string;
   name: string;
+  agentFirstName?: string;
+  agentLastName?: string;
   phone: string;
   email: string;
   brokerage: string;

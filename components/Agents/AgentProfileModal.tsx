@@ -80,6 +80,26 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
     const [tempNoteContent, setTempNoteContent] = useState("");
     const [users, setUsers] = useState<UserType[]>([]);
 
+    // Scroll Restoration Logic
+    useEffect(() => {
+        const scrollContainer = document.querySelector('main.flex-1.overflow-y-auto');
+        let scrollPos = 0;
+        if (scrollContainer) {
+            scrollPos = scrollContainer.scrollTop;
+        }
+
+        return () => {
+            if (scrollContainer) {
+                setTimeout(() => {
+                    scrollContainer.scrollTop = scrollPos;
+                }, 10);
+                setTimeout(() => {
+                    scrollContainer.scrollTop = scrollPos;
+                }, 50); // Fallback to ensure it's set after all renders
+            }
+        };
+    }, []);
+
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -245,6 +265,13 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
     const handleChange = (field: keyof Agent, value: any) => {
         setFormData(prev => {
             const newData = { ...prev, [field]: value };
+            
+            if (field === 'agentFirstName' || field === 'agentLastName') {
+                const firstName = newData.agentFirstName || '';
+                const lastName = newData.agentLastName || '';
+                newData.name = `${firstName} ${lastName}`.trim();
+            }
+            
             formDataRef.current = newData; // Update ref immediately for blur events
             return newData;
         });
@@ -507,10 +534,20 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                 </h3>
                                 <div className="space-y-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Agent Name</label>
+                                        <div className="md:col-span-2">
+                                            <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Agent Full Name</label>
                                             <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
                                                 value={formData.name} onChange={e => handleChange('name', e.target.value)} onBlur={handleAutoSave} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">First Name</label>
+                                            <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
+                                                value={formData.agentFirstName || ''} onChange={e => handleChange('agentFirstName', e.target.value)} onBlur={handleAutoSave} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Last Name</label>
+                                            <input className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" 
+                                                value={formData.agentLastName || ''} onChange={e => handleChange('agentLastName', e.target.value)} onBlur={handleAutoSave} />
                                         </div>
                                         <div>
                                             <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Mobile Number</label>

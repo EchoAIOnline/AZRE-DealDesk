@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, ArrowRight, FileSpreadsheet, AlertCircle, Loader2, Check } from 'lucide-react';
 import { Wholesaler } from '../../types';
+import { api } from '../../services/api';
 import { generateId, getLogTimestamp, formatPhoneNumber } from '../../services/utils';
 
 // Access global XLSX from CDN
@@ -27,6 +28,7 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
     const [rawData, setRawData] = useState<any[][]>([]);
     const [mapping, setMapping] = useState<Record<string, string>>({}); 
     const [importing, setImporting] = useState(false);
+    const [importProgress, setImportProgress] = useState<{current: number, total: number} | null>(null);
     
     const processedFileRef = useRef<File | null>(null);
 
@@ -91,9 +93,9 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
         }));
     };
 
-    const processImport = () => {
+    const processImport = async () => {
         setImporting(true);
-        setTimeout(() => {
+        try {
             const newWholesalers: Wholesaler[] = rawData.map(row => {
                 const wholesaler: any = {
                     id: generateId(),
@@ -132,8 +134,26 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
                 return wholesaler as Wholesaler;
             });
 
-            onImport(newWholesalers);
-        }, 500);
+            setImportProgress({ current: 0, total: newWholesalers.length });
+
+            const chunkSize = 50;
+            let savedWholesalers: Wholesaler[] = [];
+            for (let i = 0; i < newWholesalers.length; i += chunkSize) {
+                const chunk = newWholesalers.slice(i, i + chunkSize);
+                const savedChunk = await api.saveBatch(chunk, 'Wholesalers');
+                if (savedChunk) {
+                    savedWholesalers = [...savedWholesalers, ...savedChunk];
+                }
+                setImportProgress({ current: Math.min(i + chunkSize, newWholesalers.length), total: newWholesalers.length });
+            }
+
+            onImport(savedWholesalers);
+        } catch (error) {
+            console.error("Error processing import:", error);
+            alert("There was an error processing the import data.");
+            setImporting(false);
+            setImportProgress(null);
+        }
     };
 
     if (step === 'analyzing') {
@@ -150,7 +170,7 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-end items-center gap-4 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <FileSpreadsheet className="text-blue-600 dark:text-blue-500" /> 
@@ -213,8 +233,23 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium">Cancel</button>
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end items-center gap-4 shrink-0">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        {importProgress && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Importing... {importProgress.current} / {importProgress.total}</span>
+                            </div>
+                        )}
+                        {!importProgress && importing && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Preparing import...</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button onClick={onClose} disabled={importing} className="px-4 py-2 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
                     <button 
                         onClick={processImport} 
                         disabled={importing || Object.keys(mapping).length === 0}
@@ -223,6 +258,7 @@ export const ImportWholesalerMapModal: React.FC<ImportWholesalerMapModalProps> =
                         {importing ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
                         Import {rawData.length} Wholesalers
                     </button>
+                    </div>
                 </div>
             </div>
         </div>
