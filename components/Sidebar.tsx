@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={getBtnStyle('/message-sender')}
                 >
                     <MessageSquare size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Message Center</span>}
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Communication Center</span>}
                 </button>
 
                 <button 
