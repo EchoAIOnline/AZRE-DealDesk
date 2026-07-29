@@ -38,7 +38,7 @@ import { MarketOracle } from './components/MarketOracle/MarketOracle';
 import { MessageCenter } from './components/MessageCenter/MessageCenter';
 import { UploadQueue } from './components/UploadQueue';
 import { mockAcquisitionsMessages, mockDispositionsMessages } from './services/mockData';
-import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64 } from './services/utils';
+import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64, calculateDaysRemaining } from './services/utils';
 import { User as UserType, Deal, Agent, Brokerage, FilterConfig, CalcData, Buyer, BuyBox, Wholesaler, Contact, EmailList } from './types';
 import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CLOSED_STATUSES, GOOGLE_MAPS_API_KEY, GOOGLE_SCRIPT_URL, COUNTER_STATUSES, SUB_MARKETS, COUNTIES, BUYER_STATUS_TABS, AGENT_STATUS_TABS, WHOLESALER_STATUS_TABS, OFFER_DECISIONS, JV_PIPELINE_STATUSES } from './constants';
 
@@ -1768,6 +1768,22 @@ export default function App() {
               case 'Agreed to Send': filtered = filtered.filter(a => a.agreedToSend); break;
               case 'Closed Deals': filtered = filtered.filter(a => a.hasClosedDeals); break;
               case 'DO NOT CALL': filtered = filtered.filter(a => a.doNotCall); break;
+          }
+      }
+      if (filterConfig.type === 'Agent Follow-Up Status' && filterConfig.value) {
+          switch (filterConfig.value as any) {
+              case 'Future Follow-Ups':
+                  filtered = filtered.filter(a => a.nextFollowUpDate && (() => {
+                      const days = calculateDaysRemaining(a.nextFollowUpDate);
+                      return days !== null && days >= 0;
+                  })());
+                  break;
+              case 'Missed Follow-Ups':
+                  filtered = filtered.filter(a => a.nextFollowUpDate && (() => {
+                      const days = calculateDaysRemaining(a.nextFollowUpDate);
+                      return days !== null && days < 0;
+                  })());
+                  break;
           }
       }
       filtered.sort((a, b) => {
