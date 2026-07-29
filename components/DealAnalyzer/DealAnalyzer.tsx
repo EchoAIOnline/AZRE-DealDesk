@@ -3,7 +3,9 @@ import { Calculator, Home, Settings2, DollarSign, Percent, TrendingUp, Info, Wre
 
 const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
 
-export const DealAnalyzer: React.FC = () => {
+export interface DealAnalyzerProps { onAddDeal?: (address: string, offerPrice: number) => void; }
+export const DealAnalyzer: React.FC<DealAnalyzerProps> = ({ onAddDeal }) => {
+    const [showOfferPrompt, setShowOfferPrompt] = useState(false);
     const [sqft, setSqft] = useState<number | ''>('');
     const [address, setAddress] = useState('');
     const [notes, setNotes] = useState('');
@@ -106,7 +108,20 @@ export const DealAnalyzer: React.FC = () => {
 
             {/* Property Details */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Home size={20} className="text-gray-400"/> Property Details</h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2"><Home size={20} className="text-gray-400"/> Property Details</h3>
+                    {onAddDeal && (
+                        <button 
+                            onClick={() => {
+                                if (asIsMaxBuy > 0 || arvMaxBuy > 0) setShowOfferPrompt(true);
+                                else onAddDeal(address, 0);
+                            }} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm"
+                        >
+                            Add To Main Pipeline
+                        </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Address</label>
@@ -288,6 +303,69 @@ export const DealAnalyzer: React.FC = () => {
                     onChange={(e) => setNotes(e.target.value)}
                 />
             </div>
+            {showOfferPrompt && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[170]">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Select Offer Price</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                            Which maximum buy price would you like to use as your offer for this deal?
+                        </p>
+                        <div className="space-y-3">
+                            {asIsMaxBuy > 0 && (
+                                <button
+                                    onClick={() => {
+                                        onAddDeal?.(address, asIsMaxBuy);
+                                        setShowOfferPrompt(false);
+                                    }}
+                                    className="w-full text-left p-4 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition flex justify-between items-center group"
+                                >
+                                    <div>
+                                        <div className="font-bold text-blue-700 dark:text-blue-400">As-Is Max Buy</div>
+                                        <div className="text-xs text-blue-600 dark:text-blue-500 mt-1">Use the As-Is calculation</div>
+                                    </div>
+                                    <div className="text-lg font-bold text-blue-800 dark:text-blue-300 group-hover:scale-105 transition-transform">
+                                        {formatCurrency(asIsMaxBuy)}
+                                    </div>
+                                </button>
+                            )}
+                            {arvMaxBuy > 0 && (
+                                <button
+                                    onClick={() => {
+                                        onAddDeal?.(address, arvMaxBuy);
+                                        setShowOfferPrompt(false);
+                                    }}
+                                    className="w-full text-left p-4 rounded-lg border border-purple-200 dark:border-purple-900/50 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition flex justify-between items-center group"
+                                >
+                                    <div>
+                                        <div className="font-bold text-purple-700 dark:text-purple-400">ARV Max Buy</div>
+                                        <div className="text-xs text-purple-600 dark:text-purple-500 mt-1">Use the ARV calculation</div>
+                                    </div>
+                                    <div className="text-lg font-bold text-purple-800 dark:text-purple-300 group-hover:scale-105 transition-transform">
+                                        {formatCurrency(arvMaxBuy)}
+                                    </div>
+                                </button>
+                            )}
+                            <button
+                                onClick={() => {
+                                    onAddDeal?.(address, 0);
+                                    setShowOfferPrompt(false);
+                                }}
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition font-medium text-gray-700 dark:text-gray-300"
+                            >
+                                Enter offer later ($0)
+                            </button>
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <button 
+                                onClick={() => setShowOfferPrompt(false)}
+                                className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

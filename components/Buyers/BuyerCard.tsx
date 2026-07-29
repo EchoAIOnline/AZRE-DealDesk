@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Phone, Mail, Building, ChevronDown, ChevronUp, Activity, Trash2, Briefcase, DollarSign, MapPin } from 'lucide-react';
+import { Phone, Mail, Building, ChevronDown, ChevronUp, Activity, Trash2, Briefcase, DollarSign, MapPin, Calendar } from 'lucide-react';
 import { Buyer } from '../../types';
 import { getLogTimestamp, formatPhoneNumber, formatCurrency, processPhotoUrl } from '../../services/utils';
 
@@ -12,6 +12,51 @@ interface BuyerCardProps {
 
 export const BuyerCard: React.FC<BuyerCardProps> = ({ buyer, onEdit, onDelete, onUpdate }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const renderFollowUp = () => {
+        if (!buyer.nextFollowUpDate) return null;
+        
+        const [year, month, day] = buyer.nextFollowUpDate.split('-').map(Number);
+        if (!year || !month || !day) return null;
+        const target = new Date(year, month - 1, day);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = target.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        const formatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        let daysStr = '';
+        let colorClasses = 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30';
+        if (diffDays === 0) {
+            daysStr = 'Today';
+            colorClasses = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+        } else if (diffDays === 1) {
+            daysStr = 'In 1 day';
+            colorClasses = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+        } else if (diffDays === -1) {
+            daysStr = '1 day ago';
+            colorClasses = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+        } else if (diffDays > 1) {
+            daysStr = `In ${diffDays} days`;
+            colorClasses = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+        } else {
+            daysStr = `${Math.abs(diffDays)} days ago`;
+            colorClasses = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+        }
+
+        return (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-center w-full">
+                <span className={`text-[11px] font-bold px-2 py-1.5 rounded flex items-center gap-1.5 w-full justify-center ${colorClasses}`}>
+                    <Calendar size={12} className="shrink-0"/>
+                    Follow-up {daysStr} - {formatter.format(target)}
+                </span>
+            </div>
+        );
+    };
+
+
     const [isDeleting, setIsDeleting] = useState(false);
     
     // Log editing state
@@ -149,6 +194,7 @@ export const BuyerCard: React.FC<BuyerCardProps> = ({ buyer, onEdit, onDelete, o
                 </div>
 
                 {/* Expandable Activity & Notes */}
+            {renderFollowUp()}
                 {isExpanded && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200 mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
                         {/* REMOVED: Buy Box Target section was here */}

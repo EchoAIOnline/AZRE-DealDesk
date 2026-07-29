@@ -44,7 +44,12 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                 searchPlaceholder="Search agents by name or brokerage..." 
                 tabs={AGENT_STATUS_TABS.map(tab => ({ 
                     ...tab, 
-                    count: tab.id === 'All Agents' ? filteredAgentsBySearch.length : (tab.id === 'Contacted' ? filteredAgentsBySearch.filter(a => a.spokeWithAgent).length : (tab.id === 'Investor Friendly' ? filteredAgentsBySearch.filter(a => a.investorFriendly).length : (tab.id === 'Agreed to Send' ? filteredAgentsBySearch.filter(a => a.agreedToSend).length : filteredAgentsBySearch.filter(a => a.hasClosedDeals).length))) 
+                    count: tab.id === 'All Agents' ? filteredAgentsBySearch.length : 
+                           tab.id === 'Contacted' ? filteredAgentsBySearch.filter(a => a.spokeWithAgent).length : 
+                           tab.id === 'Investor Friendly' ? filteredAgentsBySearch.filter(a => a.investorFriendly).length : 
+                           tab.id === 'Agreed to Send' ? filteredAgentsBySearch.filter(a => a.agreedToSend).length : 
+                           tab.id === 'Closed Deals' ? filteredAgentsBySearch.filter(a => a.hasClosedDeals).length : 
+                           tab.id === 'DO NOT CALL' ? filteredAgentsBySearch.filter(a => a.doNotCall).length : 0
                 }))} 
                 activeTab={agentStage} 
                 onTabChange={setAgentStage} 
@@ -77,6 +82,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                                 <option value="Investor Friendly">Investor Friendly</option>
                                 <option value="Agreed to Send">Agreed to Send Deals</option>
                                 <option value="Closed Deals">Closed With AZRE</option>
+                                <option value="DO NOT CALL">DO NOT CALL</option>
                             </select>
                         </div>
                         <div className="col-span-full flex justify-end">

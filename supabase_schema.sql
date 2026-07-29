@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS public."Agents" (
     "handlesInvestments" BOOLEAN DEFAULT false,
     "agreedToSend" BOOLEAN DEFAULT false,
     "hasClosedDeals" BOOLEAN DEFAULT false,
+    "doNotCall" BOOLEAN DEFAULT false,
     "closedDealIds" JSONB DEFAULT '[]'::jsonb,
     "subscriptionStatus" TEXT DEFAULT 'Subscribed'
 );

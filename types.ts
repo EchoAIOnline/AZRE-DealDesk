@@ -203,6 +203,7 @@ export interface Agent {
   closedDealIds?: string[];
   subscriptionStatus?: 'Subscribed' | 'Unsubscribed'; // New Field
   acquisitionManager?: string;
+  doNotCall?: boolean;
 }
 
 export interface WholesalerProperty {

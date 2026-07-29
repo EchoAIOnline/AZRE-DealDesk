@@ -66,7 +66,8 @@ export const AGENT_STATUS_TABS = [
   { id: 'Contacted', label: 'Contacted Already', activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' },
   { id: 'Investor Friendly', label: 'Investor Friendly', activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
   { id: 'Agreed to Send', label: 'Agreed to Send Deals', activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' },
-  { id: 'Closed Deals', label: 'Closed With AZRE', activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }
+  { id: 'Closed Deals', label: 'Closed With AZRE', activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
+  { id: 'DO NOT CALL', label: 'DO NOT CALL', activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
 ];
 
 export const WHOLESALER_STATUS_TABS = [

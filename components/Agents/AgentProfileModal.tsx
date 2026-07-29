@@ -603,63 +603,6 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                 </div>
                             </section>
 
-                            {/* Agent Relationship */}
-                            <section>
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
-                                    <User size={16}/> Agent Relationship
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-fr gap-3">
-                                        <RelationshipButton 
-                                            label="Sent Text To Agent" 
-                                            active={!!formData.sentTextToAgent} 
-                                            date={formData.agentRelationshipDates?.sentTextToAgent}
-                                            onClick={() => handleRelationshipToggle('sentTextToAgent', 'sentTextToAgent')}
-                                            colorClass="bg-pink-600 text-white border-pink-600 hover:bg-pink-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Agent Responded To Text" 
-                                            active={!!formData.agentRespondedToText} 
-                                            date={formData.agentRelationshipDates?.agentRespondedToText}
-                                            onClick={() => handleRelationshipToggle('agentRespondedToText', 'agentRespondedToText')}
-                                            colorClass="bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Investor Friendly" 
-                                            active={!!formData.investorFriendly} 
-                                            date={formData.agentRelationshipDates?.investorFriendly}
-                                            onClick={() => handleRelationshipToggle('investorFriendly', 'investorFriendly')}
-                                            colorClass="bg-blue-600 text-white border-blue-600 hover:bg-blue-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Agreed To Send Deals" 
-                                            active={!!formData.agreedToSend} 
-                                            date={formData.agentRelationshipDates?.agreedToSend}
-                                            onClick={() => handleRelationshipToggle('agreedToSend', 'agreedToSend')}
-                                            colorClass="bg-purple-600 text-white border-purple-600 hover:bg-purple-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Spoke With Agent" 
-                                            active={!!formData.spokeWithAgent} 
-                                            date={formData.agentRelationshipDates?.spokeWithAgent}
-                                            onClick={() => handleRelationshipToggle('spokeWithAgent', 'spokeWithAgent')}
-                                            colorClass="bg-orange-600 text-white border-orange-600 hover:bg-orange-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Agent Sent Deal" 
-                                            active={!!formData.agentSentDeal} 
-                                            date={formData.agentRelationshipDates?.agentSentDeal}
-                                            onClick={() => handleRelationshipToggle('agentSentDeal', 'agentSentDeal')}
-                                            colorClass="bg-teal-600 text-white border-teal-600 hover:bg-teal-500"
-                                        />
-                                        <RelationshipButton 
-                                            label="Closed With AZRE" 
-                                            active={!!formData.hasClosedDeals} 
-                                            date={formData.agentRelationshipDates?.hasClosedDeals}
-                                            onClick={() => handleRelationshipToggle('hasClosedDeals', 'hasClosedDeals')}
-                                            colorClass="bg-green-600 text-white border-green-600 hover:bg-green-500"
-                                        />
-                                </div>
-                            </section>
 
                         </div>
 
@@ -784,6 +727,74 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                             </section>
 
                         </div>
+                    </div>
+
+                    {/* Agent Relationship (Moved to full width) */}
+                    <div className="mb-8">
+                            {/* Agent Relationship */}
+                            <section>
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
+                                    <User size={16}/> Agent Relationship
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-fr gap-3">
+                                        <RelationshipButton 
+                                            label="Sent Text To Agent" 
+                                            active={!!formData.sentTextToAgent} 
+                                            date={formData.agentRelationshipDates?.sentTextToAgent}
+                                            onClick={() => handleRelationshipToggle('sentTextToAgent', 'sentTextToAgent')}
+                                            colorClass="bg-pink-600 text-white border-pink-600 hover:bg-pink-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agent Responded To Text" 
+                                            active={!!formData.agentRespondedToText} 
+                                            date={formData.agentRelationshipDates?.agentRespondedToText}
+                                            onClick={() => handleRelationshipToggle('agentRespondedToText', 'agentRespondedToText')}
+                                            colorClass="bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Investor Friendly" 
+                                            active={!!formData.investorFriendly} 
+                                            date={formData.agentRelationshipDates?.investorFriendly}
+                                            onClick={() => handleRelationshipToggle('investorFriendly', 'investorFriendly')}
+                                            colorClass="bg-blue-600 text-white border-blue-600 hover:bg-blue-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agreed To Send Deals" 
+                                            active={!!formData.agreedToSend} 
+                                            date={formData.agentRelationshipDates?.agreedToSend}
+                                            onClick={() => handleRelationshipToggle('agreedToSend', 'agreedToSend')}
+                                            colorClass="bg-purple-600 text-white border-purple-600 hover:bg-purple-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Spoke With Agent" 
+                                            active={!!formData.spokeWithAgent} 
+                                            date={formData.agentRelationshipDates?.spokeWithAgent}
+                                            onClick={() => handleRelationshipToggle('spokeWithAgent', 'spokeWithAgent')}
+                                            colorClass="bg-orange-600 text-white border-orange-600 hover:bg-orange-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Agent Sent Deal" 
+                                            active={!!formData.agentSentDeal} 
+                                            date={formData.agentRelationshipDates?.agentSentDeal}
+                                            onClick={() => handleRelationshipToggle('agentSentDeal', 'agentSentDeal')}
+                                            colorClass="bg-teal-600 text-white border-teal-600 hover:bg-teal-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="Closed With AZRE" 
+                                            active={!!formData.hasClosedDeals} 
+                                            date={formData.agentRelationshipDates?.hasClosedDeals}
+                                            onClick={() => handleRelationshipToggle('hasClosedDeals', 'hasClosedDeals')}
+                                            colorClass="bg-green-600 text-white border-green-600 hover:bg-green-500"
+                                        />
+                                        <RelationshipButton 
+                                            label="DO NOT CALL - Agent Blocked" 
+                                            active={!!formData.doNotCall} 
+                                            date={formData.agentRelationshipDates?.doNotCall}
+                                            onClick={() => handleRelationshipToggle('doNotCall', 'doNotCall')}
+                                            colorClass="bg-red-600 text-white border-red-600 hover:bg-red-500"
+                                        />
+                                </div>
+                            </section>
                     </div>
 
                     {/* Notes About The Agent (Moved to Bottom, Full Width) */}

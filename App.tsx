@@ -1502,7 +1502,7 @@ export default function App() {
       }
   };
 
-  const handleAddDeal = async () => {
+  const handleAddDeal = async (overrides?: Partial<Deal>) => {
       const isJv = location.pathname === '/jv-pipeline';
       const newDealInit: Deal = {
           id: generateId(), 
@@ -1562,7 +1562,8 @@ export default function App() {
               status: isJv ? 'Available' : 'No Offer Made Yet',
               date: new Date().toISOString(),
               user: currentUser?.name || 'Unknown'
-          }]
+          }],
+          ...overrides
       };
       try {
         const tableName = isJv ? 'JVDeals' : 'Deals';
@@ -1756,6 +1757,7 @@ export default function App() {
               case 'Investor Friendly': filtered = filtered.filter(a => a.investorFriendly); break;
               case 'Agreed to Send': filtered = filtered.filter(a => a.agreedToSend); break;
               case 'Closed Deals': filtered = filtered.filter(a => a.hasClosedDeals); break;
+              case 'DO NOT CALL': filtered = filtered.filter(a => a.doNotCall); break;
           }
       }
       if (filterConfig.type === 'Brokerage' && filterConfig.value) filtered = filtered.filter(a => a.brokerage === filterConfig.value);
@@ -1765,6 +1767,7 @@ export default function App() {
               case 'Investor Friendly': filtered = filtered.filter(a => a.investorFriendly); break;
               case 'Agreed to Send': filtered = filtered.filter(a => a.agreedToSend); break;
               case 'Closed Deals': filtered = filtered.filter(a => a.hasClosedDeals); break;
+              case 'DO NOT CALL': filtered = filtered.filter(a => a.doNotCall); break;
           }
       }
       filtered.sort((a, b) => {
@@ -2152,7 +2155,7 @@ export default function App() {
                     handleUpdateBuyer={handleUpdateBuyer}
                  />
                } />
-               <Route path="/calculator" element={<DealAnalyzer />} />
+               <Route path="/calculator" element={<DealAnalyzer onAddDeal={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "main" })} />} />
                <Route path="/calendar" element={<div className="w-full h-full"><CalendarView agents={agents} buyers={buyers} onUpdateAgent={handleUpdateAgent} onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)} onViewAgent={(agent) => setViewingAgent(agent)} onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }} /></div>} />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>
