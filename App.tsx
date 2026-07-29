@@ -28,6 +28,7 @@ import { CalendarView } from './components/Calendar/CalendarView';
 import { Logo } from './components/Shared/Logo';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard/Dashboard';
+import { DealAnalyzer } from './components/DealAnalyzer/DealAnalyzer';
 import { EmailManager } from './components/EmailManager/EmailManager';
 import { MarketScanner } from './components/MarketScanner/MarketScanner';
 import { Campaigns } from './components/Campaigns/Campaigns';
@@ -480,11 +481,11 @@ export default function App() {
   };
 
   const handleUpdateAgent = async (agentId: string, updates: Partial<Agent>, shouldClose: boolean = true) => {
-      const agent = agents.find(a => a.id === agentId);
+      const agent = agents.find(a => String(a.id) === String(agentId));
       const merged = agent ? { ...agent, ...updates } : { id: agentId, ...updates } as Agent;
       
       const cleanEmail = merged.email ? merged.email.trim().toLowerCase() : '';
-      const otherAgents = agents.filter(a => a.id !== merged.id);
+      const otherAgents = agents.filter(a => String(a.id) !== String(merged.id));
       const duplicate = otherAgents.find(a => {
           const aEmail = a.email ? a.email.trim().toLowerCase() : '';
           if (cleanEmail && aEmail === cleanEmail) return true;
@@ -621,12 +622,12 @@ export default function App() {
   };
 
   const handleUpdateBuyer = async (buyerId: string, updates: Partial<Buyer>, shouldClose: boolean = true) => {
-      const buyer = buyers.find(b => b.id === buyerId);
+      const buyer = buyers.find(b => String(b.id) === String(buyerId));
       if (!buyer) return;
       const merged = { ...buyer, ...updates } as Buyer;
       
       const cleanEmail = merged.email ? merged.email.trim().toLowerCase() : '';
-      const otherBuyers = buyers.filter(b => b.id !== merged.id);
+      const otherBuyers = buyers.filter(b => String(b.id) !== String(merged.id));
       const duplicate = otherBuyers.find(b => {
           const bEmail = b.email ? b.email.trim().toLowerCase() : '';
           if (cleanEmail && bEmail === cleanEmail) return true;
@@ -2151,7 +2152,7 @@ export default function App() {
                     handleUpdateBuyer={handleUpdateBuyer}
                  />
                } />
-               <Route path="/calculator" element={<div className="max-w-3xl mx-auto p-4 md:p-8"><h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-purple-600 dark:text-purple-400"><Calculator/> Deal Analyzer</h2><div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-4"><div className="grid grid-cols-2 gap-4"><div><label className="text-xs uppercase font-bold text-gray-500">ARV</label><input type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3" value={calcData.arv} onChange={e => setCalcData({...calcData, arv: Number(e.target.value)})} /></div><div><label className="text-xs uppercase font-bold text-gray-500">Repairs</label><input type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3" value={calcData.repairs} onChange={e => setCalcData({...calcData, repairs: Number(e.target.value)})} /></div><div><label className="text-xs uppercase font-bold text-gray-500">Wholesale Fee</label><input type="number" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-3" value={calcData.fee} onChange={e => setCalcData({...calcData, fee: Number(e.target.value)})} /></div><div className="flex items-center"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={calcData.isDoubleClose} onChange={e => setCalcData({...calcData, isDoubleClose: e.target.checked})} className="w-5 h-5 rounded" /><span className="text-sm font-bold dark:text-white">Double Close?</span></label></div></div><div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"><div className="text-center"><div className="text-sm text-gray-500 uppercase font-bold">Max Allowable Offer (MAO)</div><div className="text-4xl font-bold text-green-600 dark:text-green-400">{formatCurrency(mao)}</div><div className="text-xs text-gray-400 mt-1">70% Rule - Repairs - Fee {calcData.isDoubleClose ? '- Costs' : ''}</div></div></div></div></div>} />
+               <Route path="/calculator" element={<DealAnalyzer />} />
                <Route path="/calendar" element={<div className="w-full h-full"><CalendarView agents={agents} buyers={buyers} onUpdateAgent={handleUpdateAgent} onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)} onViewAgent={(agent) => setViewingAgent(agent)} onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }} /></div>} />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>

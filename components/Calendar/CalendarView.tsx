@@ -101,18 +101,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
         const dateStr = formatDateStr(selectedDate);
         
         if (viewMode === 'agents') {
-            onUpdateAgent(item.id, { nextFollowUpDate: dateStr });
+            onUpdateAgent(item.id, { nextFollowUpDate: dateStr, overrideDuplicate: true });
         } else {
-            onUpdateBuyer(item.id, { nextFollowUpDate: dateStr });
+            onUpdateBuyer(item.id, { nextFollowUpDate: dateStr, overrideDuplicate: true });
         }
     };
 
     const handleRemoveFollowUp = (item: Agent | Buyer) => {
-        // Use empty string to clear the date effectively
+        // Use null to clear the date effectively
         if (viewMode === 'agents') {
-            onUpdateAgent(item.id, { nextFollowUpDate: '' });
+            onUpdateAgent(item.id, { nextFollowUpDate: null as any, overrideDuplicate: true });
         } else {
-            onUpdateBuyer(item.id, { nextFollowUpDate: '' });
+            onUpdateBuyer(item.id, { nextFollowUpDate: null as any, overrideDuplicate: true });
         }
     };
 
@@ -241,7 +241,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ agents, buyers, onUp
                                                     onClick={(e) => handleRemoveDirectly(e, item)}
                                                     onMouseDown={(e) => e.stopPropagation()}
                                                     onMouseUp={(e) => e.stopPropagation()}
-                                                    className="absolute top-1 right-1 p-1.5 rounded opacity-0 group-hover/item:opacity-100 hover:bg-white dark:hover:bg-gray-700 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all z-20 pointer-events-auto"
+                                                    className="absolute top-1 right-1 p-1.5 rounded md:opacity-0 group-hover/item:opacity-100 hover:bg-white dark:hover:bg-gray-700 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all z-20 pointer-events-auto"
                                                     title="Remove"
                                                 >
                                                     <Trash2 size={14} />

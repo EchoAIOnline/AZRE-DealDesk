@@ -204,7 +204,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                                             {onRemove && (
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); onRemove(item); }}
-                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors md:opacity-0 group-hover:opacity-100"
                                                     title="Remove"
                                                 >
                                                     <Trash2 size={16} />
