@@ -208,11 +208,11 @@ const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
                 <div className="p-5 flex flex-col justify-between space-y-3">
                     <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">MOTIVATION SIGNALS</div>
                     <div className={`text-4xl font-black ${getColorClasses(signalTier).text}`}>
-                        {signalCount} <span className="text-2xl text-gray-500 font-bold">/ 8</span>
+                        {signalCount} <span className="text-2xl text-gray-500 font-bold">/ {MOTIVATION_SIGNALS_LIST.length}</span>
                     </div>
                     <div className="space-y-2 pt-1">
                         <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                            <div className={`h-full ${getColorClasses(signalTier).bg}`} style={{ width: `${(signalCount / 8) * 100}%` }}></div>
+                            <div className={`h-full ${getColorClasses(signalTier).bg}`} style={{ width: `${(signalCount / MOTIVATION_SIGNALS_LIST.length) * 100}%` }}></div>
                         </div>
                         <div className="flex items-start gap-1.5 pt-1">
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${getColorClasses(signalTier).dot}`}></span>
@@ -260,7 +260,8 @@ const MOTIVATION_SIGNALS_LIST = [
     "Visible property distress",
     "Vacant / carrying costs",
     "Motivated seller (estate, REO, etc.)",
-    "Agent engaged / responsive"
+    "Agent engaged / responsive",
+    "Off-Market"
 ];
 
 const AgentSlot: React.FC<{
