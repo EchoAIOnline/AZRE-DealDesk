@@ -1,0 +1,1414 @@
+{
+  "zpid": 77050198,
+  "city": "South Bend",
+  "state": "IN",
+  "homeStatus": "OTHER",
+  "address": "2506 Gordon Cir, South Bend, IN 46635",
+  "isListingClaimedByCurrentSignedInUser": "false",
+  "isCurrentSignedInAgentResponsible": "false",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "price": 324100,
+  "yearBuilt": 1958,
+  "streetAddress": "2506 Gordon Cir",
+  "zipcode": "46635",
+  "isCurrentSignedInUserVerifiedOwner": "false",
+  "isVerifiedClaimedByCurrentSignedInUser": "No",
+  "listingDataSource": "Legacy",
+  "longitude": -86.2125,
+  "latitude": 41.695827,
+  "livingArea": 1908,
+  "homeType": "SINGLE_FAMILY",
+  "lotSize": 13939,
+  "lotAreaValue": 0.3199954086317723,
+  "lotAreaUnits": "Acres",
+  "livingAreaValue": 1908,
+  "livingAreaUnitsShort": "sqft",
+  "isUndisclosedAddress": "false",
+  "zestimate": 324100,
+  "rentZestimate": 2452,
+  "currency": "USD",
+  "dateSoldString": "2023-03-03",
+  "taxAssessedValue": 299600,
+  "taxAssessedYear": 2025,
+  "country": "USA",
+  "propertyTaxRate": 0.92,
+  "photoCount": 20,
+  "isPremierBuilder": "false",
+  "isZillowOwned": "false",
+  "hdpUrl": "https://www.zillow.com/homedetails/2506-Gordon-Cir-South-Bend-IN-46635/77050198_zpid/",
+  "tourViewCount": 0,
+  "hasPublicVideo": false,
+  "lastSoldPrice": 265000,
+  "livingAreaUnits": "Square Feet",
+  "streetViewTileImageUrlMediumLatLong": "https://maps.googleapis.com/maps/api/streetview?location=41.695827,-86.212500&size=400x250&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&signature=Z9fcuAJfcrUhkrzoeLs6MGnSHqw=",
+  "isNonOwnerOccupied": "false",
+  "zestimateLowPercent": "5",
+  "zestimateHighPercent": "5",
+  "description": "1 MILE FROM NOTRE DAME---Great area of homes --ALL BRICK ranch with a large 2-car attached garage. Upon entering this home from the front covered porch is the living room with refinished hardwood floors, and down the hall are 3 bedrooms which have hardwood under the carpet, and 2 full baths. The kitchen is awesome with stainless steel Whirlpool appliances and a lot of custom cabinets, and a large island with cabinets below.  You will enjoy the 9' x 11' dining area which has a hardwood floor that can handle a large dining table. On the east end of the kitchen is an alcove that has the door to the backyard, and has built-in cabinets which could be removed  and use the space for a Stackable washer/dryer unit as it is located above the plumbing used for the current W/D in the lower level. This home has had a lot of recent updates. There are two finished rooms in the lower level and  another room that can be finished to be used as an all-purpose room or one can remove a wall to extend the family room. Updates in this home  include---2023--Hardwood floors were refinished, Electric was updated and new fixtures installed,  the home interior was painted on the main floor and in the lower level, new Luxury vinyl flooring installed in the lower level family room and den/study, Pest inspection was completed, and all passed. 2022--Tear off roof installed, gutter extensions added. 2020--new inground sprinkling system installed. 2016--vinyl clad replacement windows installed, and a new garage overhead door was installed. This home can be a great Notre Dame week-end rental or a perfect place to just \"call home\" Must see inside to appreciate",
+  "parcelId": "710432352001000004",
+  "taxHistory": [
+    {
+      "time": 2025,
+      "taxPaid": 6678.8,
+      "value": 299600,
+      "valueIncreaseRate": 0.05753618
+    },
+    {
+      "time": 2024,
+      "taxPaid": 1591.12,
+      "value": 283300,
+      "valueIncreaseRate": 0.1823873
+    },
+    {
+      "time": 2023,
+      "taxPaid": 1559.92,
+      "value": 239600,
+      "valueIncreaseRate": 0.054113507
+    },
+    {
+      "time": 2022,
+      "taxPaid": 1529.34,
+      "value": 227300,
+      "valueIncreaseRate": 0.24616228
+    },
+    {
+      "time": 2021,
+      "taxPaid": 1499.36,
+      "value": 182400,
+      "valueIncreaseRate": 0.069167644
+    },
+    {
+      "time": 2020,
+      "taxPaid": 1469.96,
+      "value": 170600,
+      "valueIncreaseRate": 0.11795544
+    },
+    {
+      "time": 2019,
+      "taxPaid": 1441.12,
+      "value": 152600,
+      "valueIncreaseRate": -0.016752576
+    },
+    {
+      "time": 2018,
+      "taxPaid": 1724.2,
+      "value": 155200,
+      "valueIncreaseRate": 0.08228731
+    },
+    {
+      "time": 2017,
+      "taxPaid": 2165.4,
+      "value": 143400,
+      "valueIncreaseRate": 0.16396104
+    },
+    {
+      "time": 2016,
+      "taxPaid": 1358,
+      "value": 123200,
+      "valueIncreaseRate": 0.011494253
+    },
+    {
+      "time": 2014,
+      "taxPaid": 1331.38,
+      "value": 121800,
+      "valueIncreaseRate": 0.0008216927
+    },
+    {
+      "time": 2013,
+      "taxPaid": 1305.28,
+      "value": 121700,
+      "valueIncreaseRate": 0.017558528
+    },
+    {
+      "time": 2012,
+      "taxPaid": 1279.68,
+      "value": 119600,
+      "valueIncreaseRate": 0.05467372
+    },
+    {
+      "time": 2011,
+      "taxPaid": 1254.6,
+      "value": 113400,
+      "valueIncreaseRate": 0
+    },
+    {
+      "time": 2010,
+      "taxPaid": 1230,
+      "value": 113400,
+      "valueIncreaseRate": -0.040609136
+    },
+    {
+      "time": 2009,
+      "taxPaid": 1205.88,
+      "value": 118200,
+      "valueIncreaseRate": 0
+    },
+    {
+      "time": 2007,
+      "value": 118200,
+      "valueIncreaseRate": -0.33892617
+    },
+    {
+      "time": 2006,
+      "taxPaid": 1406.26,
+      "value": 178800,
+      "valueIncreaseRate": 0
+    },
+    {
+      "time": 2004,
+      "taxPaid": 1486.74,
+      "value": 178800,
+      "valueIncreaseRate": -0.18834265
+    },
+    {
+      "time": 2003,
+      "taxPaid": 1480.99,
+      "value": 220290,
+      "valueIncreaseRate": 14.928416
+    },
+    {
+      "time": 2001,
+      "value": 13830,
+      "valueIncreaseRate": 0
+    }
+  ],
+  "priceHistory": [
+    {
+      "date": "2023-03-03",
+      "time": 1677801600000,
+      "priceChangeRate": 0.00037750094375235937,
+      "event": "Sold",
+      "source": "IRMLS",
+      "showCountyLink": false,
+      "postingIsRental": false,
+      "attributeSource": {
+        "infoString2": "IRMLS",
+        "infoString3": "https://photos.zillowstatic.com/fp/73b132af9ed3002e0a7fe1db0fd775b3-zillow_web_logo_inf_11.jpg"
+      },
+      "price": 265000,
+      "source_listing_id": "202302779",
+      "source_name": "IRMLS"
+    },
+    {
+      "date": "2023-02-03",
+      "time": 1675382400000,
+      "priceChangeRate": 0,
+      "event": "Pending sale",
+      "source": "IRMLS",
+      "showCountyLink": false,
+      "postingIsRental": false,
+      "attributeSource": {
+        "infoString2": "IRMLS",
+        "infoString3": "https://photos.zillowstatic.com/fp/73b132af9ed3002e0a7fe1db0fd775b3-zillow_web_logo_inf_11.jpg"
+      },
+      "price": 264900,
+      "source_listing_id": "202302779",
+      "source_name": "IRMLS"
+    },
+    {
+      "date": "2023-02-01",
+      "time": 1675209600000,
+      "priceChangeRate": 0,
+      "event": "Listed for sale",
+      "source": "IRMLS",
+      "showCountyLink": false,
+      "postingIsRental": false,
+      "attributeSource": {
+        "infoString2": "IRMLS",
+        "infoString3": "https://photos.zillowstatic.com/fp/73b132af9ed3002e0a7fe1db0fd775b3-zillow_web_logo_inf_11.jpg"
+      },
+      "price": 264900,
+      "source_listing_id": "202302779",
+      "source_name": "IRMLS"
+    }
+  ],
+  "nearbyHomes": [
+    "{\"zpid\":77050199,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://maps.googleapis.com/maps/api/streetview?location=2511+Gordon+Cir%2C+South+Bend%2C+IN+46635&size=316x234&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=nfNXMO6U8HbxCss26YK2_1jpDas=\"],\"price\":262200,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":1.5,\"livingArea\":1144,\"livingAreaValue\":1144,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":13680,\"lotAreaValue\":0.3140495867768595,\"lotAreaUnits\":\"Acres\",\"address\":{\"streetAddress\":\"2511 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2511 Gordon Cir\"]},\"latitude\":41.695568,\"longitude\":-86.212494,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2511-Gordon-Cir-South-Bend-IN-46635/77050199_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050197,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://photos.zillowstatic.com/fp/58dec4f081280d735ee262196ebcf265-p_c.jpg\"],\"price\":254800,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingArea\":1134,\"livingAreaValue\":1134,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":9626,\"lotAreaValue\":9626,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"2520 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2520 Gordon Cir\"]},\"latitude\":41.695847,\"longitude\":-86.212135,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2520-Gordon-Cir-South-Bend-IN-46635/77050197_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050200,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://maps.googleapis.com/maps/api/streetview?location=2529+Gordon+Cir%2C+South+Bend%2C+IN+46635&size=316x234&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=930aV9el897Uj-Vb58QUGuWseNc=\"],\"price\":264000,\"currency\":\"USD\",\"bedrooms\":4,\"bathrooms\":1.5,\"livingArea\":1369,\"livingAreaValue\":1369,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":9630,\"lotAreaValue\":9630,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"2529 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2529 Gordon Cir\"]},\"latitude\":41.695553,\"longitude\":-86.212135,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2529-Gordon-Cir-South-Bend-IN-46635/77050200_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050195,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://photos.zillowstatic.com/fp/b6db0b2e00d5a0ede54c852d8fad531f-p_c.jpg\"],\"price\":267500,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingArea\":1430,\"livingAreaValue\":1430,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":13068,\"lotAreaValue\":0.3,\"lotAreaUnits\":\"Acres\",\"address\":{\"streetAddress\":\"2507 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2507 Gordon Cir\"]},\"latitude\":41.69606,\"longitude\":-86.21299,\"homeStatus\":\"SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2507-Gordon-Cir-South-Bend-IN-46635/77050195_zpid/\",\"hdpTypeDimension\":\"RecentlySold\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"attributionInfo\":\"{\\\"mlsId\\\":\\\"202411046\\\"}\",\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050192,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://photos.zillowstatic.com/fp/183e65e5953a724ce106aeb9d22a7e27-p_c.jpg\"],\"price\":348500,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":1.5,\"livingArea\":1911,\"livingAreaValue\":1911,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":5357880,\"lotAreaValue\":123,\"lotAreaUnits\":\"Acres\",\"address\":{\"streetAddress\":\"2513 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2513 Gordon Cir\"]},\"latitude\":41.696224,\"longitude\":-86.21276,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2513-Gordon-Cir-South-Bend-IN-46635/77050192_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050191,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://photos.zillowstatic.com/fp/628646297e196f917517a60ab70276f5-p_c.jpg\"],\"price\":263000,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingArea\":1829,\"livingAreaValue\":1829,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":10737,\"lotAreaValue\":10737.54,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"2503 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2503 Gordon Cir\"]},\"latitude\":41.6958,\"longitude\":-86.21311,\"homeStatus\":\"SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2503-Gordon-Cir-South-Bend-IN-46635/77050191_zpid/\",\"hdpTypeDimension\":\"RecentlySold\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"attributionInfo\":\"{\\\"mlsId\\\":\\\"202415670\\\"}\",\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":77050194,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://photos.zillowstatic.com/fp/b9d4d078f9b616618534f08ef3138c87-p_c.jpg\"],\"price\":286900,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingArea\":1669,\"livingAreaValue\":1669,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":12109,\"lotAreaValue\":0.2779843893480257,\"lotAreaUnits\":\"Acres\",\"address\":{\"streetAddress\":\"2523 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2523 Gordon Cir\"]},\"latitude\":41.69624,\"longitude\":-86.21224,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2523-Gordon-Cir-South-Bend-IN-46635/77050194_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}",
+    "{\"zpid\":94578511,\"isSavedByCurrentSignedInUser\":false,\"miniCardPhotos\":[\"https://maps.googleapis.com/maps/api/streetview?location=2504+Gordon+Cir%2C+South+Bend%2C+IN+46635&size=316x234&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=1EV_8DuH6Fjx_vAN6kzR69M4BHc=\"],\"price\":249400,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":1.5,\"livingArea\":1092,\"livingAreaValue\":1092,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"listingMetadata\":{\"comminglingCategoryIsRulesApplicable\":false},\"lotSize\":10736,\"lotAreaValue\":10736,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"2504 Gordon Cir\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"formattedChip\":{\"location\":[\"2504 Gordon Cir\"]},\"latitude\":41.695545,\"longitude\":-86.213135,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2504-Gordon-Cir-South-Bend-IN-46635/94578511_zpid/\",\"hdpTypeDimension\":\"Zestimate\",\"propertyTypeDimension\":\"Single Family\",\"listingTypeDimension\":\"Unknown Listed By\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false,\"is_FSBA\":false},\"isShowcaseListing\":false,\"isPremierBuilder\":false,\"state\":\"IN\"}"
+  ],
+  "schools": [
+    {
+      "distance": 0.5,
+      "name": "Edison Intermediate Center",
+      "rating": 3,
+      "grades": "K-8",
+      "link": "https://www.greatschools.org/indiana/south-bend/1574-Edison-Intermediate-Center/"
+    },
+    {
+      "distance": 1.3,
+      "name": "Rise Up Academy At Eggleston",
+      "rating": 1,
+      "grades": "9-12",
+      "link": "https://www.greatschools.org/indiana/south-bend/2903-Rise-Up-Academy-At-Eggleston/"
+    },
+    {
+      "distance": 2.1,
+      "name": "Swanson Traditional School",
+      "rating": 7,
+      "grades": "PK-5",
+      "link": "https://www.greatschools.org/indiana/south-bend/1573-Swanson-Primary-Center/"
+    }
+  ],
+  "mortgageRates": {
+    "thirtyYearFixedRate": 6.75
+  },
+  "isInstantOfferEnabled": "No",
+  "nearbyCities": [
+    {
+      "regionUrl": {
+        "path": "/bremen-in/"
+      },
+      "name": "Bremen"
+    },
+    {
+      "regionUrl": {
+        "path": "/granger-in/"
+      },
+      "name": "Granger"
+    },
+    {
+      "regionUrl": {
+        "path": "/gulivoire-park-in/"
+      },
+      "name": "Gulivoire Park"
+    },
+    {
+      "regionUrl": {
+        "path": "/lakeville-in/"
+      },
+      "name": "Lakeville"
+    },
+    {
+      "regionUrl": {
+        "path": "/mishawaka-in/"
+      },
+      "name": "Mishawaka"
+    },
+    {
+      "regionUrl": {
+        "path": "/new-carlisle-in/"
+      },
+      "name": "New Carlisle"
+    },
+    {
+      "regionUrl": {
+        "path": "/north-liberty-in/"
+      },
+      "name": "North Liberty"
+    },
+    {
+      "regionUrl": {
+        "path": "/osceola-in/"
+      },
+      "name": "Osceola"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in/"
+      },
+      "name": "South Bend"
+    },
+    {
+      "regionUrl": {
+        "path": "/walkerton-in/"
+      },
+      "name": "Walkerton"
+    }
+  ],
+  "nearbyNeighborhoods": [
+    {
+      "regionUrl": {
+        "path": "/council-oak-south-bend-in/"
+      },
+      "name": "Council Oak"
+    },
+    {
+      "regionUrl": {
+        "path": "/georgetown-south-bend-in/"
+      },
+      "name": "Georgetown"
+    },
+    {
+      "regionUrl": {
+        "path": "/lasalle-area-south-bend-in/"
+      },
+      "name": "Lasalle Area"
+    },
+    {
+      "regionUrl": {
+        "path": "/near-northwest-south-bend-in/"
+      },
+      "name": "Near Northwest"
+    },
+    {
+      "regionUrl": {
+        "path": "/northeast-south-bend-in/"
+      },
+      "name": "Northeast"
+    },
+    {
+      "regionUrl": {
+        "path": "/nws-cooperative-alliance-south-bend-in/"
+      },
+      "name": "Nws Cooperative Alliance"
+    },
+    {
+      "regionUrl": {
+        "path": "/river-park-south-bend-in/"
+      },
+      "name": "River Park"
+    },
+    {
+      "regionUrl": {
+        "path": "/rum-village-south-bend-in/"
+      },
+      "name": "Rum Village"
+    },
+    {
+      "regionUrl": {
+        "path": "/southeast-quality-south-bend-in/"
+      },
+      "name": "Southeast Quality"
+    },
+    {
+      "regionUrl": {
+        "path": "/westside-south-bend-in/"
+      },
+      "name": "Westside"
+    }
+  ],
+  "nearbyZipcodes": [
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46601/"
+      },
+      "name": "46601"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46613/"
+      },
+      "name": "46613"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46614/"
+      },
+      "name": "46614"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46615/"
+      },
+      "name": "46615"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46616/"
+      },
+      "name": "46616"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46617/"
+      },
+      "name": "46617"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46619/"
+      },
+      "name": "46619"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46628/"
+      },
+      "name": "46628"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46635/"
+      },
+      "name": "46635"
+    },
+    {
+      "regionUrl": {
+        "path": "/south-bend-in-46637/"
+      },
+      "name": "46637"
+    }
+  ],
+  "abbreviatedAddress": "2506 Gordon Cir",
+  "daysOnZillow": 1244,
+  "rentalApplicationsAcceptedType": "REQUEST_TO_APPLY",
+  "propertyTypeDimension": "Single Family",
+  "hdpTypeDimension": "Zestimate",
+  "timeZone": "America/Indiana/Indianapolis",
+  "selfTour": {
+    "hasSelfTour": false
+  },
+  "photos": [
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/ae87947a0342a6ce97cf534c3be7f534-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/490b35c95d9689d1b7e0938f9d9b8721-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3c5da1364294dfc4d9722dfdd1a834a8-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0ad537304fe9122a6de377a811ef35a1-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e6c3d4bd07346706224b8a0ba322ffa8-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d2fb45fa5db1373216c969f3d9e656f2-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/5b121ce49531940413069788f0fbd4bc-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/e2f21b1972df764ddf25f59f99b44ffe-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/d1115c2c33fbc83af78569782df69e45-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/b752331eaf8b51962c8ec17b5ed92581-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/cf5df0bb31f6916aa71793eeb9759fb0-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/4311d66ebf5fe77e1992421290dcef3b-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/dd52858fa12bbae7d676b5676ba5ff18-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/0dbffffc4a2b3eb6d1570229996f44be-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/154d1c59aef8be4d63ca7584c8223d13-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3610711cd8f8c6d3fb5e766ff8c94d17-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/acf3899ccff2b6a7f8ce855c0efecbdf-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/daba18547deb6dacfdd69c6a1667a262-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/923d6472e79d736ecd63ec83ee0a513a-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    },
+    {
+      "mixedSources": {
+        "jpeg": [
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_192.jpg",
+            "width": 192
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_384.jpg",
+            "width": 384
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_576.jpg",
+            "width": 576
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_768.jpg",
+            "width": 768
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_960.jpg",
+            "width": 960
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_1152.jpg",
+            "width": 1152
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_1344.jpg",
+            "width": 1344
+          },
+          {
+            "url": "https://photos.zillowstatic.com/fp/3d29f66fcf73fdd8dc6177e23f2b8672-cc_ft_1536.jpg",
+            "width": 1536
+          }
+        ]
+      }
+    }
+  ],
+  "utilities": [],
+  "url": "https://www.zillow.com/homedetails/2506-Gordon-Cir-South-Bend-IN-46635/77050198_zpid/",
+  "countyFIPS": "18141",
+  "countyID": "2849",
+  "dateSold": "2023-03-03T00:00:00.000Z",
+  "isFeatured": false,
+  "isHousingConnector": false,
+  "isRentalsLeadCapMet": false,
+  "listingTypeDimension": "Unknown Listed By",
+  "homeValuation": [
+    "{\"comparables\":{\"comps\":[{\"property\":{\"zestimate\":299800,\"lastSoldPrice\":null,\"price\":299800,\"daysOnZillow\":175,\"dateSold\":null,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingAreaValue\":2000,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"lotAreaValue\":null,\"lotAreaUnits\":\"sqft\",\"address\":{\"streetAddress\":\"1332 Rosemary Ln\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46617\"},\"latitude\":41.693172,\"longitude\":-86.21844,\"zpid\":77028188,\"homeStatus\":\"OTHER\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/1332-Rosemary-Ln-South-Bend-IN-46617/77028188_zpid/\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false},\"isUndisclosedAddress\":false,\"attributionInfo\":{\"mlsId\":null,\"mlsName\":null,\"providerLogo\":null,\"agentName\":null,\"agentPhoneNumber\":null,\"brokerName\":null,\"brokerPhoneNumber\":null},\"compsCarouselPropertyPhotos\":[{\"mixedSources\":{\"jpeg\":[{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_192.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_384.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_576.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_768.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_960.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_1152.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_1344.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d8050572bfcf4ddb2fb5bdcb205618c-cc_ft_1536.jpg\"}]}}]}},{\"property\":{\"zestimate\":244000,\"lastSoldPrice\":243000,\"price\":243000,\"daysOnZillow\":29,\"dateSold\":1782777600000,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingAreaValue\":1840,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"lotAreaValue\":7840.8,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"1228 N Ironwood Dr\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46615\"},\"latitude\":41.6867,\"longitude\":-86.2162,\"zpid\":94567634,\"homeStatus\":\"RECENTLY_SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/1228-N-Ironwood-Dr-South-Bend-IN-46615/94567634_zpid/\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false},\"isUndisclosedAddress\":false,\"attributionInfo\":{\"mlsId\":\"202617147\",\"mlsName\":\"IRMLS\",\"providerLogo\":null,\"agentName\":\"Tumpa Akther\",\"agentPhoneNumber\":null,\"brokerName\":\"Century 21 Affiliated\",\"brokerPhoneNumber\":null},\"compsCarouselPropertyPhotos\":[{\"mixedSources\":{\"jpeg\":[{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_192.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_384.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_576.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_768.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_960.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_1152.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_1344.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/15016de0d4a3775942e44a2eaa9c3612-cc_ft_1536.jpg\"}]}}]}},{\"property\":{\"zestimate\":263700,\"lastSoldPrice\":258900,\"price\":258900,\"daysOnZillow\":120,\"dateSold\":1774915200000,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":2,\"livingAreaValue\":1964,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"lotAreaValue\":8712,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"54645 28th St\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"latitude\":41.699493,\"longitude\":-86.20961,\"zpid\":77044543,\"homeStatus\":\"RECENTLY_SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/54645-28th-St-South-Bend-IN-46635/77044543_zpid/\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false},\"isUndisclosedAddress\":false,\"attributionInfo\":{\"mlsId\":\"202605068\",\"mlsName\":\"IRMLS\",\"providerLogo\":null,\"agentName\":\"Ann Connolly\",\"agentPhoneNumber\":null,\"brokerName\":\"RE/MAX 100 Elkhart\",\"brokerPhoneNumber\":null},\"compsCarouselPropertyPhotos\":[{\"mixedSources\":{\"jpeg\":[{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_192.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_384.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_576.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_768.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_960.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_1152.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_1344.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/608010b73600b86ac757f554dd9de7a0-cc_ft_1536.jpg\"}]}}]}},{\"property\":{\"zestimate\":265200,\"lastSoldPrice\":264000,\"price\":264000,\"daysOnZillow\":34,\"dateSold\":1782345600000,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":1,\"livingAreaValue\":1938,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"lotAreaValue\":9583.2,\"lotAreaUnits\":\"Square Feet\",\"address\":{\"streetAddress\":\"1603 Crestwood Blvd\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46635\"},\"latitude\":41.69693,\"longitude\":-86.20696,\"zpid\":77050465,\"homeStatus\":\"RECENTLY_SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/1603-Crestwood-Blvd-South-Bend-IN-46635/77050465_zpid/\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false},\"isUndisclosedAddress\":false,\"attributionInfo\":{\"mlsId\":\"202617171\",\"mlsName\":\"IRMLS\",\"providerLogo\":null,\"agentName\":\"Jan McGregor\",\"agentPhoneNumber\":null,\"brokerName\":\"Freedom Realty Partners\",\"brokerPhoneNumber\":null},\"compsCarouselPropertyPhotos\":[{\"mixedSources\":{\"jpeg\":[{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=192x144&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=5ucGx0O1bPb8VX8wAI-Lq7TWP3M=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=384x288&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=R9-SnekEQl3iDoqnybYTRMF18Vg=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=576x432&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=0BCwyVOwZ3ErtLGfUsK9Uo4CGck=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=768x576&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=hgTiomV1Fj-gqj5sJPYZ3bIxGfU=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=960x720&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=erQOMqbLz0mngEo36Qdmq6ams_I=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=1152x864&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=fVeLmLYmp4ymZeNkGU9kda6UrHk=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=1344x1008&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=F0OeSH36yI9kigr25n11E--ltPU=\"},{\"url\":\"https://maps.googleapis.com/maps/api/streetview?location=1603+Crestwood+Blvd%2C+South+Bend%2C+IN+46635&size=1536x1152&key=AIzaSyARFMLB1na-BBWf7_R3-5YOQQaHqEJf6RQ&source=outdoor&&signature=rlJ0LeWwF7_nv63GpTAjvLNPlX0=\"}]}}]}},{\"property\":{\"zestimate\":286300,\"lastSoldPrice\":285000,\"price\":285000,\"daysOnZillow\":33,\"dateSold\":1782432000000,\"currency\":\"USD\",\"bedrooms\":3,\"bathrooms\":1,\"livingAreaValue\":1992,\"livingAreaUnits\":\"Square Feet\",\"livingAreaUnitsShort\":\"sqft\",\"lotAreaValue\":0.25,\"lotAreaUnits\":\"Acres\",\"address\":{\"streetAddress\":\"2220 Solomon Ave\",\"city\":\"South Bend\",\"state\":\"IN\",\"zipcode\":\"46615\"},\"latitude\":41.689384,\"longitude\":-86.21526,\"zpid\":77028356,\"homeStatus\":\"RECENTLY_SOLD\",\"homeType\":\"SINGLE_FAMILY\",\"hdpUrl\":\"/homedetails/2220-Solomon-Ave-South-Bend-IN-46615/77028356_zpid/\",\"listing_sub_type\":{\"is_newHome\":false,\"is_forAuction\":false,\"is_bankOwned\":false,\"is_foreclosure\":false,\"is_FSBO\":false,\"is_comingSoon\":false},\"isUndisclosedAddress\":false,\"attributionInfo\":{\"mlsId\":\"202620324\",\"mlsName\":\"IRMLS\",\"providerLogo\":null,\"agentName\":\"Erika J Walter\",\"agentPhoneNumber\":null,\"brokerName\":\"Berkshire Hathaway HomeServices Northern Indiana Real Estate\",\"brokerPhoneNumber\":null},\"compsCarouselPropertyPhotos\":[{\"mixedSources\":{\"jpeg\":[{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_192.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_384.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_576.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_768.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_960.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_1152.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_1344.jpg\"},{\"url\":\"https://photos.zillowstatic.com/fp/5d107d838a79742faf1df2bb31b368b2-cc_ft_1536.jpg\"}]}}]}}]}}"
+  ],
+  "isOffMarket": false,
+  "citySearchUrl": {
+    "path": "/south-bend-in/",
+    "text": "Homes in South Bend"
+  },
+  "county": "Saint Joseph County",
+  "is_showcased": false,
+  "interior": {
+    "bedrooms_and_bathrooms": {
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "full_bathrooms": 2,
+      "half_bathroom": "0"
+    },
+    "flooring": "Carpet, Hardwood",
+    "heating": "Forced air, Gas",
+    "other_interior_features": "Total interior livable area :1,908 sqft"
+  },
+  "overview": {
+    "days_on_zillow": 1244
+  },
+  "is_listed_by_management_company": false,
+  "listing_provided_by": null,
+  "hoa_details": {
+    "services_included": null,
+    "amenities_included": null
+  },
+  "financial": null,
+  "interior_full": [
+    {
+      "title": "Bedrooms & bathrooms",
+      "values": [
+        "Bedrooms: 3",
+        "Bathrooms: 2",
+        "Full bathrooms: 2"
+      ]
+    },
+    {
+      "title": "Heating",
+      "values": [
+        "Heating features: Forced air,Gas"
+      ]
+    },
+    {
+      "title": "Cooling",
+      "values": [
+        "Cooling features: Central"
+      ]
+    },
+    {
+      "title": "Features",
+      "values": [
+        "Flooring: Carpet,Hardwood"
+      ]
+    },
+    {
+      "title": "Interior area",
+      "values": [
+        "Total interior livable area: 1,908 sqft"
+      ]
+    }
+  ],
+  "property": [
+    {
+      "title": "Parking",
+      "values": [
+        "Parking features: Garage - Attached"
+      ]
+    },
+    {
+      "title": "Features",
+      "values": [
+        "Exterior features: Stone"
+      ]
+    },
+    {
+      "title": "Lot",
+      "values": [
+        "Lot size: 0.32 Acres"
+      ]
+    },
+    {
+      "title": "Details",
+      "values": [
+        "Parcel number: 710432352001000004"
+      ]
+    }
+  ],
+  "construction": [
+    {
+      "title": "Type & style",
+      "values": [
+        "Home type: SingleFamily"
+      ]
+    },
+    {
+      "title": "Materials",
+      "values": [
+        "Foundation: Crawl/Raised",
+        "Roof: Shake / Shingle",
+        "Construction materials: masonry"
+      ]
+    },
+    {
+      "title": "Condition",
+      "values": [
+        "Year built: 1958"
+      ]
+    }
+  ],
+  "tag": null,
+  "contingent_listing_type": null,
+  "unit_number": null,
+  "unit_amenities": null,
+  "open_house_details": null,
+  "community_details": null,
+  "mls_id": null,
+  "base_rent": null,
+  "sqft": null,
+  "availability_date": null,
+  "special_offer": null,
+  "originating_mls": null,
+  "tags": [
+    "Off market"
+  ],
+  "getting_around_scores": {
+    "walk_score": "68/100 | Somewhat Walkable",
+    "transit_score": null,
+    "bike_score": "56/100 | Bikeable"
+  },
+  "days_on_zillow": 1244,
+  "getting_around": {
+    "walk": {
+      "score": 68,
+      "description": "Somewhat Walkable"
+    },
+    "transit": null,
+    "bike": {
+      "score": 56,
+      "description": "Bikeable"
+    }
+  },
+  "other": null,
+  "financial_listing_details": null,
+  "publish_url": null,
+  "climate_risks": null,
+  "num_of_contacts": null,
+  "num_of_applications": null,
+  "has_3d_tour": false,
+  "payment_breakdown": [
+    {
+      "name": "Principal & interest",
+      "value": "1682$"
+    },
+    {
+      "name": "Mortgage insurance",
+      "value": "0$"
+    },
+    {
+      "name": "Property taxes",
+      "value": "423$"
+    },
+    {
+      "name": "Home insurance",
+      "value": "108$"
+    },
+    {
+      "name": "HOA fees",
+      "value": "N/A"
+    },
+    {
+      "name": "Utilities",
+      "value": "Not included"
+    }
+  ],
+  "sold_to_list_ratio": 0.8176488738043813,
+  "sold_to_zestimate_ratio": 0.8176488738043813,
+  "is_flipped_within_12_months": true,
+  "timestamp": "2026-07-30T21:01:30.285Z",
+  "input": {
+    "url": "https://www.zillow.com/homedetails/2506-Gordon-Cir-South-Bend-IN-46635/77050198_zpid/"
+  }
+}

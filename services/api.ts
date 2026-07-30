@@ -261,7 +261,7 @@ export const api = {
 
     save: async (item: any, table: string) => {
         if (isDummyClient) {
-             return null;
+             return item;
         }
         // Strip ID if it looks like a temp ID or let Supabase handle it if UUID
         const payload = { ...item };
@@ -357,7 +357,7 @@ if (table === 'Deals') {
 
     saveBatch: async (items: any[], table: string) => {
         if (isDummyClient) {
-             return null;
+             return items;
         }
         const payloads = items.map(item => {
             const payload = { ...item };
@@ -451,7 +451,7 @@ if (table === 'Deals') {
 
     delete: async (id: string, table: string) => {
         if (isDummyClient) {
-             return false;
+             return true;
         }
         const { error } = await supabase.from(table).delete().eq('id', id);
         if (error) {

@@ -493,6 +493,75 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
 
     const [showBuyerMatch, setShowBuyerMatch] = useState(false);
+    const [showZillowImport, setShowZillowImport] = useState(false);
+    const [zillowUrl, setZillowUrl] = useState("");
+    const [zillowLoading, setZillowLoading] = useState(false);
+    const [zillowError, setZillowError] = useState("");
+
+    const handleZillowImport = async () => {
+        if (!zillowUrl) {
+            setZillowError("Please enter a Zillow URL");
+            return;
+        }
+        setZillowLoading(true);
+        setZillowError("");
+        try {
+            const response = await fetch('/api/scrape-zillow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: zillowUrl })
+            });
+            const result = await response.json();
+            
+            if (!response.ok) {
+                setZillowError(result.message || "Failed to import from Zillow");
+                setZillowLoading(false);
+                return;
+            }
+
+            if (result.data && result.data.length > 0) {
+                const zData = result.data[0];
+                
+                if (zData.error) {
+                    setZillowError(zData.error);
+                    setZillowLoading(false);
+                    return;
+                }
+                
+                const updates: Partial<Deal> = {};
+                
+                // Parse Zillow data into Deal fields (adjust mapping as needed based on BrightData's actual schema)
+                if (zData.address) updates.address = zData.address;
+                if (zData.price) updates.listPrice = parseInt(zData.price.toString().replace(/[^0-9]/g, ''));
+                if (zData.bedrooms) updates.bedrooms = parseInt(zData.bedrooms);
+                if (zData.bathrooms) updates.bathrooms = parseInt(zData.bathrooms);
+                if (zData.livingArea) updates.sqft = parseInt(zData.livingArea);
+                if (zData.yearBuilt) updates.yearBuilt = parseInt(zData.yearBuilt);
+                if (zData.description) updates.listingDescription = (deal.listingDescription ? deal.listingDescription + '\n\n' : '') + 'Zillow Description: ' + zData.description;
+
+                if (zData.mappedPhotos && Array.isArray(zData.mappedPhotos)) {
+                    updates.photos = [...(deal.photos || []), ...zData.mappedPhotos];
+                }
+                if (zData.mappedAgentName) updates.agentName = zData.mappedAgentName;
+                if (zData.mappedAgentPhone) updates.agentPhone = zData.mappedAgentPhone;
+                if (zData.mappedAgentBrokerage) updates.agentBrokerage = zData.mappedAgentBrokerage;
+                if (zData.mappedAgentBrokerPhone) updates.agentBrokerPhone = zData.mappedAgentBrokerPhone;
+                
+                if (zData.mappedMlsNumber) updates.mls = zData.mappedMlsNumber;
+                if (zData.mappedListingType) updates.listingType = zData.mappedListingType;
+                if (zData.mappedDateListed) updates.dateListed = zData.mappedDateListed;
+                
+                setDeal(prev => ({ ...prev, ...updates }));
+                setShowZillowImport(false);
+                setZillowUrl("");
+            } else {
+                setZillowError("No data returned from Zillow scraper.");
+            }
+        } catch (err: any) {
+            setZillowError(err.message || "An error occurred");
+        }
+        setZillowLoading(false);
+    };
     const [previewDocument, setPreviewDocument] = useState<{name: string, url: string} | null>(null);
     
     const [neighborhoodQuery, setNeighborhoodQuery] = useState("");
@@ -1483,6 +1552,14 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     <div className="space-y-4">
                         <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><Home size={14}/> Property Information</h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowZillowImport(true)}
+                                className="text-[11px] font-semibold px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded flex items-center gap-1.5 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors ml-auto shadow-sm"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                Import from Zillow
+                            </button>
                         </div>
                         <div className="space-y-4">
                             <div className="relative z-[100]">
@@ -2428,6 +2505,61 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     setShowUnsavedWarning(false);
                 }}
             />
+          )}
+
+          
+          {showZillowImport && (
+            <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Import from Zillow
+                        </h3>
+                        <button onClick={() => { setShowZillowImport(false); setZillowError(""); }} className="text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Paste a Zillow URL to automatically import property details and photos.
+                    </p>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1">Zillow Property URL</label>
+                            <input 
+                                type="url" 
+                                value={zillowUrl}
+                                onChange={(e) => setZillowUrl(e.target.value)}
+                                placeholder="https://www.zillow.com/homedetails/..."
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        {zillowError && (
+                            <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800">
+                                {zillowError}
+                            </div>
+                        )}
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button 
+                                type="button"
+                                onClick={() => { setShowZillowImport(false); setZillowError(""); }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleZillowImport}
+                                disabled={zillowLoading || !zillowUrl}
+                                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                {zillowLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                {zillowLoading ? 'Importing...' : 'Import Data'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
           )}
 
           {showEmailModal && (

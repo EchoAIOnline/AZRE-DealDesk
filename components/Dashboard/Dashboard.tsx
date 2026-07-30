@@ -18,11 +18,12 @@ interface DashboardProps {
     onUpdate: (id: string, updates: Partial<Deal>) => void;
     onDelete: (id: string) => void;
     onMove: (id: string, decision: string) => void;
+    onAddDeal: () => void;
 }
 
 const DASHBOARD_BG_KEY = 'azre_dashboard_bg_images_v1';
 
-export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents, buyers, onEdit, onUpdate, onDelete, onMove }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents, buyers, onEdit, onUpdate, onDelete, onMove, onAddDeal }) => {
     const navigate = useNavigate();
     // Default Theme Images
     const DEFAULT_THEME_IMAGES = {
@@ -397,7 +398,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                         <Filter size={16} />
                         Filter
                     </button>
-                    <button onClick={() => navigate('/pipeline')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
+                    <button onClick={() => { onAddDeal(); navigate('/pipeline'); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
                         <Plus size={16} />
                         Add Deal
                     </button>

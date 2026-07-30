@@ -1503,6 +1503,9 @@ export default function App() {
   };
 
   const handleAddDeal = async (overrides?: Partial<Deal>) => {
+      if (overrides && 'nativeEvent' in overrides) {
+          overrides = undefined;
+      } console.log('handleAddDeal called');
       const isJv = location.pathname === '/jv-pipeline';
       const newDealInit: Deal = {
           id: generateId(), 
@@ -1566,9 +1569,9 @@ export default function App() {
           ...overrides
       };
       try {
-        const tableName = isJv ? 'JVDeals' : 'Deals';
+        const tableName = isJv ? 'JVDeals' : 'Deals'; console.log('Adding deal:', newDealInit);
         const savedRecord = await api.save(newDealInit, tableName);
-        if (savedRecord) {
+        if (savedRecord) { console.log('Deal saved:', savedRecord);
             setDeals(prev => {
                 if (prev.some(d => d.id === savedRecord.id)) return prev;
                 return [savedRecord, ...prev];

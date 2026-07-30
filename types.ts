@@ -111,6 +111,7 @@ export interface Deal {
   agentPhone: string;
   agentEmail: string;
   agentBrokerage: string;
+  agentBrokerPhone?: string;
   // Secondary Agents (New fields)
   secondAgentId?: string;
   thirdAgentId?: string;
