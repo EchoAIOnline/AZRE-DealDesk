@@ -498,6 +498,84 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const [zillowLoading, setZillowLoading] = useState(false);
     const [zillowError, setZillowError] = useState("");
 
+    const [compsLoading, setCompsLoading] = useState(false);
+    const [compsError, setCompsError] = useState("");
+
+    const handlePullComps = async (targetType: 'renovation' | 'newConstruction' = 'renovation') => {
+        if (!deal.address) {
+            setCompsError("No address available on deal to pull comps.");
+            return;
+        }
+        setCompsLoading(true);
+        setCompsError("");
+        try {
+            // Construct Zillow search URL from the address
+            const formattedAddress = deal.address.replace(/,/g, '').replace(/ /g, '-');
+            const searchUrl = `https://www.zillow.com/homes/${formattedAddress}_rb/`;
+            
+            const response = await fetch('/api/scrape-zillow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: searchUrl })
+            });
+            const result = await response.json();
+            
+            if (!response.ok) {
+                setCompsError(result.message || "Failed to pull comps");
+                setCompsLoading(false);
+                return;
+            }
+
+            if (result.status === 'success' && result.data && result.data.length > 0) {
+                const zData = result.data[0];
+                const updates: Partial<Deal> = {};
+                
+                if (zData.mappedComps && Array.isArray(zData.mappedComps)) {
+                    // Filter comps by square footage (+/- 300 sqft of subject property)
+                    let validComps = zData.mappedComps;
+                    const targetSqft = Number(deal.sqft);
+                    if (targetSqft > 0) {
+                        console.log("Filtering comps. Target sqft:", targetSqft);
+                        validComps = validComps.filter((c: any) => {
+                            const compSqft = Number(c.sqft);
+                            if (!compSqft) return false;
+                            return Math.abs(compSqft - targetSqft) <= 300;
+                        });
+                        if (validComps.length === 0) {
+                            setCompsError("No comps found within +/- 300 sqft of the subject property.");
+                            setCompsLoading(false);
+                            return;
+                        }
+                    } else {
+                        console.log("Subject sqft is 0 or invalid. Skipping sqft filter.");
+                    }
+
+                    if (targetType === 'renovation') {
+                        if (validComps[0]) updates.renovationComparable1 = validComps[0];
+                        if (validComps[1]) updates.renovationComparable2 = validComps[1];
+                        if (validComps[2]) updates.renovationComparable3 = validComps[2];
+                    } else if (targetType === 'newConstruction') {
+                        if (validComps[0]) updates.newConstructionComparable1 = validComps[0];
+                        if (validComps[1]) updates.newConstructionComparable2 = validComps[1];
+                        if (validComps[2]) updates.newConstructionComparable3 = validComps[2];
+                    }
+                }
+
+                setDeal(prev => ({ ...prev, ...updates }));
+                setHasUnsavedChanges(true);
+            } else {
+                setCompsError("No comps data returned from Zillow scraper.");
+            }
+        } catch (err: any) {
+            setCompsError(err.message || "An error occurred");
+        } finally {
+            setCompsLoading(false);
+        }
+    };
+
+    const handlePullRenovationComps = () => handlePullComps('renovation');
+    const handlePullNewConstructionComps = () => handlePullComps('newConstruction');
+
     const handleZillowImport = async () => {
         if (!zillowUrl) {
             setZillowError("Please enter a Zillow URL");
@@ -551,7 +629,14 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 if (zData.mappedListingType) updates.listingType = zData.mappedListingType;
                 if (zData.mappedDateListed) updates.dateListed = zData.mappedDateListed;
                 
+                if (zData.mappedComps && Array.isArray(zData.mappedComps)) {
+                    if (zData.mappedComps[0]) updates.renovationComparable1 = zData.mappedComps[0];
+                    if (zData.mappedComps[1]) updates.renovationComparable2 = zData.mappedComps[1];
+                    if (zData.mappedComps[2]) updates.renovationComparable3 = zData.mappedComps[2];
+                }
+                
                 setDeal(prev => ({ ...prev, ...updates }));
+                setHasUnsavedChanges(true);
                 setShowZillowImport(false);
                 setZillowUrl("");
             } else {
@@ -1881,9 +1966,25 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
 
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><TrendingUp size={12}/> Valuation & Comparables</h4></div>
+                                {compsError && (
+                                    <div className="p-3 mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded border border-red-200 dark:border-red-800">
+                                        {compsError}
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 placeholder-green-600 dark:placeholder-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationARV) || ''} onChange={e => updateDealState({renovationARV: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} placeholder="0" /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">Renovation Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white placeholder-gray-900 dark:placeholder-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.renovationEstimate) || ''} onChange={e => updateDealState({renovationEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} placeholder="0" /></div></div></div>
                                 <div className="grid grid-cols-2 gap-4 mb-4"><div><label className="text-xs text-gray-500 block mb-1 font-bold">New Construction ARV</label><div className="relative"><span className="absolute left-4 top-4 text-green-600 dark:text-green-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-green-600 dark:text-green-400 placeholder-green-600 dark:placeholder-green-400 text-2xl font-bold focus:border-green-500 outline-none transition-colors" value={formatNumberWithCommas(deal.newConstructionARV) || ''} onChange={e => updateDealState({newConstructionARV: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} placeholder="0" /></div></div><div><label className="text-xs text-gray-500 block mb-1 font-bold">New Construction Estimate</label><div className="relative"><span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 text-xl font-bold">$</span><input type="text" className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-4 pl-10 text-gray-900 dark:text-white placeholder-gray-900 dark:placeholder-white text-2xl font-bold focus:border-blue-500 outline-none transition-colors" value={formatNumberWithCommas(deal.newConstructionEstimate) || ''} onChange={e => updateDealState({newConstructionEstimate: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} placeholder="0" /></div></div></div>
-                                <label className="text-xs text-gray-500 block mb-1 font-bold uppercase tracking-wider">Renovation Comps</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Renovation Comps</label>
+                                    <button
+                                        type="button"
+                                        onClick={handlePullRenovationComps}
+                                        disabled={compsLoading}
+                                        className="text-[10px] font-semibold px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded flex items-center gap-1 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        {compsLoading ? <Loader2 size={10} className="animate-spin" /> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>}
+                                        {compsLoading ? 'Pulling...' : 'Pull After-Repaired Comps'}
+                                    </button>
+                                </div>
                                 <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded border border-gray-200 dark:border-gray-800 mb-4">
                                     <div className="grid grid-cols-12 gap-2 text-[10px] text-gray-500 uppercase font-bold">
                                             <div className="col-span-1 flex items-center">#</div>
@@ -1932,7 +2033,18 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                         ); 
                                     })}
                                 </div>
-                                <label className="text-xs text-gray-500 block mb-1 font-bold uppercase tracking-wider">New Construction Comps</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs text-gray-500 font-bold uppercase tracking-wider">New Construction Comps</label>
+                                    <button
+                                        type="button"
+                                        onClick={handlePullNewConstructionComps}
+                                        disabled={compsLoading}
+                                        className="text-[10px] font-semibold px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded flex items-center gap-1 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        {compsLoading ? <Loader2 size={10} className="animate-spin" /> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>}
+                                        {compsLoading ? 'Pulling...' : 'Pull New Construction Comps'}
+                                    </button>
+                                </div>
                                 <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded border border-gray-200 dark:border-gray-800">
                                     <div className="grid grid-cols-12 gap-2 text-[10px] text-gray-500 uppercase font-bold">
                                             <div className="col-span-1 flex items-center">#</div>
