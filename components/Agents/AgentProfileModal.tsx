@@ -715,7 +715,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                                         <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">{deal.offerDecision}</span>
                                                     </div>
                                                     <div className="text-xs font-mono font-medium text-gray-600 dark:text-gray-400">
-                                                        {formatCurrency(deal.listPrice)}
+                                                        <span className="text-green-600 dark:text-green-400 mr-1">My Offer:</span>{formatCurrency(deal.offerPrice)}
                                                     </div>
                                                 </div>
                                             ))
@@ -748,7 +748,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                                         <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">{deal.offerDecision}</span>
                                                     </div>
                                                     <div className="text-xs font-mono font-medium text-gray-600 dark:text-gray-400">
-                                                        {formatCurrency(deal.listPrice)}
+                                                        <span className="text-green-600 dark:text-green-400 mr-1">My Offer:</span>{formatCurrency(deal.offerPrice)}
                                                     </div>
                                                 </div>
                                             ))
