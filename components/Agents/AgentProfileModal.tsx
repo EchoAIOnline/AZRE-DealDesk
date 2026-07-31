@@ -443,7 +443,9 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
         ? deals.filter(d => d && (d.address || '').toLowerCase().includes(dealSearch.toLowerCase()) && !(formData.closedDealIds || []).includes(d.id))
         : [];
 
-    const listedProperties = deals.filter(d => d && d.agentName && d.agentName.toLowerCase().trim() === (agent.name || '').toLowerCase().trim());
+    const agentDeals = deals.filter(d => d && d.agentName && d.agentName.toLowerCase().trim() === (agent.name || '').toLowerCase().trim());
+    const listedProperties = agentDeals.filter(d => d.listingType !== 'Off-Market');
+    const offMarketProperties = agentDeals.filter(d => d.listingType === 'Off-Market');
 
     return (
         <div className={`fixed inset-0 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm ${zIndex}`} onClick={handleCloseClick}>
@@ -603,6 +605,33 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                 </div>
                             </section>
 
+                            {/* Follow-Up Assistant (Moved from Left Column) */}
+                            <section>
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
+                                    <Clock size={16}/> Follow-Up Assistant
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Last Contacted</label>
+                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
+                                            value={formData.lastContactDate || ''} onChange={e => handleChange('lastContactDate', e.target.value)} onBlur={handleAutoSave} />
+                                        <div className="text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2">
+                                            <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Time Since</span>
+                                            <span className="text-sm font-bold text-gray-800 dark:text-white">{getLastContactText()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Next Follow-Up</label>
+                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
+                                            value={formData.nextFollowUpDate || ''} onChange={e => handleChange('nextFollowUpDate', e.target.value)} onBlur={handleAutoSave} />
+                                        <div className={`text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2 border ${daysUntilFollowUp !== null && daysUntilFollowUp <= 0 ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10' : 'border-transparent'}`}>
+                                            <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Due In</span>
+                                            <span className={`text-sm font-bold ${getFollowUpColor()}`}>{getFollowUpText()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
 
                         </div>
 
@@ -698,33 +727,41 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                     </div>
                                 </div>
                             </section>
-
-                            {/* Follow-Up Assistant (Moved from Left Column) */}
+                            {/* Current Off-Market Properties */}
                             <section>
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2">
-                                    <Clock size={16}/> Follow-Up Assistant
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 mt-8 flex items-center gap-2">
+                                    <Home size={16}/> Current Off-Market Properties
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Last Contacted</label>
-                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
-                                            value={formData.lastContactDate || ''} onChange={e => handleChange('lastContactDate', e.target.value)} onBlur={handleAutoSave} />
-                                        <div className="text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2">
-                                            <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Time Since</span>
-                                            <span className="text-sm font-bold text-gray-800 dark:text-white">{getLastContactText()}</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Next Follow-Up</label>
-                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
-                                            value={formData.nextFollowUpDate || ''} onChange={e => handleChange('nextFollowUpDate', e.target.value)} onBlur={handleAutoSave} />
-                                        <div className={`text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2 border ${daysUntilFollowUp !== null && daysUntilFollowUp <= 0 ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10' : 'border-transparent'}`}>
-                                            <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Due In</span>
-                                            <span className={`text-sm font-bold ${getFollowUpColor()}`}>{getFollowUpText()}</span>
-                                        </div>
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm min-h-[160px] flex flex-col">
+                                    <div className="flex-1 overflow-y-auto max-h-[200px] space-y-2">
+                                        {offMarketProperties.length > 0 ? (
+                                            offMarketProperties.map(deal => (
+                                                <div key={deal.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded p-2 text-sm">
+                                                    <div className="flex flex-col truncate">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => onOpenDeal && onOpenDeal(deal)}
+                                                            className="text-left font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate transition-colors"
+                                                        >
+                                                            {deal.address}
+                                                        </button>
+                                                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">{deal.offerDecision}</span>
+                                                    </div>
+                                                    <div className="text-xs font-mono font-medium text-gray-600 dark:text-gray-400">
+                                                        {formatCurrency(deal.listPrice)}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm italic">
+                                                No off-market properties found for this agent.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </section>
+
+                            
 
                         </div>
                     </div>
