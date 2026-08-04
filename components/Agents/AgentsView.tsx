@@ -45,7 +45,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                 tabs={AGENT_STATUS_TABS.map(tab => ({ 
                     ...tab, 
                     count: tab.id === 'All Agents' ? filteredAgentsBySearch.length : 
-                           tab.id === 'Contacted' ? filteredAgentsBySearch.filter(a => a.spokeWithAgent).length : 
+                           tab.id === 'Agent Sent Deal' ? filteredAgentsBySearch.filter(a => a.agentSentDeal).length : 
                            tab.id === 'Investor Friendly' ? filteredAgentsBySearch.filter(a => a.investorFriendly).length : 
                            tab.id === 'Agreed to Send' ? filteredAgentsBySearch.filter(a => a.agreedToSend).length : 
                            tab.id === 'Closed Deals' ? filteredAgentsBySearch.filter(a => a.hasClosedDeals).length : 
@@ -78,9 +78,10 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                             <label className="text-xs font-bold text-gray-500 uppercase">Relationship</label>
                             <select className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2" onChange={e => setFilterConfig({type: 'Relationship', value: e.target.value})} value={filterConfig.type === 'Relationship' ? filterConfig.value : ''}>
                                 <option value="">All Agents</option>
-                                <option value="Contacted">Contacted Already</option>
+                                
                                 <option value="Investor Friendly">Investor Friendly</option>
                                 <option value="Agreed to Send">Agreed to Send Deals</option>
+                                <option value="Agent Sent Deal">Agent Sent Deal</option>
                                 <option value="Closed Deals">Closed With AZRE</option>
                                 <option value="DO NOT CALL">DO NOT CALL</option>
                             </select>

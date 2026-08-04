@@ -3,11 +3,11 @@ import { Layout, X } from 'lucide-react';
 import { Deal, Agent, FilterConfig } from '../../types';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { DealCard } from '../Deals/DealCard';
-import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, JV_PIPELINE_STATUSES } from '../../constants';
+import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, DFD_PIPELINE_STATUSES } from '../../constants';
 
 interface PipelineViewProps {
     title?: string;
-    pipelineType?: 'main' | 'jv';
+    pipelineType?: 'mls' | 'off-market' | 'dfd';
     deals: Deal[];
     agents: Agent[];
     pipelineSearch: string;
@@ -35,14 +35,14 @@ interface PipelineViewProps {
 
 export const PipelineView: React.FC<PipelineViewProps> = ({
     title = "Pipeline",
-    pipelineType = "main",
+    pipelineType = "mls",
     deals, agents, pipelineSearch, setPipelineSearch, pipelineStage, setPipelineStage,
     pipelineSort, setPipelineSort, showFilterMenu, setShowFilterMenu, filterConfig,
     setFilterConfig, agentFilterSearch, setAgentFilterSearch, showAgentFilterSuggestions,
     setShowAgentFilterSuggestions, handleAddDeal, updateDeal, setDealModalZIndex,
     setEditingDeal, filteredDeals, orderedDeals, handleDeleteDeal
 }) => {
-    const tabs = pipelineType === 'jv' ? [
+    const tabs = pipelineType === 'dfd' ? [
         { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
         { id: 'Available', label: 'Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'Available').length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
         { id: 'No Longer Available', label: 'No Longer Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'No Longer Available').length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
@@ -109,7 +109,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                             <label className="text-xs font-bold text-gray-500 uppercase">Contact Status</label>
                             <select className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2" value={filterConfig.type === 'Contact Status' ? filterConfig.value : ''} onChange={e => { if (e.target.value) setFilterConfig({type: 'Contact Status', value: e.target.value}); else setFilterConfig({type: 'All', value: ''}); setAgentFilterSearch(''); }}>
                                 <option value="">All Statuses</option>
-                                {pipelineType === 'jv' ? (
+                                {pipelineType === 'dfd' ? (
                                     <>
                                         <option value="Have Not Spoken With Wholesaler">Have Not Spoken With Wholesaler</option>
                                         <option value="Spoke With Wholesaler">Spoke With Wholesaler</option>
@@ -136,15 +136,15 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                             </select>
                         </div>
                         <div className="space-y-1 relative z-20">
-                            <label className="text-xs font-bold text-gray-500 uppercase">{pipelineType === 'jv' ? 'Wholesaler Name' : 'Agent Name'}</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase">{pipelineType === 'dfd' ? 'Wholesaler Name' : 'Agent Name'}</label>
                             <div className="relative">
-                                <input type="text" className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 focus:border-blue-500 outline-none" placeholder={`Search ${pipelineType === 'jv' ? 'Wholesaler' : 'Agent'}...`} value={agentFilterSearch} onChange={(e) => { const val = e.target.value; setAgentFilterSearch(val); if (filterConfig.type === 'Agent Name') setFilterConfig({ type: 'All', value: '' }); setShowAgentFilterSuggestions(true); }} onFocus={() => setShowAgentFilterSuggestions(true)} onBlur={() => setTimeout(() => setShowAgentFilterSuggestions(false), 200)} />
+                                <input type="text" className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 focus:border-blue-500 outline-none" placeholder={`Search ${pipelineType === 'dfd' ? 'Wholesaler' : 'Agent'}...`} value={agentFilterSearch} onChange={(e) => { const val = e.target.value; setAgentFilterSearch(val); if (filterConfig.type === 'Agent Name') setFilterConfig({ type: 'All', value: '' }); setShowAgentFilterSuggestions(true); }} onFocus={() => setShowAgentFilterSuggestions(true)} onBlur={() => setTimeout(() => setShowAgentFilterSuggestions(false), 200)} />
                                 {showAgentFilterSuggestions && agentFilterSearch && (
                                     <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-b-lg shadow-xl z-50 max-h-48 overflow-y-auto mt-1">
                                         {(agents || []).filter(a => a && String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).map(a => (
                                             <div key={a.id} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-0" onMouseDown={() => { setFilterConfig({ type: 'Agent Name', value: a.name }); setAgentFilterSearch(a.name); setShowAgentFilterSuggestions(false); }}>{a.name}</div>
                                         ))}
-                                        {(agents || []).filter(a => a && String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).length === 0 && (<div className="p-2 text-xs text-gray-500 italic">No {pipelineType === 'jv' ? 'wholesalers' : 'agents'} found</div>)}
+                                        {(agents || []).filter(a => a && String(a.name || '').toLowerCase().includes(String(agentFilterSearch || '').toLowerCase())).length === 0 && (<div className="p-2 text-xs text-gray-500 italic">No {pipelineType === 'dfd' ? 'wholesalers' : 'agents'} found</div>)}
                                     </div>
                                 )}
                                 {filterConfig.type === 'Agent Name' && (<button onClick={() => { setFilterConfig({ type: 'All', value: '' }); setAgentFilterSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"><X size={14} /></button>)}
@@ -165,8 +165,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
             <div className="px-4 md:px-8 pb-8 pt-4">
                 {(() => { 
                     let statusesToShow: string[] = []; 
-                    if (pipelineType === 'jv') {
-                        if (pipelineStage === 'All Deals') statusesToShow = JV_PIPELINE_STATUSES;
+                    if (pipelineType === 'dfd') {
+                        if (pipelineStage === 'All Deals') statusesToShow = DFD_PIPELINE_STATUSES;
                         else if (pipelineStage === 'Available') statusesToShow = ['Available'];
                         else if (pipelineStage === 'No Longer Available') statusesToShow = ['No Longer Available'];
                     } else {

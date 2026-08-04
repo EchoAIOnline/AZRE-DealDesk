@@ -101,7 +101,7 @@ export interface DealDocument {
 export interface Deal {
   id: string;
   createdAt?: string;
-  pipelineType?: 'main' | 'jv'; // New Field to distinguish pipelines
+  pipelineType?: 'mls' | 'off-market' | 'dfd'; // New Field to distinguish pipelines
   address: string;
   mls: string;
   listPrice: number;

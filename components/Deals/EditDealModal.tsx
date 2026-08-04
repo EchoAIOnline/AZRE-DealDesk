@@ -378,7 +378,7 @@ const AgentSlot: React.FC<{
                                 type="date" 
                                 className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs focus:border-blue-500 outline-none date-input-icon cursor-pointer"
                                 value={agent.lastContactDate || ''} 
-                                onChange={(e) => onUpdate && onUpdate(agent.id, {lastContactDate: e.target.value})} 
+                                onChange={(e) => onUpdate && onUpdate(agent.id, {lastContactDate: e.target.value || null})} 
                             />
                         </div>
                         <div>
@@ -387,7 +387,7 @@ const AgentSlot: React.FC<{
                                 type="date" 
                                 className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs focus:border-blue-500 outline-none date-input-icon cursor-pointer"
                                 value={agent.nextFollowUpDate || ''} 
-                                onChange={(e) => onUpdate && onUpdate(agent.id, {nextFollowUpDate: e.target.value})} 
+                                onChange={(e) => onUpdate && onUpdate(agent.id, {nextFollowUpDate: e.target.value || null})} 
                             />
                         </div>
                     </div>
@@ -562,7 +562,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 }
 
                 setDeal(prev => ({ ...prev, ...updates }));
-                setHasUnsavedChanges(true);
+                triggerSave();
             } else {
                 setCompsError("No comps data returned from Zillow scraper.");
             }
@@ -636,7 +636,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 }
                 
                 setDeal(prev => ({ ...prev, ...updates }));
-                setHasUnsavedChanges(true);
+                triggerSave();
                 setShowZillowImport(false);
                 setZillowUrl("");
             } else {
@@ -1779,7 +1779,15 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     </div>
                                 </div>
 
-                                <div><label className="text-xs text-gray-500 block mb-1">Listing Type</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.listingType || ''} onChange={e => { updateDealState({listingType: e.target.value}); if(onUpdate) onUpdate(deal.id, {listingType: e.target.value}); triggerSave(); }}><option value="">Select...</option><option value="Listed On MLS">Listed On MLS</option><option value="Off-Market">Off-Market</option></select></div>
+                                <div><label className="text-xs text-gray-500 block mb-1">Listing Type</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.listingType || ''} onChange={e => { 
+    const val = e.target.value;
+    let newPipelineType = deal.pipelineType;
+    if (val === 'Listed On MLS') newPipelineType = 'mls';
+    if (val === 'Off-Market') newPipelineType = 'off-market';
+    updateDealState({listingType: val, pipelineType: newPipelineType}); 
+    if(onUpdate) onUpdate(deal.id, {listingType: val, pipelineType: newPipelineType}); 
+    triggerSave(); 
+}}><option value="">Select...</option><option value="Listed On MLS">Listed On MLS</option><option value="Off-Market">Off-Market</option></select></div>
                             </div>
 
                             <div className="grid md:grid-cols-4 gap-4">
@@ -1815,7 +1823,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div><label className="text-xs text-gray-500 block mb-1">Date Listed</label><input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm date-input-icon" value={deal.dateListed || ''} onChange={e => { updateDealState({dateListed: e.target.value}); if(onUpdate) onUpdate(deal.id, {dateListed: e.target.value}); triggerSave(); }} /></div>
+                                <div><label className="text-xs text-gray-500 block mb-1">Date Listed</label><input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm date-input-icon" value={deal.dateListed || ''} onChange={e => { updateDealState({dateListed: e.target.value || null}); if(onUpdate) onUpdate(deal.id, {dateListed: e.target.value || null}); triggerSave(); }} /></div>
                                 <div><label className="text-xs text-gray-500 block mb-1">Zoning</label><input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.zoning || ''} onChange={e => updateDealState({zoning: e.target.value})} onBlur={handleAutoSave} placeholder="e.g. R-1" /></div>
                                 <div><label className="text-xs text-gray-500 block mb-1">County</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.county || ''} onChange={e => { updateDealState({county: e.target.value}); if(onUpdate) onUpdate(deal.id, {county: e.target.value}); triggerSave(); }}><option value="">Select...</option>{COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                                 <div><label className="text-xs text-gray-500 block mb-1">Lock Box Code</label><input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.lockBoxCode || ''} onChange={e => updateDealState({lockBoxCode: e.target.value})} onBlur={handleAutoSave} placeholder="1234" /></div>
@@ -1880,7 +1888,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Inspection Ends</label>
-                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.inspectionDate || ''} onChange={(e) => { updateDealState({ inspectionDate: e.target.value }); if(onUpdate) onUpdate(deal.id, {inspectionDate: e.target.value}); triggerSave(); }} />
+                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.inspectionDate || ''} onChange={(e) => { updateDealState({ inspectionDate: e.target.value || null }); if(onUpdate) onUpdate(deal.id, {inspectionDate: e.target.value || null}); triggerSave(); }} />
                                         <div className="mt-2 p-3 rounded border border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/20 flex flex-col items-center justify-center">
                                             <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Time Remaining</span>
                                             <span className={`text-lg font-bold ${getUrgencyColor(daysToInsp)}`}>
@@ -1890,7 +1898,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">EMD Due</label>
-                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.emdDate || ''} onChange={(e) => { updateDealState({ emdDate: e.target.value }); if(onUpdate) onUpdate(deal.id, {emdDate: e.target.value}); triggerSave(); }} />
+                                        <input type="date" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.emdDate || ''} onChange={(e) => { updateDealState({ emdDate: e.target.value || null }); if(onUpdate) onUpdate(deal.id, {emdDate: e.target.value || null}); triggerSave(); }} />
                                         <div className="mt-2 p-3 rounded border border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/20 flex flex-col items-center justify-center">
                                             <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Time Remaining</span>
                                             <span className={`text-lg font-bold ${getUrgencyColor(daysToEMD)}`}>

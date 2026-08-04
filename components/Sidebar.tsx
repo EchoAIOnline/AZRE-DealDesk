@@ -99,15 +99,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={getBtnStyle('/pipeline')}
                 >
                     <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Main Pipeline</span>}
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">MLS Pipeline</span>}
                 </button>
 
+
                 <button 
-                    onClick={() => handleNavigate('/jv-pipeline')} 
-                    className={getBtnStyle('/jv-pipeline')}
+                    onClick={() => handleNavigate('/off-market-pipeline')} 
+                    className={getBtnStyle('/off-market-pipeline')}
                 >
                     <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">JV Pipeline</span>}
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Off-Market Pipeline</span>}
+                </button>
+                <button 
+                    onClick={() => handleNavigate('/dfd-scouter')} 
+                    className={getBtnStyle('/dfd-scouter')}
+                >
+                    <Layout size={18} />
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">DFD Scouter</span>}
                 </button>
 
                 <div className={getSectionHeaderStyle()}>Acquisitions</div>

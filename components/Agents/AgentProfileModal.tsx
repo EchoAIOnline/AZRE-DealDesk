@@ -614,7 +614,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                                         <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Last Contacted</label>
                                         <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
-                                            value={formData.lastContactDate || ''} onChange={e => handleChange('lastContactDate', e.target.value)} onBlur={handleAutoSave} />
+                                            value={formData.lastContactDate || ''} onChange={e => handleChange('lastContactDate', e.target.value || null)} onBlur={handleAutoSave} />
                                         <div className="text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2">
                                             <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Time Since</span>
                                             <span className="text-sm font-bold text-gray-800 dark:text-white">{getLastContactText()}</span>
@@ -623,7 +623,7 @@ export const AgentProfileModal: React.FC<AgentProfileModalProps> = ({
                                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                                         <label className="text-xs text-gray-500 block mb-2 uppercase font-bold">Next Follow-Up</label>
                                         <input type="date" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none mb-2 date-input-icon" 
-                                            value={formData.nextFollowUpDate || ''} onChange={e => handleChange('nextFollowUpDate', e.target.value)} onBlur={handleAutoSave} />
+                                            value={formData.nextFollowUpDate || ''} onChange={e => handleChange('nextFollowUpDate', e.target.value || null)} onBlur={handleAutoSave} />
                                         <div className={`text-center bg-gray-100 dark:bg-gray-700/50 rounded py-2 border ${daysUntilFollowUp !== null && daysUntilFollowUp <= 0 ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10' : 'border-transparent'}`}>
                                             <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-bold block">Due In</span>
                                             <span className={`text-sm font-bold ${getFollowUpColor()}`}>{getFollowUpText()}</span>
