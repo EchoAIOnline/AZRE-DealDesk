@@ -1,5 +1,7 @@
 {
   "name": "AZRE DealDesk Ultra v8.5 (dev)",
   "description": "A comprehensive real estate deal management system featuring pipeline tracking, agent database, deal analysis, and team collaboration tools.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

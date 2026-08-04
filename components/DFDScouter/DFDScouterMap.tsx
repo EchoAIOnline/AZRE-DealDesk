@@ -56,11 +56,14 @@ const DFDMapContent = ({ handleAddDeal }: { handleAddDeal: (overrides?: Partial<
                         map.setZoom(15);
                     }
                 },
-                () => {
-                    console.warn("Geolocation denied or unavailable.");
+                (error) => {
+                    console.warn("Geolocation error:", error.message);
+                    alert("Unable to detect location. Please ensure location permissions are granted.");
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
+        } else {
+            alert("Geolocation is not supported by your browser.");
         }
     };
 
