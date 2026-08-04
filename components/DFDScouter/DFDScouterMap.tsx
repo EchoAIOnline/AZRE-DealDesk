@@ -64,31 +64,18 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
     const [locationMethod, setLocationMethod] = useState<'gps' | 'ip' | 'default' | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-    // IP Geolocation Fallback for when browser permission is denied or times out
-    const fetchIpLocation = async () => {
-        try {
-            setStatusMessage('Attempting IP-based location fallback...');
-            const res = await fetch('https://ipapi.co/json/');
-            if (res.ok) {
-                const data = await res.json();
-                if (data.latitude && data.longitude) {
-                    const pos = { lat: Number(data.latitude), lng: Number(data.longitude) };
-                    setUserLocation(pos);
-                    setHasLocated(true);
-                    setLocationMethod('ip');
-                    setStatusMessage(`Located near ${data.city || 'your area'}, ${data.region_code || ''} (IP estimate)`);
-                    if (map) {
-                        map.panTo(pos);
-                        map.setZoom(13);
-                    }
-                    setTimeout(() => setStatusMessage(null), 5000);
-                    return true;
-                }
-            }
-        } catch (err) {
-            console.warn('IP geolocation fallback failed:', err);
+    // Fallback handler when browser geolocation fails or is denied
+    const fallbackToAtlanta = (reason?: string) => {
+        const atlantaPos = { lat: 33.7490, lng: -84.3880 };
+        setUserLocation(atlantaPos);
+        setHasLocated(true);
+        setLocationMethod('default');
+        setStatusMessage(reason || 'Set to default market: Atlanta, GA');
+        if (map) {
+            map.panTo(atlantaPos);
+            map.setZoom(13);
         }
-        return false;
+        setTimeout(() => setStatusMessage(null), 5000);
     };
 
     const locateUser = useCallback(() => {
@@ -96,52 +83,38 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
         setStatusMessage('Detecting current location...');
 
         if (!navigator.geolocation) {
-            setStatusMessage('Browser geolocation not supported. Trying IP location...');
-            fetchIpLocation().finally(() => setIsLocating(false));
+            fallbackToAtlanta('Browser geolocation unavailable. Defaulted to Atlanta, GA');
+            setIsLocating(false);
             return;
         }
 
-        // Try standard low-accuracy positioning first (fast & reliable on laptops/desktops without GPS chip)
-        const optionsLowAcc = { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 };
-        const optionsHighAcc = { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 };
+        const options = { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 };
 
-        const handleSuccess = (position: GeolocationPosition) => {
-            const pos = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
-            setUserLocation(pos);
-            setHasLocated(true);
-            setLocationMethod('gps');
-            setIsLocating(false);
-            setStatusMessage('Location detected!');
-            setTimeout(() => setStatusMessage(null), 4000);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                setUserLocation(pos);
+                setHasLocated(true);
+                setLocationMethod('gps');
+                setIsLocating(false);
+                setStatusMessage('GPS Location detected!');
+                setTimeout(() => setStatusMessage(null), 4000);
 
-            if (map) {
-                map.panTo(pos);
-                map.setZoom(15);
-            }
-        };
-
-        const handleFirstError = (error: GeolocationPositionError) => {
-            console.warn('First geolocation attempt failed:', error.message);
-            // Try high accuracy as second attempt before falling back to IP
-            navigator.geolocation.getCurrentPosition(
-                handleSuccess,
-                async (err2) => {
-                    console.warn('High accuracy geolocation failed:', err2.message);
-                    const ipSuccess = await fetchIpLocation();
-                    if (!ipSuccess) {
-                        setStatusMessage('Could not detect location. Please search for an address.');
-                        setTimeout(() => setStatusMessage(null), 6000);
-                    }
-                    setIsLocating(false);
-                },
-                optionsHighAcc
-            );
-        };
-
-        navigator.geolocation.getCurrentPosition(handleSuccess, handleFirstError, optionsLowAcc);
+                if (map) {
+                    map.panTo(pos);
+                    map.setZoom(15);
+                }
+            },
+            (error) => {
+                console.warn('Geolocation failed or permission denied:', error.message);
+                fallbackToAtlanta('GPS permission denied or unavailable. Centered on Atlanta, GA');
+                setIsLocating(false);
+            },
+            options
+        );
     }, [map]);
 
     useEffect(() => {
