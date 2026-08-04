@@ -6,6 +6,7 @@ import { activityLogService } from './services/activityLogService';
 import { useAppStore } from './store/useAppStore';
 import { LoginForm } from './components/Auth/LoginForm';
 import { PipelineView } from './components/Pipeline/PipelineView';
+import { DFDScouterMap } from './components/DFDScouter/DFDScouterMap';
 import { DealCard } from './components/Deals/DealCard';
 import { AgentCard } from './components/Agents/AgentCard';
 import { AgentsView } from './components/Agents/AgentsView';
@@ -1533,8 +1534,12 @@ export default function App() {
       if (overrides && 'nativeEvent' in overrides) {
           overrides = undefined;
       } console.log('handleAddDeal called');
-      const isDfd = location.pathname === '/dfd-scouter';
-      const isOffMarket = location.pathname === '/off-market-pipeline';
+      let isDfd = location.pathname === '/dfd-scouter';
+      let isOffMarket = location.pathname === '/off-market-pipeline';
+      if (overrides && overrides.pipelineType) {
+          isDfd = overrides.pipelineType === 'dfd';
+          isOffMarket = overrides.pipelineType === 'off-market';
+      }
       const newDealInit: Deal = {
           id: generateId(), 
           pipelineType: isDfd ? 'dfd' : (isOffMarket ? 'off-market' : 'mls'),
@@ -2074,33 +2079,7 @@ export default function App() {
                  />
                } />
                <Route path="/dfd-scouter" element={
-                 <PipelineView
-                    title="DFD Scouter"
-                    pipelineType="dfd"
-                    deals={deals}
-                    agents={wholesalers as any}
-                    pipelineSearch={pipelineSearch}
-                    setPipelineSearch={setPipelineSearch}
-                    pipelineStage={pipelineStage}
-                    setPipelineStage={setPipelineStage}
-                    pipelineSort={pipelineSort}
-                    setPipelineSort={setPipelineSort}
-                    showFilterMenu={showFilterMenu}
-                    setShowFilterMenu={setShowFilterMenu}
-                    filterConfig={filterConfig}
-                    setFilterConfig={setFilterConfig}
-                    agentFilterSearch={agentFilterSearch}
-                    setAgentFilterSearch={setAgentFilterSearch}
-                    showAgentFilterSuggestions={showAgentFilterSuggestions}
-                    setShowAgentFilterSuggestions={setShowAgentFilterSuggestions}
-                    handleAddDeal={handleAddDeal}
-                    updateDeal={updateDeal}
-                    setDealModalZIndex={setDealModalZIndex}
-                    setEditingDeal={setEditingDeal}
-                    filteredDeals={getFilteredDeals()}
-                    orderedDeals={getOrderedDeals()}
-                    handleDeleteDeal={handleDeleteDeal}
-                 />
+                 <DFDScouterMap handleAddDeal={(overrides) => handleAddDeal(overrides)} globalSearchQuery={globalSearchQuery} />
                } />
                <Route path="/email" element={
                  <div className="w-full h-full">
