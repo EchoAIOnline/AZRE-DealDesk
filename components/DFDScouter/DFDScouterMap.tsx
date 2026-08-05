@@ -3,7 +3,7 @@ import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap, useMapsLibra
 import { GOOGLE_MAPS_API_KEY } from '../../constants';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { Deal } from '../../types';
-import { Layout, Locate, Loader2, Navigation, AlertCircle, Search } from 'lucide-react';
+import { Layout, Locate, Loader2, Navigation, AlertCircle, Search, MapPin } from 'lucide-react';
 
 interface DFDScouterMapProps {
     handleAddDeal: (overrides?: Partial<Deal>) => void;
@@ -64,6 +64,9 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
     const [locationMethod, setLocationMethod] = useState<'gps' | 'ip' | 'default' | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [showGpsHelp, setShowGpsHelp] = useState(false);
+    const [showLocationPrompt, setShowLocationPrompt] = useState(() => {
+        return localStorage.getItem('dfd_location_prompt_seen') !== 'true';
+    });
     const [customZipInput, setCustomZipInput] = useState('');
 
     // Fallback handler when browser geolocation fails or is denied
@@ -133,8 +136,10 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
     }, [map]);
 
     useEffect(() => {
-        locateUser();
-    }, [locateUser]);
+        if (!showLocationPrompt && !hasLocated && locationMethod === null) {
+            locateUser();
+        }
+    }, [locateUser, showLocationPrompt, hasLocated, locationMethod]);
 
     // Handle search query from PageNavBar
     useEffect(() => {
@@ -230,6 +235,50 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
                     </InfoWindow>
                 )}
             </Map>
+
+            {/* Location Prompt Modal */}
+            {showLocationPrompt && (
+                <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-fadeIn">
+                        <div className="flex justify-center mb-4">
+                            <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-full text-blue-600 dark:text-blue-400">
+                                <MapPin size={32} />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+                            Enable Location Services
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
+                            DealDesk needs your location to center the map on your local real estate market. 
+                            By allowing GPS access, you can quickly find properties near you.
+                        </p>
+                        
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem('dfd_location_prompt_seen', 'true');
+                                    setShowLocationPrompt(false);
+                                    locateUser();
+                                }}
+                                className="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex justify-center items-center gap-2"
+                            >
+                                <Locate size={18} />
+                                Allow Location Access
+                            </button>
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem('dfd_location_prompt_seen', 'true');
+                                    setShowLocationPrompt(false);
+                                    fallbackToAtlanta('Set to default market');
+                                }}
+                                className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                            >
+                                Skip for Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* GPS Instructions Modal */}
             {showGpsHelp && (
