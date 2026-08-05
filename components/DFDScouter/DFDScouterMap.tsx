@@ -3,7 +3,7 @@ import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap, useMapsLibra
 import { GOOGLE_MAPS_API_KEY } from '../../constants';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { Deal } from '../../types';
-import { Layout, Locate, Loader2, Navigation, AlertCircle, Search, MapPin } from 'lucide-react';
+import { Layout, Locate, Loader2, Navigation, AlertCircle, Search } from 'lucide-react';
 
 interface DFDScouterMapProps {
     handleAddDeal: (overrides?: Partial<Deal>) => void;
@@ -63,19 +63,34 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
     const [isLocating, setIsLocating] = useState(false);
     const [locationMethod, setLocationMethod] = useState<'gps' | 'ip' | 'default' | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [showGpsHelp, setShowGpsHelp] = useState(false);
+    const [customZipInput, setCustomZipInput] = useState('');
 
     // Fallback handler when browser geolocation fails or is denied
     const fallbackToAtlanta = (reason?: string) => {
-        const atlantaPos = { lat: 33.7490, lng: -84.3880 };
-        setUserLocation(atlantaPos);
+        const savedLoc = localStorage.getItem('dfd_home_location');
+        let initialPos = { lat: 33.7490, lng: -84.3880 }; // Atlanta GA
+        let locName = 'Atlanta, GA';
+        if (savedLoc) {
+            try {
+                const parsed = JSON.parse(savedLoc);
+                if (parsed.lat && parsed.lng) {
+                    initialPos = { lat: parsed.lat, lng: parsed.lng };
+                    if (parsed.name) locName = parsed.name;
+                }
+            } catch (e) {
+                console.warn('Failed to parse saved location');
+            }
+        }
+        setUserLocation(initialPos);
         setHasLocated(true);
         setLocationMethod('default');
-        setStatusMessage(reason || 'Set to default market: Atlanta, GA');
+        setStatusMessage(reason || `Centered on ${locName}`);
         if (map) {
-            map.panTo(atlantaPos);
+            map.panTo(initialPos);
             map.setZoom(13);
         }
-        setTimeout(() => setStatusMessage(null), 5000);
+        setTimeout(() => setStatusMessage(null), 6000);
     };
 
     const locateUser = useCallback(() => {
@@ -216,85 +231,50 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
                 )}
             </Map>
 
-            {/* Quick Market Presets Bar */}
-            <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-1.5 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-1.5 rounded-xl shadow-md border border-gray-200/80 dark:border-gray-700/80 text-xs font-medium">
-                <span className="px-2 text-gray-500 dark:text-gray-400 font-semibold flex items-center gap-1">
-                    <MapPin size={12} className="text-blue-500" />
-                    Markets:
-                </span>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const pos = { lat: 33.7490, lng: -84.3880 };
-                        setUserLocation(pos);
-                        setHasLocated(true);
-                        setLocationMethod('default');
-                        setStatusMessage('Centered on Atlanta, GA');
-                        setTimeout(() => setStatusMessage(null), 3000);
-                        if (map) {
-                            map.panTo(pos);
-                            map.setZoom(13);
-                        }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 font-semibold transition-colors flex items-center gap-1"
-                >
-                    📍 Atlanta, GA
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const pos = { lat: 33.4484, lng: -112.0740 };
-                        setUserLocation(pos);
-                        setHasLocated(true);
-                        setLocationMethod('default');
-                        setStatusMessage('Centered on Phoenix, AZ');
-                        setTimeout(() => setStatusMessage(null), 3000);
-                        if (map) {
-                            map.panTo(pos);
-                            map.setZoom(13);
-                        }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-                >
-                    Phoenix, AZ
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const pos = { lat: 32.7767, lng: -96.7970 };
-                        setUserLocation(pos);
-                        setHasLocated(true);
-                        setLocationMethod('default');
-                        setStatusMessage('Centered on Dallas, TX');
-                        setTimeout(() => setStatusMessage(null), 3000);
-                        if (map) {
-                            map.panTo(pos);
-                            map.setZoom(13);
-                        }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-                >
-                    Dallas, TX
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const pos = { lat: 27.9506, lng: -82.4572 };
-                        setUserLocation(pos);
-                        setHasLocated(true);
-                        setLocationMethod('default');
-                        setStatusMessage('Centered on Tampa, FL');
-                        setTimeout(() => setStatusMessage(null), 3000);
-                        if (map) {
-                            map.panTo(pos);
-                            map.setZoom(13);
-                        }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-                >
-                    Tampa, FL
-                </button>
-            </div>
+            {/* GPS Instructions Modal */}
+            {showGpsHelp && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-fadeIn">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                            <Navigation className="text-blue-500" size={20} />
+                            Enabling GPS Location Permissions
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-4">
+                            When hosted on Vercel or in an embedded browser/iframe, browser security requires explicit site location permission.
+                        </p>
+                        
+                        <div className="space-y-3 text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/50 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/80">
+                            <div className="flex items-start gap-2.5">
+                                <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]">1</span>
+                                <div>
+                                    <strong>Click the Lock/Tune Icon:</strong> Next to the URL in your browser address bar (top left of screen).
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                                <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]">2</span>
+                                <div>
+                                    <strong>Allow Location:</strong> Toggle <em>Location</em> or <em>Permissions</em> from <strong>Block</strong> to <strong>Allow</strong>.
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                                <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]">3</span>
+                                <div>
+                                    <strong>Refresh the Page:</strong> Reload the app tab and click the blue <strong>Locate</strong> button again!
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex gap-2 justify-end">
+                            <button
+                                onClick={() => setShowGpsHelp(false)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
+                            >
+                                Got It
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Status Toast Banner */}
             {statusMessage && (
