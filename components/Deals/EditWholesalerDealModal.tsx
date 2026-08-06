@@ -87,7 +87,13 @@ const WholesalerSlot: React.FC<{
     }, [slotIndex, agent, customNameValue]);
 
     const filteredWholesalers = searchTerm.length > 0 
-        ? allWholesalers.filter(a => a && (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        ? allWholesalers.filter(a => {
+            if (!a || !a.name) return false;
+            const nameStr = a.name.toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
+            const query = searchTerm.toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
+            const queryWords = query.split(' ').filter(w => w);
+            return queryWords.length > 0 && queryWords.every(word => nameStr.includes(word));
+        })
         : [];
 
     const handleSearchChange = (val: string) => {

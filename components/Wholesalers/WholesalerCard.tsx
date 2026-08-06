@@ -74,7 +74,7 @@ export const WholesalerCard: React.FC<WholesalerCardProps> = ({ wholesaler, onEd
                              <div className="absolute right-0 bottom-full mb-2 z-10 bg-white dark:bg-gray-800 p-2 rounded shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col gap-2 min-w-[100px]">
                                  <span className="text-[10px] font-bold text-red-600 text-center whitespace-nowrap">Confirm Delete?</span>
                                  <div className="flex gap-1 justify-center">
-                                     <button onClick={(e) => {e.stopPropagation(); onDelete(wholesaler.id)}} className="bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold hover:bg-red-700 flex-1">Yes</button>
+                                     <button onClick={(e) => {e.stopPropagation(); setIsDeleting(false); onDelete(wholesaler.id); }} className="bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold hover:bg-red-700 flex-1">Yes</button>
                                      <button onClick={(e) => {e.stopPropagation(); setIsDeleting(false)}} className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-[10px] px-2 py-1 rounded hover:bg-gray-300 flex-1">No</button>
                                  </div>
                              </div>

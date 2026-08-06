@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { EmailManagerNav } from './EmailManagerNav';
-import { BuyerBlastCampaignManager } from '../BuyerBlastCampaignManager';
-import { SubscriberListView } from './SubscriberListView';
-import { EditSubscriberModal } from './EditSubscriberModal';
-import { CreateListModal } from './CreateListModal';
-import { EmailTemplates } from './EmailTemplates';
+import { EmailManagerNav } from '../EmailManager/EmailManagerNav';
+import { LOIBlastCampaignManager } from '../LOIBlastCampaignManager';
+import { SubscriberListView } from '../EmailManager/SubscriberListView';
+import { EditSubscriberModal } from '../EmailManager/EditSubscriberModal';
+import { CreateListModal } from '../EmailManager/CreateListModal';
+import { EmailTemplates } from '../EmailManager/EmailTemplates';
 import { LayoutDashboard, Users, Mail, BarChart2, PlusCircle, History, Image as ImageIcon, FileCode, Plus, ChevronRight, Tag, ShieldCheck, UserCheck, Star, PhoneForwarded, Heart, Handshake, CheckSquare, Copy, Search, X, Trash2, AlertTriangle, ChevronDown, ChevronUp, Edit2, Split, UserPlus, Building, Briefcase, List } from 'lucide-react';
 import { Buyer, Agent, Deal, Wholesaler, EmailList } from '../../types';
 import { api, sendEmail, Recipient } from '../../services/api';
 import { generateId, getLogTimestamp } from '../../services/utils';
 
-interface EmailManagerProps {
+interface CampaignsProps {
     buyers: Buyer[];
     agents: Agent[];
     wholesalers: Wholesaler[];
@@ -24,9 +24,9 @@ interface EmailManagerProps {
     onDeleteCampaign?: (id: string) => Promise<boolean>;
 }
 
-export const EmailManager: React.FC<EmailManagerProps> = ({ 
+export const Campaigns: React.FC<CampaignsProps> = ({ 
     buyers, agents, wholesalers, deals, campaigns = [], emailLists = [], 
-    onUpdateContact, onCreateList, onDeleteList, onDeleteCampaign 
+    onUpdateContact, onCreateList, onDeleteList 
 }) => {
     const [currentTab, setCurrentTab] = useState('Dashboard');
     const [currentSubTab, setCurrentSubTab] = useState('All campaigns');
@@ -73,11 +73,11 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     const [editingContact, setEditingContact] = useState<{data: any, type: 'buyer' | 'agent'} | null>(null);
 
     const activeCampaigns = useMemo(() => {
-        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id) && c.type !== 'loi_blast');
+        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id) && c.type === 'loi_blast');
     }, [localCampaigns, deletedIds]);
 
-    const totalSubscribers = (buyers?.length || 0) + (wholesalers?.length || 0);
-    const activeListsCount = 2 + (emailLists ? emailLists.filter(list => list.source === 'buyer' || list.source === 'wholesaler').length : 0);
+    const totalSubscribers = (agents?.length || 0) + (wholesalers?.length || 0);
+    const activeListsCount = 2 + (emailLists ? emailLists.filter(list => list.source === 'agent' || list.source === 'wholesaler').length : 0);
 
     // Calculate dynamic stats
     const totalSentCount = useMemo(() => 
@@ -141,14 +141,14 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
     const databaseLists = [
         {
-            id: 'buyer_db',
-            name: 'Buyer Database',
-            type: 'buyer' as const,
-            icon: <Users size={24} />,
-            colorClass: 'text-blue-500 bg-blue-500/10',
-            data: buyers,
-            segments: buyerSegments,
-            description: 'Active buyers and investors',
+            id: 'agent_db',
+            name: 'Agent Database',
+            type: 'agent' as const,
+            icon: <Briefcase size={24} />,
+            colorClass: 'text-purple-500 bg-purple-500/10',
+            data: agents,
+            segments: agentSegments,
+            description: 'Real estate agents and brokers',
             isSystem: true
         },
         {
@@ -164,9 +164,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         },
         // Map custom email lists
         ...emailLists
-            .filter(list => list.source === 'buyer' || list.source === 'wholesaler')
+            .filter(list => list.source === 'agent' || list.source === 'wholesaler')
             .map(list => {
-            const data = list.source === 'buyer' ? buyers : list.source === 'wholesaler' ? wholesalers : agents;
+            const data = list.source === 'agent' ? agents : list.source === 'wholesaler' ? wholesalers : buyers;
             const filter = getSegmentFilter(list.source, list.segmentRule || 'all');
             const filteredData = data.filter(filter as any);
             
@@ -175,7 +175,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
                 name: list.name,
                 type: list.source as 'buyer' | 'agent' | 'wholesaler',
                 icon: <List size={24} />,
-                colorClass: list.source === 'buyer' ? 'text-teal-500 bg-teal-500/10' : 'text-orange-500 bg-orange-500/10',
+                colorClass: list.source === 'agent' ? 'text-indigo-500 bg-indigo-500/10' : 'text-orange-500 bg-orange-500/10',
                 data: filteredData,
                 segments: [{ 
                     id: 'all_subscribers', 
@@ -284,7 +284,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
         // 2. Perform DB deletion
         try {
-            if (onDeleteCampaign) { await onDeleteCampaign(id); } else { await api.delete(id, 'Campaigns'); }
+            await api.delete(id, 'Campaigns');
         } catch (e) {
             console.error("Delete failed", e);
             alert("Failed to delete campaign from database.");
@@ -327,7 +327,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
             return (
                 <div className="p-8 space-y-6 animate-in fade-in duration-300">
                     <div className="flex flex-col">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Buyer Blast Campaigns</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">LOI Blast Campaigns</h1>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">System performance and delivery overview</p>
                     </div>
                     
@@ -543,7 +543,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         if (currentTab === 'Campaigns') {
             if (['Create new', 'Campaign Setup', 'Content'].includes(currentSubTab)) {
                 return (
-                    <BuyerBlastCampaignManager 
+                    <LOIBlastCampaignManager 
                         buyers={buyers}
                         agents={agents}
                         deals={deals} 

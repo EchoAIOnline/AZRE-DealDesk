@@ -43,7 +43,7 @@ interface EditDealModalProps {
     
     agents?: Agent[];
     onUpdateAgent?: (agentId: string, updates: Partial<Agent>) => void;
-    onAddNewAgent?: (name?: string) => void;
+    onAddNewAgent?: (name?: string) => Promise<Agent | void>;
     currentUser?: UserType | null;
 
     onNavigate: (direction: 'prev' | 'next') => void;
@@ -278,7 +278,7 @@ const AgentSlot: React.FC<{
     customNameValue?: string;
     onCustomNameChange?: (val: string) => void;
     onGenerateEmail?: (agent: Agent) => void;
-    onAddNewAgent?: (name?: string) => void;
+    onAddNewAgent?: (name?: string) => Promise<Agent | void>;
     onBlur?: () => void;
 }> = ({ slotIndex, agent, deal, allAgents, onSelect, onClear, onViewProfile, onUpdate, customNameValue, onCustomNameChange, onGenerateEmail, onAddNewAgent, onBlur }) => {
     
@@ -292,7 +292,13 @@ const AgentSlot: React.FC<{
     }, [slotIndex, agent, customNameValue]);
 
     const filteredAgents = searchTerm.length > 0 
-        ? allAgents.filter(a => a && (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        ? allAgents.filter(a => {
+            if (!a || !a.name) return false;
+            const nameStr = a.name.toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
+            const query = searchTerm.toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
+            const queryWords = query.split(' ').filter(w => w);
+            return queryWords.length > 0 && queryWords.every(word => nameStr.includes(word));
+        })
         : [];
 
     const handleSearchChange = (val: string) => {
@@ -442,9 +448,10 @@ const AgentSlot: React.FC<{
                          <button 
                             type="button"
                             className="w-full text-left p-3 hover:bg-blue-50 dark:hover:bg-blue-900/50 cursor-pointer text-sm text-blue-500 dark:text-blue-400 font-bold flex items-center gap-2 sticky bottom-0 bg-white dark:bg-gray-800"
-                            onMouseDown={(e) => {
+                            onMouseDown={async (e) => {
                                 e.preventDefault();
-                                onAddNewAgent(searchTerm);
+                                const newAgent = await onAddNewAgent(searchTerm);
+                                if (newAgent) onSelect(newAgent);
                                 setShowDropdown(false);
                             }}
                         >

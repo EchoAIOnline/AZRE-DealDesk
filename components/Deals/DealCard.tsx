@@ -179,8 +179,10 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
             </div>
         )}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900/50 dark:from-gray-900/90 to-transparent pointer-events-none"></div>
-        <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm ${isClosed ? 'bg-purple-600 text-white' : isUnderContract ? 'bg-green-600 text-white' : isDeclined ? 'bg-red-600 text-white' : 'bg-yellow-500 text-white'}`}>
-          {deal.offerDecision || 'New'}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+            <div className={`px-2 py-1 rounded text-xs font-bold shadow-sm ${isClosed ? 'bg-purple-600 text-white' : isUnderContract ? 'bg-green-600 text-white' : isDeclined ? 'bg-red-600 text-white' : 'bg-yellow-500 text-white'}`}>
+              {deal.offerDecision || 'New'}
+            </div>
         </div>
       </div>
 
@@ -211,9 +213,22 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
             </div>
         </div>
 
-        <div className="flex gap-4 mb-3 text-sm">
-            <div className="text-gray-500 dark:text-gray-400">List Price: <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(deal.listPrice)}</span></div>
-            <div className="text-gray-500 dark:text-gray-400">My Offer: <span className="text-green-600 dark:text-green-400 font-bold">{deal.offerPrice ? formatCurrency(deal.offerPrice) : '-'}</span></div>
+        <div className="flex gap-6 mb-3 text-sm">
+            <div className="flex flex-col">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wide font-semibold mb-0.5">List Price:</span>
+                <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(deal.listPrice)}</span>
+            </div>
+            <div className="flex flex-col">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wide font-semibold mb-0.5">My Offer:</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400 font-bold">{deal.offerPrice ? formatCurrency(deal.offerPrice) : '-'}</span>
+                    {deal.loiSent && (
+                        <div className="px-1.5 h-[22px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-bold flex items-center gap-1 border border-green-200 dark:border-green-800/50 whitespace-nowrap">
+                            <Mail size={10} /> LOI Sent
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
 
         {isExpanded && (

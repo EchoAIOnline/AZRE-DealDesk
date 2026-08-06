@@ -21,11 +21,12 @@ interface CampaignsProps {
     onUpdateContact: (type: 'buyer' | 'agent', updatedContact: any) => Promise<void>;
     onCreateList?: (list: EmailList) => Promise<void>;
     onDeleteList?: (id: string) => Promise<void>;
+    onDeleteCampaign?: (id: string) => Promise<boolean>;
 }
 
 export const Campaigns: React.FC<CampaignsProps> = ({ 
     buyers, agents, wholesalers, deals, campaigns = [], emailLists = [], 
-    onUpdateContact, onCreateList, onDeleteList 
+    onUpdateContact, onCreateList, onDeleteList, onDeleteCampaign 
 }) => {
     const [currentTab, setCurrentTab] = useState('Dashboard');
     const [currentSubTab, setCurrentSubTab] = useState('All campaigns');
@@ -283,7 +284,7 @@ export const Campaigns: React.FC<CampaignsProps> = ({
 
         // 2. Perform DB deletion
         try {
-            await api.delete(id, 'Campaigns');
+            if (onDeleteCampaign) { await onDeleteCampaign(id); } else { await api.delete(id, 'Campaigns'); }
         } catch (e) {
             console.error("Delete failed", e);
             alert("Failed to delete campaign from database.");

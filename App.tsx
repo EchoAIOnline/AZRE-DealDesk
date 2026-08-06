@@ -884,6 +884,7 @@ export default function App() {
       }
   };
 
+  
   const handleDeleteEmailList = async (id: string) => {
       const listToDelete = emailLists.find(l => l.id === id);
       const success = await api.delete(id, 'EmailLists');
@@ -893,7 +894,7 @@ export default function App() {
               activityLogService.logActivity(
                   currentUser,
                   'DELETE',
-                  'EMAIL_LIST',
+                  'BUYER',
                   id,
                   `Deleted email list: ${listToDelete.name}`,
                   {},
@@ -901,6 +902,14 @@ export default function App() {
               );
           }
       }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+      const success = await api.delete(id, 'Campaigns');
+      if(success) {
+          setCampaigns(prev => prev.filter((c: any) => c.id !== id));
+      }
+      return success;
   };
 
   const handleMoveBuyerToAgent = async (buyer: Buyer) => {
@@ -1175,7 +1184,7 @@ export default function App() {
     if (saved) {
         setDeals(prev => prev.map(d => d.id === id ? saved : d));
         setEditingDeal(prev => prev && prev.id === id ? saved : prev);
-        if (saved.agentName) checkAndSaveAgent(saved);
+        // if (saved.agentName) // checkAndSaveAgent(saved); // Disabled auto-create // Disabled auto-create
         
         // Determine action type based on updates
         let actionType = 'UPDATE';
@@ -1215,9 +1224,10 @@ export default function App() {
       let filtered = [...buyers];
       const activeSearch = globalSearchQuery.trim() || buyerSearch.trim();
       if (activeSearch) { 
-          const query = (activeSearch || "").toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
           const cleanQuery = query.replace(/\D/g, '');
           const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
           
           let extractedQueryEmail = "";
           const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1227,7 +1237,7 @@ export default function App() {
 
           const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
           filtered = filtered.filter(b => {
-              const nameStr = String(b.name || "").toLowerCase();
+              const nameStr = String(b.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
               const compStr = String(b.companyName || "").toLowerCase();
               const emailStr = String(b.email || "").toLowerCase();
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1238,11 +1248,8 @@ export default function App() {
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              return nameStr.includes(query) || 
-                     compStr.includes(query) || 
-                     matchesEmail || 
-                     (phoneStr && phoneStr.includes(query)) || 
-                     (isPhoneSearch && phoneClean.includes(cleanQuery));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
       if (buyerStage !== 'All Buyers') {
@@ -1272,9 +1279,10 @@ export default function App() {
       let filtered = [...buyers];
       const activeSearch = globalSearchQuery.trim() || buyerSearch.trim();
       if (activeSearch) { 
-          const query = (activeSearch || "").toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
           const cleanQuery = query.replace(/\D/g, '');
           const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
           
           let extractedQueryEmail = "";
           const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1284,7 +1292,7 @@ export default function App() {
 
           const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
           filtered = filtered.filter(b => {
-              const nameStr = String(b.name || "").toLowerCase();
+              const nameStr = String(b.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
               const compStr = String(b.companyName || "").toLowerCase();
               const emailStr = String(b.email || "").toLowerCase();
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1295,11 +1303,8 @@ export default function App() {
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              return nameStr.includes(query) || 
-                     compStr.includes(query) || 
-                     matchesEmail || 
-                     (phoneStr && phoneStr.includes(query)) || 
-                     (isPhoneSearch && phoneClean.includes(cleanQuery));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
       return filtered;
@@ -1415,7 +1420,7 @@ export default function App() {
                 if (exists) return prev.map(d => d.id === updatedDeal.id ? saved : d);
                 return [saved, ...prev];
             });
-            checkAndSaveAgent(saved);
+            // checkAndSaveAgent(saved); // Disabled auto-create
             localStorage.setItem('azre-editing-deal-id', saved.id);
             
             // State Diffing for Activity Logs
@@ -1759,9 +1764,10 @@ export default function App() {
       let filtered = [...agents];
       const activeSearch = globalSearchQuery.trim() || agentSearch.trim();
       if (activeSearch) { 
-          const query = (activeSearch || "").toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
           const cleanQuery = query.replace(/\D/g, '');
           const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
           
           let extractedQueryEmail = "";
           const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1771,7 +1777,7 @@ export default function App() {
           const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
 
           filtered = filtered.filter(a => {
-              const nameStr = String(a.name || '').toLowerCase();
+              const nameStr = String(a.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
               const brokerageStr = String(a.brokerage || '').toLowerCase();
               const emailStr = String(a.email || '').toLowerCase();
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1782,11 +1788,8 @@ export default function App() {
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              return nameStr.includes(query) || 
-                     brokerageStr.includes(query) || 
-                     matchesEmail || 
-                     (phoneStr && phoneStr.includes(query)) || 
-                     (isPhoneSearch && phoneClean.includes(cleanQuery));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || brokerageStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
       if (agentStage !== 'All Agents') {
@@ -1842,9 +1845,10 @@ export default function App() {
     let filtered = [...agents];
     const activeSearch = globalSearchQuery.trim() || agentSearch.trim();
     if (activeSearch) { 
-        const query = (activeSearch || "").toLowerCase(); 
+        const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
         const cleanQuery = query.replace(/\D/g, '');
         const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
         
         let extractedQueryEmail = "";
         const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1854,7 +1858,7 @@ export default function App() {
         const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
 
         filtered = filtered.filter(a => {
-            const nameStr = String(a.name || '').toLowerCase();
+            const nameStr = String(a.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
             const brokerageStr = String(a.brokerage || '').toLowerCase();
             const emailStr = String(a.email || '').toLowerCase();
             const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1865,11 +1869,8 @@ export default function App() {
                                  (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                  (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-            return nameStr.includes(query) || 
-                   brokerageStr.includes(query) || 
-                   matchesEmail || 
-                   (phoneStr && phoneStr.includes(query)) || 
-                   (isPhoneSearch && phoneClean.includes(cleanQuery));
+            const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || brokerageStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
         });
     }
     return filtered;
@@ -1879,9 +1880,10 @@ export default function App() {
       let filtered = [...wholesalers];
       const activeSearch = globalSearchQuery.trim() || wholesalerSearch.trim();
       if (activeSearch) { 
-          const query = (activeSearch || "").toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
           const cleanQuery = query.replace(/\D/g, '');
           const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
           
           let extractedQueryEmail = "";
           const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1891,7 +1893,7 @@ export default function App() {
 
           const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
           filtered = filtered.filter(w => {
-              const nameStr = String(w.name || "").toLowerCase();
+              const nameStr = String(w.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
               const compStr = String(w.companyName || "").toLowerCase();
               const emailStr = String(w.email || "").toLowerCase();
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1902,11 +1904,8 @@ export default function App() {
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              return nameStr.includes(query) || 
-                     compStr.includes(query) || 
-                     matchesEmail || 
-                     (phoneStr && phoneStr.includes(query)) || 
-                     (isPhoneSearch && phoneClean.includes(cleanQuery));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
       if (wholesalerStage !== 'All Wholesalers') {
@@ -1928,9 +1927,10 @@ export default function App() {
       let filtered = [...wholesalers];
       const activeSearch = globalSearchQuery.trim() || wholesalerSearch.trim();
       if (activeSearch) { 
-          const query = (activeSearch || "").toLowerCase(); 
+          const query = (activeSearch || "").toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' '); 
           const cleanQuery = query.replace(/\D/g, '');
           const queryNoSpaces = query.replace(/\s+/g, '');
+        const queryWords = query.split(' ').filter(w => w);
           
           let extractedQueryEmail = "";
           const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
@@ -1940,7 +1940,7 @@ export default function App() {
 
           const isPhoneSearch = cleanQuery.length >= 3 && !query.includes('@') && query.replace(/[^a-zA-Z]/g, '').length < 3;
           filtered = filtered.filter(w => {
-              const nameStr = String(w.name || "").toLowerCase();
+              const nameStr = String(w.name || '').toLowerCase().replace(/[\.,]/g, '').replace(/\s+/g, ' ');
               const compStr = String(w.companyName || "").toLowerCase();
               const emailStr = String(w.email || "").toLowerCase();
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
@@ -1951,11 +1951,8 @@ export default function App() {
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              return nameStr.includes(query) || 
-                     compStr.includes(query) || 
-                     matchesEmail || 
-                     (phoneStr && phoneStr.includes(query)) || 
-                     (isPhoneSearch && phoneClean.includes(cleanQuery));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+            return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
       return filtered;
@@ -2088,6 +2085,7 @@ export default function App() {
                        agents={agents} 
                        deals={deals}
                        campaigns={campaigns}
+                       onDeleteCampaign={handleDeleteCampaign}
                        wholesalers={wholesalers}
                        emailLists={emailLists}
                        onCreateList={handleCreateEmailList}
@@ -2108,6 +2106,7 @@ export default function App() {
                        agents={agents} 
                        deals={deals}
                        campaigns={campaigns}
+                       onDeleteCampaign={handleDeleteCampaign}
                        wholesalers={wholesalers}
                        emailLists={emailLists}
                        onCreateList={handleCreateEmailList}
@@ -2221,7 +2220,7 @@ export default function App() {
 
       {importFile && (<ImportMapModal file={importFile} onClose={() => setImportFile(null)} onImport={async (d) => { try { const saved = d; if(saved) { setDeals(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'DEAL', 'batch', `Imported ${saved.length} properties`, {}, 'Batch Import'); } setImportFile(null); } catch (error) { console.error("Error importing deals:", error); alert("Error importing deals. Please try again."); setImportFile(null); } }} />)}
       {importBuyerFile && (<ImportBuyerMapModal file={importBuyerFile} onClose={() => setImportBuyerFile(null)} onImport={async (importedBuyers, overwrite) => { try { const saved = importedBuyers; if(saved) { setBuyers(prevBuyers => { const newIds = new Set(saved.map((s:any) => s.id)); const oldBuyers = prevBuyers.filter(b => !newIds.has(b.id)); return [...oldBuyers, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'BUYER', 'batch', `Imported ${saved.length} buyers`, {}, 'Batch Import'); } setImportBuyerFile(null); } catch (error) { console.error("Error importing buyers:", error); alert("Error importing buyers. Please try again."); setImportBuyerFile(null); } }} />)}
-      {importAgentFile && (<ImportAgentMapModal file={importAgentFile} existingAgents={agents} onClose={() => setImportAgentFile(null)} onImport={async (a, skipped, updated) => { try { const saved = a; if (saved || updated) { setAgents(prev => { const updatedMap = new Map((updated || []).map(u => [u.id, u])); const newIds = new Set((saved || []).map((s:any)=>s.id)); const old = prev.map(p => updatedMap.has(p.id) ? updatedMap.get(p.id)! : p).filter(p=>!newIds.has(p.id)); return [...old, ...(saved || [])]; }); activityLogService.logActivity(currentUser, 'CREATE', 'AGENT', 'batch', `Imported ${(saved || []).length} agents`, {}, 'Batch Import'); let msg = `Imported ${(saved || []).length} agents.`; if (skipped > 0) msg += ` Skipped ${skipped} duplicates.`; if (updated && updated.length > 0) msg += ` Updated ${updated.length} existing agents.`; alert(msg); } setImportAgentFile(null); } catch (error) { console.error("Error importing agents:", error); alert("Error importing agents. Please try again."); setImportAgentFile(null); } }} />)}
+      {importAgentFile && (<ImportAgentMapModal file={importAgentFile} existingAgents={agents} onClose={() => setImportAgentFile(null)} onImport={async (a, skipped, updated) => { try { const saved = a; if (saved || updated) { setAgents((prev: any[]) => { const updatedMap = new Map((updated || []).map(u => [u.id, u])); const newIds = new Set((saved || []).map((s:any)=>s.id)); const old = prev.map(p => updatedMap.has(p.id) ? updatedMap.get(p.id)! : p).filter(p=>!newIds.has(p.id)); return [...old, ...(saved || [])]; }); activityLogService.logActivity(currentUser, 'CREATE', 'AGENT', 'batch', `Imported ${(saved || []).length} agents`, {}, 'Batch Import'); let msg = `Imported ${(saved || []).length} agents.`; if (skipped > 0) msg += ` Skipped ${skipped} duplicates.`; if (updated && updated.length > 0) msg += ` Updated ${updated.length} existing agents.`; alert(msg); } setImportAgentFile(null); } catch (error) { console.error("Error importing agents:", error); alert("Error importing agents. Please try again."); setImportAgentFile(null); } }} />)}
       {importWholesalerFile && (<ImportWholesalerMapModal file={importWholesalerFile} onClose={() => setImportWholesalerFile(null)} onImport={async (w) => { try { const saved = w; if(saved) { setWholesalers(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'WHOLESALER', 'batch', `Imported ${saved.length} wholesalers`, {}, 'Batch Import'); } setImportWholesalerFile(null); } catch (error) { console.error("Error importing wholesalers:", error); alert("Error importing wholesalers. Please try again."); setImportWholesalerFile(null); } }} />)}
       
 
@@ -2310,6 +2309,7 @@ export default function App() {
                     }); 
                     setEditingAgent(saved); 
                     setAgentModalZIndex('z-[160]'); 
+                    return saved;
                 } 
             }} 
             currentUser={currentUser} 

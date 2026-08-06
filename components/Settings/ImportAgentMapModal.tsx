@@ -212,7 +212,7 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
             let finalUpdatedAgents: Agent[] = [];
             for (let i = 0; i < agentsToUpdate.length; i++) {
                 const agent = agentsToUpdate[i];
-                const updated = await api.update(agent.id, agent, 'Agents');
+                const updated = await api.save(agent, 'Agents');
                 if (updated) {
                     finalUpdatedAgents.push(updated as Agent);
                 }

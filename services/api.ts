@@ -26,7 +26,7 @@ let currentOrgId: string | null = null;
 export const setOrganizationId = (orgId: string | null) => {
     currentOrgId = orgId;
 };
-export const getCurrentOrgId = () => currentOrgId;
+export const getCurrentOrgId = () => { console.log('Current Org ID:', currentOrgId); return currentOrgId; };
 
 export interface Recipient {
     email: string;
@@ -139,9 +139,18 @@ const processIncomingItem = (item: any, tableName: string) => {
     }
 
     // Process Agents
-    if (tableName === 'Agents') {
+    if (tableName === 'Agents') { console.log('Agent keys:', Object.keys(processed));
         processed.notes = cleanArrayField(processed.notes, false).filter(Boolean);
         processed.closedDealIds = cleanArrayField(processed.closedDealIds, false).filter(Boolean);
+        
+        const first = processed.agentFirstName || processed.agentfirstname || '';
+        const last = processed.agentLastName || processed.agentlastname || '';
+        if (first || last) {
+            processed.agentFirstName = first; processed.agentLastName = last;
+            processed.name = `${processed.agentFirstName || ''} ${processed.agentLastName || ''}`.trim();
+        } else if (!processed.name || String(processed.name).trim() === '' || String(processed.name) === 'null' || String(processed.name) === 'undefined') {
+            processed.name = '';
+        }
     }
     
     return processed;
@@ -225,17 +234,39 @@ export const api = {
             return []; // Prevents leaking AZRE data when org ID is missing
         }
 
-        let query = supabase.from(table).select('*');
-        if (currentOrgId && table !== 'Integrations') {
-            if (currentOrgId === 'org_azre_00001') {
-                // Master org automatically sees records with null organization_id to handle manual Supabase CSV imports
-                query = query.or(`organization_id.eq.${currentOrgId},organization_id.is.null`);
+        let allData = [];
+        let from = 0;
+        const step = 1000;
+        let fetchMore = true;
+        let error = null;
+
+        while (fetchMore) {
+            let query = supabase.from(table).select('*').range(from, from + step - 1);
+            if (currentOrgId && table !== 'Integrations') {
+                if (currentOrgId === 'org_azre_00001') {
+                    query = query.or(`organization_id.eq.${currentOrgId},organization_id.is.null`);
+                } else {
+                    query = query.eq('organization_id', currentOrgId);
+                }
+            }
+            let { data: pageData, error: pageError } = await query;
+            if (pageError) {
+                error = pageError;
+                fetchMore = false;
+                break;
+            }
+            if (pageData && pageData.length > 0) {
+                allData.push(...pageData);
+                if (pageData.length < step) {
+                    fetchMore = false;
+                } else {
+                    from += step;
+                }
             } else {
-                query = query.eq('organization_id', currentOrgId);
+                fetchMore = false;
             }
         }
-        
-        let { data, error } = await query;
+        let data = allData;
 
         // If the schema cache is stale after running the SQL script, we must strictly enforce data isolation 
         // by throwing the error. We cannot fallback to loading all data, otherwise new organizations see old data.
@@ -246,10 +277,25 @@ export const api = {
                  return []; // Returns empty array to prevent leaking AZRE data to the new org
              }
              // For the master org let it slide so they aren't totally broken, but still warn.
-             console.warn(`Falling back to unprotected load for Master AZRE Org. You MUST run "NOTIFY pgrst, 'reload schema';" in Supabase.`);
-             const fallback = await supabase.from(table).select('*');
-             data = fallback.data;
-             error = fallback.error;
+                         console.warn(`Falling back to unprotected load for Master AZRE Org. You MUST run "NOTIFY pgrst, 'reload schema';" in Supabase.`);
+             let fallbackData = [];
+             let fbFrom = 0;
+             let fbFetchMore = true;
+             while(fbFetchMore) {
+                 const fbPage = await supabase.from(table).select('*').range(fbFrom, fbFrom + step - 1);
+                 if (fbPage.error) {
+                     error = fbPage.error;
+                     break;
+                 }
+                 if (fbPage.data && fbPage.data.length > 0) {
+                     fallbackData.push(...fbPage.data);
+                     if (fbPage.data.length < step) fbFetchMore = false;
+                     else fbFrom += step;
+                 } else {
+                     fbFetchMore = false;
+                 }
+             }
+             data = fallbackData;
         }
 
         if (error) {
@@ -274,6 +320,15 @@ export const api = {
         // Ensure JSON fields are stringified if needed for text columns
         if (table === 'Wholesalers' && payload.properties && typeof payload.properties === 'object') {
             payload.properties = JSON.stringify(payload.properties);
+        }
+        
+        if (table === 'Agents') {
+            if (payload.name) {
+                const parts = payload.name.split(' ');
+                payload.agentFirstName = parts[0];
+                payload.agentLastName = parts.slice(1).join(' ');
+            }
+            // Remove name if the db doesn't have it, but wait, if it does, it's fine
         }
         
         if (table === 'Deals' || table === 'JVDeals') {
@@ -368,6 +423,13 @@ if (table === 'Deals') {
             }
             if (table === 'Wholesalers' && payload.properties && typeof payload.properties === 'object') {
                 payload.properties = JSON.stringify(payload.properties);
+            }
+            if (table === 'Agents') {
+                if (payload.name) {
+                    const parts = payload.name.split(' ');
+                    payload.agentFirstName = parts[0];
+                    payload.agentLastName = parts.slice(1).join(' ');
+                }
             }
             if (table === 'Deals' || table === 'JVDeals') {
                 if (payload.interestedBuyers && typeof payload.interestedBuyers === 'object') {
