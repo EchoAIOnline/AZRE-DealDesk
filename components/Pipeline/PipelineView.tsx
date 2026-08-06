@@ -1,5 +1,5 @@
-import React from 'react';
-import { Layout, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layout, X, Mail } from 'lucide-react';
 import { Deal, Agent, FilterConfig } from '../../types';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { DealCard } from '../Deals/DealCard';
@@ -42,6 +42,22 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     setShowAgentFilterSuggestions, handleAddDeal, updateDeal, setDealModalZIndex,
     setEditingDeal, filteredDeals, orderedDeals, handleDeleteDeal
 }) => {
+    const [selectedDealIds, setSelectedDealIds] = useState<string[]>([]);
+
+    const handleSelectDeal = (id: string, selected: boolean) => {
+        if (selected) {
+            setSelectedDealIds(prev => [...prev, id]);
+        } else {
+            setSelectedDealIds(prev => prev.filter(dealId => dealId !== id));
+        }
+    };
+
+    const handleSendLOIToAll = () => {
+        if (selectedDealIds.length === 0) return;
+        alert(`Ready to send LOI to ${selectedDealIds.length} selected deals. Next step would open bulk LOI sender.`);
+        setSelectedDealIds([]); // Reset selection
+    };
+
     const tabs = pipelineType === 'dfd' ? [
         { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
         { id: 'Available', label: 'Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'Available').length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
@@ -161,6 +177,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 } 
                 actionLabel="Add Deal" 
                 onAction={handleAddDeal} 
+                secondaryActionLabel={selectedDealIds.length > 0 ? "Send LOI to All" : undefined}
+                onSecondaryAction={selectedDealIds.length > 0 ? handleSendLOIToAll : undefined}
             />
             <div className="px-4 md:px-8 pb-8 pt-4">
                 {(() => { 
@@ -203,6 +221,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                             onUpdate={updateDeal} 
                                             onDelete={handleDeleteDeal} 
                                             onEdit={(d) => { setDealModalZIndex('z-[120]'); setEditingDeal(d); }}
+                                            selected={selectedDealIds.includes(deal.id)}
+                                            onSelect={handleSelectDeal}
                                         />
                                     ))}
                                 </div>

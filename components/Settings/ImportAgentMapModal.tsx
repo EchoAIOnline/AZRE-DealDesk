@@ -12,7 +12,7 @@ interface ImportAgentMapModalProps {
     file: File;
     existingAgents: Agent[];
     onClose: () => void;
-    onImport: (agents: Agent[], skipped: number) => void;
+    onImport: (agents: Agent[], skipped: number, updatedAgents?: Agent[]) => void;
 }
 
 const FIELD_DEFINITIONS: { key: string, label: string, aliases: string[], type: 'string' }[] = [
@@ -101,6 +101,7 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
         try {
             const newAgents: Agent[] = [];
             let skipped = 0;
+            const agentsToUpdateMap: Record<string, Agent> = {};
 
             rawData.forEach(row => {
                 const agent: any = {
@@ -148,22 +149,54 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
                 if (!agent.email) agent.email = '';
                 if (!agent.brokerage) agent.brokerage = '';
 
-                // Duplicate Check
+                // Duplicate Check & Merge
+                let duplicateExisting: Agent | null = null;
                 const isDuplicate = existingAgents.some(existing => {
-                    if (agent.email && existing.email && agent.email.toLowerCase() === existing.email.toLowerCase()) return true;
-                    if (agent.phone && existing.phone && agent.phone === existing.phone) return true;
-                    if (agent.name && existing.name && agent.name.toLowerCase() === existing.name.toLowerCase() && agent.name !== 'Unknown Agent') return true;
+                    if (agent.email && existing.email && agent.email.toLowerCase() === existing.email.toLowerCase()) {
+                        duplicateExisting = existing;
+                        return true;
+                    }
+                    if (agent.phone && existing.phone && agent.phone === existing.phone) {
+                        duplicateExisting = existing;
+                        return true;
+                    }
+                    if (agent.name && existing.name && agent.name.toLowerCase() === existing.name.toLowerCase() && agent.name !== 'Unknown Agent') {
+                        duplicateExisting = existing;
+                        return true;
+                    }
                     return false;
                 });
 
-                if (isDuplicate) {
+                if (isDuplicate && duplicateExisting) {
+                    let needsUpdate = false;
+                    const updates: Partial<Agent> = {};
+                    
+                    const currentExisting = agentsToUpdateMap[duplicateExisting.id] || duplicateExisting;
+
+                    if (agent.email && !currentExisting.email) {
+                        updates.email = agent.email;
+                        needsUpdate = true;
+                    }
+                    if (agent.phone && !currentExisting.phone) {
+                        updates.phone = agent.phone;
+                        needsUpdate = true;
+                    }
+                    if (agent.brokerage && !currentExisting.brokerage) {
+                        updates.brokerage = agent.brokerage;
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        agentsToUpdateMap[currentExisting.id] = { ...currentExisting, ...updates };
+                    }
                     skipped++;
                 } else {
                     newAgents.push(agent as Agent);
                 }
             });
 
-            setImportProgress({ current: 0, total: newAgents.length });
+            const agentsToUpdate = Object.values(agentsToUpdateMap);
+            setImportProgress({ current: 0, total: newAgents.length + agentsToUpdate.length });
 
             const chunkSize = 50;
             let savedAgents: Agent[] = [];
@@ -173,10 +206,20 @@ export const ImportAgentMapModal: React.FC<ImportAgentMapModalProps> = ({ file, 
                 if (savedChunk) {
                     savedAgents = [...savedAgents, ...savedChunk];
                 }
-                setImportProgress({ current: Math.min(i + chunkSize, newAgents.length), total: newAgents.length });
+                setImportProgress({ current: Math.min(i + chunkSize, newAgents.length), total: newAgents.length + agentsToUpdate.length });
             }
 
-            onImport(savedAgents, skipped);
+            let finalUpdatedAgents: Agent[] = [];
+            for (let i = 0; i < agentsToUpdate.length; i++) {
+                const agent = agentsToUpdate[i];
+                const updated = await api.update(agent.id, agent, 'Agents');
+                if (updated) {
+                    finalUpdatedAgents.push(updated as Agent);
+                }
+                setImportProgress({ current: newAgents.length + i + 1, total: newAgents.length + agentsToUpdate.length });
+            }
+
+            onImport(savedAgents, skipped, finalUpdatedAgents);
         } catch (error) {
             console.error("Error processing import:", error);
             alert("There was an error processing the import data.");

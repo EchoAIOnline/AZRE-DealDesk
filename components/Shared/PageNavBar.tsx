@@ -48,6 +48,8 @@ interface PageNavBarProps {
   // Actions
   actionLabel?: string;
   onAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 }
 
 export const PageNavBar: React.FC<PageNavBarProps> = ({
@@ -67,7 +69,9 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
   isFilterActive,
   filterContent,
   actionLabel,
-  onAction
+  onAction,
+  secondaryActionLabel,
+  onSecondaryAction
 }) => {
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -156,14 +160,26 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
                       </button>
                   )}
 
-                  {/* Action Button */}
-                  {actionLabel && onAction && (
-                      <button 
-                          onClick={onAction} 
-                          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all shrink-0 text-sm whitespace-nowrap"
-                      >
-                          <Plus size={16} /> {actionLabel}
-                      </button>
+                  {/* Action Buttons */}
+                  {(actionLabel || secondaryActionLabel) && (
+                      <div className="flex flex-row items-center gap-2">
+                          {actionLabel && onAction && (
+                              <button 
+                                  onClick={onAction} 
+                                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all shrink-0 text-sm whitespace-nowrap"
+                              >
+                                  <Plus size={16} /> {actionLabel}
+                              </button>
+                          )}
+                          {secondaryActionLabel && onSecondaryAction && (
+                              <button 
+                                  onClick={onSecondaryAction} 
+                                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 shadow-md transition-all shrink-0 text-sm whitespace-nowrap"
+                              >
+                                  {secondaryActionLabel}
+                              </button>
+                          )}
+                      </div>
                   )}
               </div>
           </div>

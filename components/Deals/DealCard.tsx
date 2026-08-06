@@ -12,9 +12,11 @@ interface DealCardProps {
     onUpdate: (id: string, updates: Partial<Deal>) => void;
     onDelete: (id: string) => void;
     onEdit: (deal: Deal) => void;
+    selected?: boolean;
+    onSelect?: (id: string, selected: boolean) => void;
 }
 
-export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpdate, onDelete, onEdit }) => {
+export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpdate, onDelete, onEdit, selected = false, onSelect }) => {
   const isUnderContract = UNDER_CONTRACT_STATUSES.includes(deal.offerDecision);
   const isDeclined = DECLINED_STATUSES.includes(deal.offerDecision);
   const isClosed = CLOSED_STATUSES.includes(deal.offerDecision);
@@ -139,9 +141,22 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   return (
     <div 
       onClick={() => onEdit(deal)}
-      className="bg-white dark:bg-gray-800 rounded-lg mb-4 border border-gray-200 dark:border-gray-700 shadow-md transition hover:border-blue-500/50 cursor-pointer group overflow-hidden"
+      className={`bg-white dark:bg-gray-800 rounded-lg mb-4 border shadow-md transition hover:border-blue-500/50 cursor-pointer group overflow-hidden ${selected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-700'}`}
     >
       <div className="w-full h-32 bg-gray-100 dark:bg-gray-900 relative">
+        {onSelect && (
+            <div 
+                className="absolute top-2 left-2 z-10 p-1 bg-white/80 dark:bg-black/60 backdrop-blur rounded hover:bg-white dark:hover:bg-black transition-colors"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <input 
+                    type="checkbox" 
+                    checked={selected}
+                    onChange={(e) => onSelect(deal.id, e.target.checked)}
+                    className="w-4 h-4 cursor-pointer text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+            </div>
+        )}
         {displayImageUrl ? (
             <img 
               src={displayImageUrl} 
