@@ -588,6 +588,10 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
             setZillowError("Please enter a Zillow URL");
             return;
         }
+        if (!zillowUrl.startsWith('http')) {
+            setZillowError("Please enter a valid Zillow URL starting with http:// or https://");
+            return;
+        }
         setZillowLoading(true);
         setZillowError("");
         try {
@@ -596,7 +600,19 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: zillowUrl })
             });
-            const result = await response.json();
+            let result;
+            const textResponse = await response.text();
+            try {
+                result = JSON.parse(textResponse);
+            } catch (e) {
+                if (textResponse.trim().startsWith('<')) {
+                    setZillowError("The server timed out or returned an HTML error. The Zillow URL might be invalid or scraping took too long.");
+                } else {
+                    setZillowError(textResponse ? `Error: ${textResponse}` : `Server returned an empty or invalid response (${response.status})`);
+                }
+                setZillowLoading(false);
+                return;
+            }
             
             if (!response.ok) {
                 setZillowError(result.message || "Failed to import from Zillow");

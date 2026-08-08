@@ -1415,12 +1415,13 @@ export default function App() {
         
         const saved = await api.save(updatedDeal, tableName);
         if (saved) {
+            const finalSaved = { ...updatedDeal, ...saved };
             setDeals(prev => {
                 const exists = prev.some(d => d.id === updatedDeal.id);
-                if (exists) return prev.map(d => d.id === updatedDeal.id ? saved : d);
-                return [saved, ...prev];
+                if (exists) return prev.map(d => d.id === updatedDeal.id ? finalSaved : d);
+                return [finalSaved, ...prev];
             });
-            // checkAndSaveAgent(saved); // Disabled auto-create
+            // checkAndSaveAgent(finalSaved); // Disabled auto-create
             localStorage.setItem('azre-editing-deal-id', saved.id);
             
             // State Diffing for Activity Logs

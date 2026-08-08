@@ -119,7 +119,8 @@ const processIncomingItem = (item: any, tableName: string) => {
         
         processed.interestedBuyers = cleanArrayField(processed.interestedBuyers, false);
         processed.buyersWhoPassed = cleanArrayField(processed.buyersWhoPassed, false);
-        processed.pipelineType = tableName === 'JVDeals' ? 'jv' : 'main';
+        if (tableName === 'JVDeals' && (!processed.pipelineType || processed.pipelineType === 'jv')) processed.pipelineType = 'dfd';
+        else if (tableName === 'Deals' && (!processed.pipelineType || processed.pipelineType === 'main')) processed.pipelineType = 'mls';
     }
 
     if (tableName === 'Wholesalers') {
