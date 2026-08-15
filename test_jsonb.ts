@@ -1,0 +1,13 @@
+import { supabase } from './services/api';
+async function run() {
+    const { data, error } = await supabase.from('Deals').select('id').limit(1);
+    if(error || !data || data.length === 0) {
+        console.log("Error or no deals:", error);
+        return;
+    }
+    const dealId = data[0].id;
+    console.log("Updating deal", dealId);
+    const res = await supabase.from('Deals').update({ feasibilityStudy: "Test string" }).eq('id', dealId);
+    console.log("Update res:", res);
+}
+run();

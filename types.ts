@@ -139,6 +139,7 @@ export interface Deal {
   desiredWholesaleProfit?: number;
   priceReductionAlert: string;
   forSaleBy: string;
+  feasibilityStudy?: string;
   listingStatus?: string;
   contactStatus: string;
   agentContacted: string;
@@ -196,6 +197,8 @@ export interface Agent {
   spokeWithAgent?: boolean;
   investorFriendly?: boolean;
   agreedToSend?: boolean;
+  loiSent?: boolean;
+  loiSentDate?: string;
   hasClosedDeals?: boolean;
   sentTextToAgent?: boolean;
   agentRespondedToText?: boolean;
@@ -337,8 +340,8 @@ export interface DealFinderProperty {
 export interface Campaign {
   id: string;
   name: string;
-  type: 'Email' | 'SMS' | 'Hybrid';
-  status: 'Running' | 'Scheduled' | 'Completed' | 'Draft';
+  type: 'Email' | 'SMS' | 'Hybrid' | 'loi_blast' | 'buyer_blast';
+  status: 'Running' | 'Scheduled' | 'Completed' | 'Draft' | 'Sent' | 'finished';
   audienceSize: number;
   sent: number;
   delivered: number;

@@ -222,7 +222,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
                 <span className="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wide font-semibold mb-0.5">My Offer:</span>
                 <div className="flex items-center gap-2">
                     <span className="text-green-600 dark:text-green-400 font-bold">{deal.offerPrice ? formatCurrency(deal.offerPrice) : '-'}</span>
-                    {deal.loiSent && (
+                    { (deal.loiSent || deal.contactStatus === 'Sent LOI Email') && (
                         <div className="px-1.5 h-[22px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-bold flex items-center gap-1 border border-green-200 dark:border-green-800/50 whitespace-nowrap">
                             <Mail size={10} /> LOI Sent
                         </div>

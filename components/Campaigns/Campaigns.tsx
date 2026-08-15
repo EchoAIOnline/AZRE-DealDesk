@@ -10,6 +10,7 @@ import { LayoutDashboard, Users, Mail, BarChart2, PlusCircle, History, Image as 
 import { Buyer, Agent, Deal, Wholesaler, EmailList } from '../../types';
 import { api, sendEmail, Recipient } from '../../services/api';
 import { generateId, getLogTimestamp } from '../../services/utils';
+import { useAppStore } from '../../store/useAppStore';
 
 interface CampaignsProps {
     buyers: Buyer[];
@@ -28,6 +29,7 @@ export const Campaigns: React.FC<CampaignsProps> = ({
     buyers, agents, wholesalers, deals, campaigns = [], emailLists = [], 
     onUpdateContact, onCreateList, onDeleteList, onDeleteCampaign 
 }) => {
+    const { setAgents, setDeals } = useAppStore();
     const [currentTab, setCurrentTab] = useState('Dashboard');
     const [currentSubTab, setCurrentSubTab] = useState('All campaigns');
     
@@ -73,7 +75,7 @@ export const Campaigns: React.FC<CampaignsProps> = ({
     const [editingContact, setEditingContact] = useState<{data: any, type: 'buyer' | 'agent'} | null>(null);
 
     const activeCampaigns = useMemo(() => {
-        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id) && c.type === 'loi_blast');
+        return (localCampaigns || []).filter(c => c && !deletedIds.has(c.id) && c.type === 'loi_blast' || c.name?.includes('LOI Blast'));
     }, [localCampaigns, deletedIds]);
 
     const totalSubscribers = (agents?.length || 0) + (wholesalers?.length || 0);
@@ -82,7 +84,7 @@ export const Campaigns: React.FC<CampaignsProps> = ({
     // Calculate dynamic stats
     const totalSentCount = useMemo(() => 
         activeCampaigns.reduce((sum, campaign) => 
-            (campaign && (campaign.status === 'Sent' || campaign.status === 'finished')) ? sum + (campaign.recipientCount || campaign.recipient_count || 0) : sum, 0
+            (campaign && (campaign.status === 'Sent' || campaign.status === 'finished')) ? sum + (campaign.recipientCount || campaign.recipient_count || campaign.sent || campaign.audienceSize || 0) : sum, 0
         ), [activeCampaigns]);
     const displaySentCount = totalSentCount > 0 ? totalSentCount.toLocaleString() : "0";
 
@@ -234,6 +236,34 @@ export const Campaigns: React.FC<CampaignsProps> = ({
                 // Prepend new record
                 return [campaign, ...prev];
             });
+
+            if (campaign.type === 'loi_blast' && campaign.deliveryLogs) {
+                const successfulEmails = campaign.deliveryLogs.filter((l: any) => l.status === 'sent').map((l: any) => l.email.toLowerCase());
+                if (successfulEmails.length > 0) {
+                    const nowStr = new Date().toISOString();
+                    
+                    // Update agents
+                    const agentsToUpdate = agents.filter(a => a.email && successfulEmails.includes(a.email.toLowerCase()));
+                    for (const a of agentsToUpdate) {
+                         const updatedAgent = { ...a, loiSent: true, loiSentDate: nowStr };
+                         await api.save(updatedAgent, 'Agents');
+                         setAgents(prev => prev.map(pa => pa.id === updatedAgent.id ? updatedAgent : pa));
+                    }
+
+                    // Update deals associated with those agents
+                    const agentNames = agentsToUpdate.map(a => a.name);
+                    const dealsToUpdate = deals.filter(d => 
+                        (d.agentEmail && successfulEmails.includes(d.agentEmail.toLowerCase())) || 
+                        (d.agentName && agentNames.includes(d.agentName))
+                    );
+                    for (const d of dealsToUpdate) {
+                         const updatedDeal = { ...d, contactStatus: 'Sent LOI Email', offerDecision: 'Made Written Offer On Property', loiSent: true, loiSentDate: nowStr };
+                         await api.save(updatedDeal, 'Deals');
+                         setDeals(prev => prev.map(pd => pd.id === updatedDeal.id ? updatedDeal : pd));
+                    }
+                }
+            }
+
             setCurrentSubTab('All campaigns');
         } catch (e) {
             console.error("Failed to save completed campaign", e);
@@ -363,8 +393,8 @@ export const Campaigns: React.FC<CampaignsProps> = ({
                                     return (
                                         <tr key={campaign.id || idx} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => handleEditCampaign(campaign)}>
                                             <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{campaign.name || 'Untitled Campaign'}</td>
-                                            <td className="px-6 py-4 text-xs">{campaign.displaySentAt || formatCampaignDate(campaign.sentAt)}</td>
-                                            <td className="px-6 py-4 font-mono text-xs">{campaign.recipientCount || campaign.recipient_count || 0}</td>
+                                            <td className="px-6 py-4 text-xs">{campaign.displaySentAt || formatCampaignDate(campaign.sentAt || campaign.startDate)}</td>
+                                            <td className="px-6 py-4 font-mono text-xs">{campaign.recipientCount || campaign.recipient_count || campaign.sent || campaign.audienceSize || 0}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${
                                                     isSent 
@@ -586,9 +616,9 @@ export const Campaigns: React.FC<CampaignsProps> = ({
                                     </div>
                                     <div className="flex items-center gap-8">
                                         <div className="text-right">
-                                            <div className="text-xl font-bold text-gray-900 dark:text-white">{c.recipientCount || c.recipient_count || 0}</div>
+                                            <div className="text-xl font-bold text-gray-900 dark:text-white">{c.recipientCount || c.recipient_count || c.sent || c.audienceSize || 0}</div>
                                             <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black tracking-widest">Recipients</div>
-                                            <div className="text-[10px] text-blue-500 mt-1 font-bold">{c.displaySentAt || formatCampaignDate(c.sentAt)}</div>
+                                            <div className="text-[10px] text-blue-500 mt-1 font-bold">{c.displaySentAt || formatCampaignDate(c.sentAt || c.startDate)}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button 

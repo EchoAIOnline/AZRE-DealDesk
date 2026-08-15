@@ -5,6 +5,7 @@ export const GOOGLE_MAPS_API_KEY = "AIzaSyASuyXz6R-QrKgqeiaHF_JYfmF2c88agy0";
 // --- STATUS CONSTANTS ---
 export const POTENTIAL_STATUSES = [
   'No Offer Made Yet', 
+  'Seller Counter-Offered', 
   'Monitoring Pending Status Before Offer', 
   'Requires A Buyers Agent', 
   'Made Verbal Offer On Property', 

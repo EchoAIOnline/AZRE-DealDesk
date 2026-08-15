@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Layout, X, Mail } from 'lucide-react';
-import { Deal, Agent, FilterConfig } from '../../types';
+import { Layout, X, Mail, Loader2, CheckCircle } from 'lucide-react';
+import { Deal, Agent, FilterConfig, Campaign } from '../../types';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { DealCard } from '../Deals/DealCard';
 import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, DFD_PIPELINE_STATUSES } from '../../constants';
+import { useAppStore } from '../../store/useAppStore';
+import { api, sendBulkEmailGAS } from '../../services/api';
+import { generateId, formatCurrency } from '../../services/utils';
+import { mockOfferTemplates } from '../../services/mockData';
 
 interface PipelineViewProps {
     title?: string;
@@ -43,6 +47,13 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     setEditingDeal, filteredDeals, orderedDeals, handleDeleteDeal
 }) => {
     const [selectedDealIds, setSelectedDealIds] = useState<string[]>([]);
+    
+    const [isBlastModalOpen, setIsBlastModalOpen] = useState(false);
+    const [blastProgress, setBlastProgress] = useState(0);
+    const [blastTotal, setBlastTotal] = useState(0);
+    const [isBlastComplete, setIsBlastComplete] = useState(false);
+
+    const { campaigns, setCampaigns, setAgents, currentUser } = useAppStore();
 
     const handleSelectDeal = (id: string, selected: boolean) => {
         if (selected) {
@@ -52,9 +63,98 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         }
     };
 
-    const handleSendLOIToAll = () => {
+    const handleSendLOIToAll = async () => {
         if (selectedDealIds.length === 0) return;
-        alert(`Ready to send LOI to ${selectedDealIds.length} selected deals. Next step would open bulk LOI sender.`);
+        
+        const total = selectedDealIds.length;
+        setBlastTotal(total);
+        setBlastProgress(0);
+        setIsBlastComplete(false);
+        setIsBlastModalOpen(true);
+        
+        const template = mockOfferTemplates[0]; // Default template
+        const defaultSubject = "Offer for {{Property_Address}}";
+        const fromEmail = currentUser?.email || "asharizakarrei@gmail.com";
+        
+        let sentCount = 0;
+        let deliveredCount = 0;
+        for (const dealId of selectedDealIds) {
+            const deal = orderedDeals.find(d => d.id === dealId);
+            if (!deal) {
+                sentCount++;
+                setBlastProgress(sentCount);
+                continue;
+            }
+
+            const agent = deal.agentName ? agents.find(a => a.name === deal.agentName) : null;
+            const targetEmail = agent?.email || deal.agentEmail;
+            
+            if (targetEmail) {
+                const agentFirstName = agent ? agent.name.split(' ')[0] : (deal.agentName ? deal.agentName.split(' ')[0] : "Agent");
+                const agentName = agent ? agent.name : (deal.agentName || "Agent");
+                const offerPriceStr = deal.offerPrice ? formatCurrency(deal.offerPrice) : "[Offer Price]";
+                const propAddress = deal.street || "[Property Address]";
+
+                let body = template.emailBody || "";
+                if (template.loiBody) {
+                    body += `<br/><br/>---<br/><br/>${template.loiBody}`;
+                }
+                body = body.replace(/{{Agent_Name}}/g, agentName)
+                           .replace(/{{Agent_First_Name}}/g, agentFirstName)
+                           .replace(/{{Property_Address}}/g, propAddress)
+                           .replace(/{{Offer_Amount}}/g, offerPriceStr)
+                           .replace(/{{Your_Phone}}/g, "[Your Phone]")
+                           .replace(/{{Your_Address}}/g, "[Your Address]")
+                           .replace(/\n/g, '<br/>');
+                           
+                if (currentUser?.signature) {
+                    body += `<br/><br/>${currentUser.signature}`;
+                }
+
+                let subject = defaultSubject.replace(/{{Property_Address}}/g, propAddress);
+
+                try {
+                    const response = await sendBulkEmailGAS([{ email: targetEmail, name: agentName }], subject, body, fromEmail);
+                    if (response && (response.status === 'success' || response.status === 'partial_success')) {
+                        deliveredCount++;
+                        updateDeal(dealId, { contactStatus: 'Sent LOI Email', offerDecision: 'Made Written Offer On Property', loiSent: true, loiSentDate: new Date().toISOString() });
+                        
+                        if (agent) {
+                            api.save({ ...agent, loiSent: true, loiSentDate: new Date().toISOString() }, 'Agents').then((savedAgent: any) => {
+                                if(savedAgent) setAgents((prev: any) => prev.map((a: any) => a.id === agent.id ? savedAgent : a));
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to send LOI for deal", dealId, e);
+                }
+            }
+
+            sentCount++;
+            setBlastProgress(sentCount);
+        }
+        
+        setIsBlastComplete(true);
+        
+        // Log the Campaign
+        const newCampaign: Campaign = {
+            id: generateId(),
+            name: `LOI Blast - ${new Date().toLocaleDateString()}`,
+            type: 'loi_blast',
+            status: 'finished',
+            audienceSize: total,
+            sent: total,
+            delivered: deliveredCount,
+            responses: 0,
+            startDate: new Date().toISOString(),
+            templateId: template.id
+        };
+        
+        const savedCampaign = await api.save(newCampaign, 'Campaigns');
+        if (savedCampaign) {
+            setCampaigns(prev => [...prev, savedCampaign]);
+        }
+        
         setSelectedDealIds([]); // Reset selection
     };
 
@@ -231,6 +331,78 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                     }); 
                 })()}
             </div>
+            
+            {/* LOI Blast Progress Modal */}
+            {isBlastModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    LOI Blast Campaign
+                                </h2>
+                                {isBlastComplete && (
+                                    <button 
+                                        onClick={() => setIsBlastModalOpen(false)}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <div className="space-y-6 text-center py-4">
+                                {!isBlastComplete ? (
+                                    <>
+                                        <div className="flex justify-center mb-4">
+                                            <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin" />
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-900 dark:text-white font-medium text-lg">
+                                                Sending Letters of Intent...
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                Sending LOI {blastProgress} of {blastTotal}
+                                            </p>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                                            <div 
+                                                className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                                                style={{ width: `${(blastProgress / blastTotal) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-center mb-4">
+                                            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                                                <CheckCircle className="w-8 h-8" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-900 dark:text-white font-bold text-xl">
+                                                Campaign Sent!
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                Successfully delivered {blastTotal} Letters of Intent. You can view the full report in the LOI Blast Campaigns tab.
+                                            </p>
+                                        </div>
+                                        <div className="pt-4">
+                                            <button 
+                                                onClick={() => setIsBlastModalOpen(false)}
+                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+                                            >
+                                                Done
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
