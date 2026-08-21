@@ -10,7 +10,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const apiKey = process.env.BRIGHTDATA_API_KEY || "008b1060-0915-4386-b2d1-b84270cbd5b9";
-    const collectorId = process.env.BRIGHTDATA_COLLECTOR_ID;
+    const collectorId = process.env.BRIGHTDATA_COLLECTOR_ID || "gd_lfqkr8wm13ixtbd8f5";
 
     if (!collectorId) {
       return res.status(400).json({ 
