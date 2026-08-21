@@ -13,7 +13,7 @@ code = code.replace(
                 }
                 
                 if (zData.snapshot_id) {
-                    setZillowError("The scrape is taking longer than expected and is queued. Please wait a minute and try again, or check your BrightData dashboard.");
+                    setZillowError("The scrape is taking longer than expected and is queued. Please wait a minute and try again, or check BrightData dashboard.");
                     setZillowLoading(false);
                     return;
                 }`

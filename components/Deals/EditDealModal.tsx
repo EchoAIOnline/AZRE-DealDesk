@@ -520,8 +520,9 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
             const formattedAddress = deal.address.replace(/,/g, '').replace(/ /g, '-');
             const searchUrl = `https://www.zillow.com/homes/${formattedAddress}_rb/`;
             
-            const response = await fetch('/api/scrape-zillow', {
+            const response = await fetch('/api/zillow-data', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: searchUrl })
             });
@@ -590,6 +591,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         try {
             const response = await fetch('/api/gemini/comps', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     address: deal.address,
@@ -643,8 +645,9 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         setZillowLoading(true);
         setZillowError("");
         try {
-            const response = await fetch('/api/scrape-zillow', {
+            const response = await fetch('/api/zillow-data', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: zillowUrl })
             });
@@ -673,6 +676,12 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 
                 if (zData.error) {
                     setZillowError(zData.error);
+                    setZillowLoading(false);
+                    return;
+                }
+                
+                if (zData.snapshot_id) {
+                    setZillowError("The scrape is taking longer than expected and is queued. Please wait a minute and try again, or check your BrightData dashboard.");
                     setZillowLoading(false);
                     return;
                 }

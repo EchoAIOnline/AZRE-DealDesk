@@ -58,7 +58,12 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
 
   // API route for Zillow Scraper (BrightData)
-  app.post("/api/scrape-zillow", async (req, res) => {
+  app.post("/api/test-timeout", async (req, res) => {
+    await new Promise(resolve => setTimeout(resolve, 65000));
+    res.json({ status: 'success' });
+  });
+
+  app.post("/api/zillow-data", async (req, res) => {
     try {
       const { url } = req.body;
       if (!url) {
