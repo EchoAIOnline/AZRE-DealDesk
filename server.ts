@@ -1,3 +1,4 @@
+import { GoogleGenAI, Type } from "@google/genai";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -253,6 +254,158 @@ async function startServer() {
     } catch (e: any) {
       console.error("Error sending email via SES:", e);
       res.status(500).json({ status: 'error', message: e.message || 'Unknown server error' });
+    }
+  });
+
+  
+// --- Microsoft OAuth Setup ---
+const MS_TENANT = 'common';
+const MS_CLIENT_ID = process.env.MS_CLIENT_ID || '';
+const MS_CLIENT_SECRET = process.env.MS_CLIENT_SECRET || '';
+
+// In-memory store for tokens (for single-user demo purposes)
+let msAccessToken: string | null = null;
+let msRefreshToken: string | null = null;
+
+app.get('/api/auth/microsoft/url', (req, res) => {
+  const redirectUri = `${process.env.APP_URL || 'http://localhost:3000'}/auth/callback`;
+  const params = new URLSearchParams({
+    client_id: MS_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    response_mode: 'query',
+    scope: 'offline_access Mail.Read',
+  });
+  const authUrl = `https://login.microsoftonline.com/${MS_TENANT}/oauth2/v2.0/authorize?${params.toString()}`;
+  res.json({ url: authUrl });
+});
+
+app.get('/api/auth/microsoft/status', (req, res) => {
+  res.json({ connected: !!msAccessToken });
+});
+
+app.get('/auth/callback', async (req, res) => {
+  const { code } = req.query;
+  const redirectUri = `${process.env.APP_URL || 'http://localhost:3000'}/auth/callback`;
+
+  try {
+    if (code) {
+      const tokenResponse = await fetch(`https://login.microsoftonline.com/${MS_TENANT}/oauth2/v2.0/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: MS_CLIENT_ID,
+          client_secret: MS_CLIENT_SECRET,
+          code: code as string,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }).toString(),
+      });
+      const tokenData = await tokenResponse.json();
+      if (tokenData.access_token) {
+        msAccessToken = tokenData.access_token;
+        msRefreshToken = tokenData.refresh_token || null;
+      }
+    }
+  } catch (err) {
+    console.error('Error exchanging code:', err);
+  }
+
+  res.send(`
+    <html>
+      <body>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+            window.close();
+          } else {
+            window.location.href = '/';
+          }
+        </script>
+        <p>Authentication complete. This window should close automatically.</p>
+      </body>
+    </html>
+  `);
+});
+
+// Fetch emails from Graph API
+app.get('/api/emails/acquisitions', async (req, res) => {
+  if (!msAccessToken) {
+    return res.status(401).json({ error: 'Not connected to Microsoft' });
+  }
+  try {
+    // Fetch top 50 emails
+    const response = await fetch('https://graph.microsoft.com/v1.0/me/messages?$top=50&$select=id,subject,bodyPreview,receivedDateTime,from', {
+      headers: {
+        'Authorization': `Bearer ${msAccessToken}`
+      }
+    });
+    
+    if (response.status === 401) {
+      msAccessToken = null; // Token expired
+      return res.status(401).json({ error: 'Token expired' });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('Error fetching emails:', err);
+    res.status(500).json({ error: 'Failed to fetch emails' });
+  }
+});
+
+    // Gemini Comps endpoint
+  app.post("/api/gemini/comps", async (req, res) => {
+    try {
+      const { address, sqft, beds, baths } = req.body;
+      if (!address) {
+        return res.status(400).json({ status: 'error', message: 'Address is required' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY_2;
+      if (!apiKey) {
+        return res.status(500).json({ status: 'error', message: 'GEMINI_API_KEY is not configured on the server.' });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `Address: ${address}
+Square Footage: ${sqft || 'Unknown'}
+Bedrooms: ${beds || 'Unknown'}
+Bathrooms: ${baths || 'Unknown'}
+
+Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales within 2026 that match this property’s Square footage within 300 sqft larger or smaller, bedrooms and bathroom that is no more then 1 mile away from the subject property. Give me the comps that are in the highest price ranges. Can this be acheaved?`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                address: { type: Type.STRING },
+                sqft: { type: Type.INTEGER },
+                saleDate: { type: Type.STRING, description: "Format as MM/DD/YYYY" },
+                salePrice: { type: Type.NUMBER }
+              },
+              required: ["address", "sqft", "saleDate", "salePrice"]
+            }
+          }
+        }
+      });
+
+      const text = response.text;
+      if (!text) throw new Error("No text generated");
+      const comps = JSON.parse(text);
+
+      res.json({ status: 'success', data: comps });
+    } catch (err: any) {
+      console.error("Error from Gemini API:", err);
+      res.status(500).json({ status: 'error', message: err.message });
     }
   });
 

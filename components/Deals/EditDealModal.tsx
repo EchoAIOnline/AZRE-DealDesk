@@ -580,7 +580,55 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         }
     };
 
-    const handlePullRenovationComps = () => handlePullComps('renovation');
+    const handlePullRenovationComps = async () => {
+        if (!deal.address) {
+            setCompsError("No address available on deal to pull comps.");
+            return;
+        }
+        setCompsLoading(true);
+        setCompsError("");
+        try {
+            const response = await fetch('/api/gemini/comps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    address: deal.address,
+                    sqft: deal.sqft,
+                    beds: deal.beds,
+                    baths: deal.baths
+                })
+            });
+            const result = await response.json();
+            
+            if (!response.ok) {
+                setCompsError(result.message || "Failed to pull comps from Gemini");
+                setCompsLoading(false);
+                return;
+            }
+
+            if (result.status === 'success' && result.data && Array.isArray(result.data)) {
+                const validComps = result.data;
+                const updates: Partial<Deal> = {};
+                if (validComps[0]) {
+                    updates.renovationComparable1 = { ...deal.renovationComparable1, address: validComps[0].address || '', salePrice: validComps[0].salePrice || 0, saleDate: validComps[0].saleDate || '', sqft: validComps[0].sqft || 0, softenerPercent: deal.renovationComparable1?.softenerPercent || 0 };
+                }
+                if (validComps[1]) {
+                    updates.renovationComparable2 = { ...deal.renovationComparable2, address: validComps[1].address || '', salePrice: validComps[1].salePrice || 0, saleDate: validComps[1].saleDate || '', sqft: validComps[1].sqft || 0, softenerPercent: deal.renovationComparable2?.softenerPercent || 0 };
+                }
+                if (validComps[2]) {
+                    updates.renovationComparable3 = { ...deal.renovationComparable3, address: validComps[2].address || '', salePrice: validComps[2].salePrice || 0, saleDate: validComps[2].saleDate || '', sqft: validComps[2].sqft || 0, softenerPercent: deal.renovationComparable3?.softenerPercent || 0 };
+                }
+                setDeal(prev => ({ ...prev, ...updates }));
+            } else {
+                setCompsError("No comparable properties found matching criteria via Gemini.");
+            }
+        } catch (error) {
+            console.error("Error pulling comps via Gemini:", error);
+            setCompsError("An error occurred while pulling comps.");
+        } finally {
+            setCompsLoading(false);
+        }
+    };
     const handlePullNewConstructionComps = () => handlePullComps('newConstruction');
 
     const handleZillowImport = async () => {
