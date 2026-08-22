@@ -174,3 +174,4 @@ BEGIN
   END IF;
 END
 $$;
+ALTER TABLE "public"."Deals" ADD COLUMN IF NOT EXISTS "feasibilityStudy" text;

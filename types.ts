@@ -139,7 +139,7 @@ export interface Deal {
   desiredWholesaleProfit?: number;
   priceReductionAlert: string;
   forSaleBy: string;
-  feasibilityStudy?: string;
+  feasibilityStudy?: any;
   listingStatus?: string;
   contactStatus: string;
   agentContacted: string;
@@ -400,4 +400,5 @@ export interface Integration {
     organization?: string;
     inviteCode?: string;
 }
+ 
  

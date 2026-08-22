@@ -2219,8 +2219,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                         <textarea
                             className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 outline-none h-48 resize-none"
                             placeholder="Enter feasibility study details here..."
-                            value={deal.feasibilityStudy || ''}
-                            onChange={(e) => updateDealState({ feasibilityStudy: e.target.value })}
+                            value={typeof deal.feasibilityStudy === 'object' && deal.feasibilityStudy !== null ? (deal.feasibilityStudy.notes || '') : (deal.feasibilityStudy || '')}
+                            onChange={(e) => updateDealState({ feasibilityStudy: { notes: e.target.value } })}
                             onBlur={handleAutoSave}
                         />
                    </div>
