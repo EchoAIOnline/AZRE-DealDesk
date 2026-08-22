@@ -400,3 +400,4 @@ export interface Integration {
     organization?: string;
     inviteCode?: string;
 }
+ 
