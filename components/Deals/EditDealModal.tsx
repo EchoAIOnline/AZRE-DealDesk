@@ -504,6 +504,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const [zillowUrl, setZillowUrl] = useState("");
     const [zillowLoading, setZillowLoading] = useState(false);
     const [zillowError, setZillowError] = useState("");
+    const [zillowDuplicateData, setZillowDuplicateData] = useState<{updates: Partial<Deal>, matches: Deal[]} | null>(null);
 
     const [compsLoading, setCompsLoading] = useState(false);
     const [compsError, setCompsError] = useState("");
@@ -735,6 +736,28 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     }
                 }
                 
+                // Duplicate check
+                if (zData.address || zData.mappedMlsNumber) {
+                    const normalizedAddress = (updates.address || "").toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const normalizedMls = (updates.mls || "").toLowerCase().trim();
+                    const matches = allDeals ? allDeals.filter(d => {
+                        if (d.id === deal.id) return false;
+                        const existingAddress = (d.address || "").toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const existingMls = (d.mls || "").toLowerCase().trim();
+                        
+                        const isAddressMatch = normalizedAddress && existingAddress && existingAddress === normalizedAddress;
+                        const isMlsMatch = normalizedMls && existingMls && existingMls === normalizedMls;
+                        
+                        return isAddressMatch || isMlsMatch;
+                    }) : [];
+                    
+                    if (matches.length > 0) {
+                        setZillowDuplicateData({ updates, matches });
+                        setShowZillowImport(false);
+                        return;
+                    }
+                }
+
                 setDeal(prev => ({ ...prev, ...updates }));
                 triggerSave();
                 setShowZillowImport(false);
@@ -2797,6 +2820,59 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 {zillowLoading ? 'Importing...' : 'Import Data'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+          )}
+
+          {zillowDuplicateData && (
+            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                        <AlertTriangle className="text-yellow-500" size={24} />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Duplicate Detected</h3>
+                    </div>
+                    <div className="p-4 flex-1 overflow-y-auto max-h-[50vh]">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            The Zillow importer found existing deals in your CRM that match the address or MLS number of this property. 
+                            What would you like to do?
+                        </p>
+                        <div className="space-y-3">
+                            {zillowDuplicateData.matches.map(match => (
+                                <div key={match.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div className="font-semibold text-gray-900 dark:text-white">{match.address || 'Unknown Address'}</div>
+                                    <div className="text-xs text-gray-500 mt-1">MLS: {match.mls || 'N/A'} • Status: {match.status || 'Active'}</div>
+                                    <button
+                                        onClick={() => {
+                                            setZillowDuplicateData(null);
+                                            if (onSwitchToDeal) onSwitchToDeal(match);
+                                        }}
+                                        className="mt-2 w-full px-3 py-1.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded transition-colors"
+                                    >
+                                        Switch to this Deal
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-2 bg-gray-50 dark:bg-gray-900/50">
+                        <button
+                            onClick={() => setZillowDuplicateData(null)}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                setDeal(prev => ({ ...prev, ...zillowDuplicateData.updates }));
+                                triggerSave();
+                                setZillowDuplicateData(null);
+                                setZillowUrl("");
+                            }}
+                            className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+                        >
+                            Import Anyway (Create Duplicate)
+                        </button>
                     </div>
                 </div>
             </div>
