@@ -154,10 +154,13 @@ export interface Deal {
   zoning?: string;
   lockBoxCode?: string;
   dateListed?: string | null;
+  renovationARVToggle?: boolean;
   renovationARV?: number;
+  newConstructionARVToggle?: boolean;
   newConstructionARV?: number;
   newConstructionEstimate?: number;
   renovationEstimate?: number;
+  arvCalculationType?: 'renovation' | 'new_construction';
   motivationSignals?: string[];
   renovationComparable1?: Comparable;
   renovationComparable2?: Comparable;

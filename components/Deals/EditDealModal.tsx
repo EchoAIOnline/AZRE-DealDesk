@@ -65,7 +65,7 @@ interface EditDealModalProps {
 const OfferAnalyticsBar: React.FC<{ deal: Deal }> = ({ deal }) => {
     const listPrice = deal.listPrice || 0;
     const offerPrice = deal.offerPrice || 0;
-    const arv = deal.renovationARV || deal.newConstructionARV || 0;
+    const arv = deal.newConstructionARVToggle ? (deal.newConstructionARV || 0) : (deal.renovationARV || deal.newConstructionARV || 0);
     const signalCount = deal.motivationSignals?.length || 0;
 
     let listPercent = listPrice > 0 ? (offerPrice / listPrice) * 100 : 0;
@@ -562,10 +562,20 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                         if (validComps[0]) updates.renovationComparable1 = validComps[0];
                         if (validComps[1]) updates.renovationComparable2 = validComps[1];
                         if (validComps[2]) updates.renovationComparable3 = validComps[2];
+                        
+                        const arvs = validComps.slice(0, 3).map((c: any) => c.salePrice || 0).filter((p: number) => p > 0);
+                        if (arvs.length > 0) {
+                            updates.renovationARV = Math.round(arvs.reduce((a: number, b: number) => a + b, 0) / arvs.length);
+                        }
                     } else if (targetType === 'newConstruction') {
                         if (validComps[0]) updates.newConstructionComparable1 = validComps[0];
                         if (validComps[1]) updates.newConstructionComparable2 = validComps[1];
                         if (validComps[2]) updates.newConstructionComparable3 = validComps[2];
+                        
+                        const arvs = validComps.slice(0, 3).map((c: any) => c.salePrice || 0).filter((p: number) => p > 0);
+                        if (arvs.length > 0) {
+                            updates.newConstructionARV = Math.round(arvs.reduce((a: number, b: number) => a + b, 0) / arvs.length);
+                        }
                     }
                 }
 
@@ -619,6 +629,11 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 }
                 if (validComps[2]) {
                     updates.renovationComparable3 = { ...deal.renovationComparable3, address: validComps[2].address || '', salePrice: validComps[2].salePrice || 0, saleDate: validComps[2].saleDate || '', sqft: validComps[2].sqft || 0, softenerPercent: deal.renovationComparable3?.softenerPercent || 0 };
+                }
+                
+                const arvs = validComps.slice(0, 3).map((c: any) => c.salePrice || 0).filter((p: number) => p > 0);
+                if (arvs.length > 0) {
+                    updates.renovationARV = Math.round(arvs.reduce((a: number, b: number) => a + b, 0) / arvs.length);
                 }
                 setDeal(prev => ({ ...prev, ...updates }));
             } else {
@@ -713,6 +728,11 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                     if (zData.mappedComps[0]) updates.renovationComparable1 = zData.mappedComps[0];
                     if (zData.mappedComps[1]) updates.renovationComparable2 = zData.mappedComps[1];
                     if (zData.mappedComps[2]) updates.renovationComparable3 = zData.mappedComps[2];
+                    
+                    const arvs = zData.mappedComps.slice(0, 3).map((c: any) => c.salePrice || 0).filter((p: number) => p > 0);
+                    if (arvs.length > 0) {
+                        updates.renovationARV = Math.round(arvs.reduce((a: number, b: number) => a + b, 0) / arvs.length);
+                    }
                 }
                 
                 setDeal(prev => ({ ...prev, ...updates }));
@@ -2053,7 +2073,13 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                             <div className="h-px bg-gray-200 dark:bg-gray-700/50 w-full my-6"></div>
 
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800"><h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><TrendingUp size={12}/> Valuation & Comparables</h4></div>
+                                <div className="flex items-center gap-4 pb-2 border-b border-gray-200 dark:border-gray-800">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><TrendingUp size={12}/> Valuation & Comparables</h4>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => { updateDealState({ renovationARVToggle: true, newConstructionARVToggle: false }); handleAutoSave(); }} className={`text-[10px] font-semibold px-2 py-1 rounded transition-colors shadow-sm ${!deal.newConstructionARVToggle ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700'}`}>Use Renovation ARV</button>
+                                        <button type="button" onClick={() => { updateDealState({ renovationARVToggle: false, newConstructionARVToggle: true }); handleAutoSave(); }} className={`text-[10px] font-semibold px-2 py-1 rounded transition-colors shadow-sm ${deal.newConstructionARVToggle ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700'}`}>Use New Construction ARV</button>
+                                    </div>
+                                </div>
                                 {compsError && (
                                     <div className="p-3 mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded border border-red-200 dark:border-red-800">
                                         {compsError}
