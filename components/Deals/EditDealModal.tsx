@@ -1951,7 +1951,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div><label className="text-xs text-gray-500 block mb-1">County</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.county || ''} onChange={e => { updateDealState({county: e.target.value}); if(onUpdate) onUpdate(deal.id, {county: e.target.value}); triggerSave(); }}><option value="">Select...</option>{COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                                 <div><label className="text-xs text-gray-500 block mb-1">Lock Box Code</label><input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.lockBoxCode || ''} onChange={e => updateDealState({lockBoxCode: e.target.value})} onBlur={handleAutoSave} placeholder="1234" /></div>
                             </div>
-                            <div><label className="text-xs text-gray-500 block mb-1 font-bold uppercase">Listing Description</label><textarea className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none h-48 resize-none" value={deal.listingDescription || ''} onChange={e => updateDealState({listingDescription: e.target.value})} onBlur={handleAutoSave} placeholder="Paste full property description here..." /></div>
+                            <div><label className="text-xs text-gray-500 block mb-1 font-bold uppercase">Listing Description</label><textarea className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none h-48 resize-y min-h-[120px]" value={deal.listingDescription || ''} onChange={e => updateDealState({listingDescription: e.target.value})} onBlur={handleAutoSave} placeholder="Paste full property description here..." /></div>
                        </div>
                    </div>
 
@@ -2240,7 +2240,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">Feasibility Study</h3>
                         </div>
                         <textarea
-                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 outline-none h-48 resize-none"
+                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 outline-none h-48 resize-y min-h-[120px]"
                             placeholder="Enter feasibility study details here..."
                             value={typeof deal.feasibilityStudy === 'object' && deal.feasibilityStudy !== null ? (deal.feasibilityStudy.notes || '') : (deal.feasibilityStudy || '')}
                             onChange={(e) => updateDealState({ feasibilityStudy: { notes: e.target.value } })}
