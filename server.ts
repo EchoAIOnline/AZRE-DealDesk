@@ -54,6 +54,12 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Set Permissions-Policy header to allow Geolocation
+  app.use((_req, res, next) => {
+    res.setHeader("Permissions-Policy", "geolocation=*");
+    next();
+  });
+
   // Middleware to parse JSON bodies
   app.use(express.json({ limit: "50mb" }));
 
