@@ -106,40 +106,51 @@ const DFDMapContent = ({ handleAddDeal, searchQuery, onSearchHandled }: DFDMapCo
             return;
         }
 
-        const options = { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 };
+        const handleSuccess = (position: GeolocationPosition) => {
+            const pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            setUserLocation(pos);
+            setHasLocated(true);
+            setLocationMethod('gps');
+            setIsLocating(false);
+            setStatusMessage('GPS Location detected!');
+            setTimeout(() => setStatusMessage(null), 4000);
 
+            if (map) {
+                map.panTo(pos);
+                map.setZoom(15);
+            }
+        };
+
+        // Primary attempt: high accuracy with 10s timeout
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                setUserLocation(pos);
-                setHasLocated(true);
-                setLocationMethod('gps');
-                setIsLocating(false);
-                setStatusMessage('GPS Location detected!');
-                setTimeout(() => setStatusMessage(null), 4000);
-
-                if (map) {
-                    map.panTo(pos);
-                    map.setZoom(15);
-                }
+            handleSuccess,
+            (primaryError) => {
+                console.warn('High accuracy geolocation attempt failed, trying low accuracy fallback:', primaryError);
+                // Fallback attempt: low accuracy with 15s timeout and 1 minute cache
+                navigator.geolocation.getCurrentPosition(
+                    handleSuccess,
+                    (fallbackError) => {
+                        console.warn('Geolocation fallback failed:', fallbackError);
+                        fallbackToAtlanta('GPS permission denied or unavailable. Centered on Atlanta, GA');
+                        setIsLocating(false);
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 15000,
+                        maximumAge: 60000
+                    }
+                );
             },
-            (error) => {
-                console.warn('Geolocation failed or permission denied:', error.message);
-                fallbackToAtlanta('GPS permission denied or unavailable. Centered on Atlanta, GA');
-                setIsLocating(false);
-            },
-            options
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            }
         );
     }, [map]);
-
-    useEffect(() => {
-        if (!showLocationPrompt && !hasLocated && locationMethod === null) {
-            locateUser();
-        }
-    }, [locateUser, showLocationPrompt, hasLocated, locationMethod]);
 
     // Handle search query from PageNavBar
     useEffect(() => {
