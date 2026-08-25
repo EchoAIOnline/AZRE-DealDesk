@@ -56,7 +56,7 @@ async function startServer() {
 
   // Set Permissions-Policy header to allow Geolocation
   app.use((_req, res, next) => {
-    res.setHeader("Permissions-Policy", "geolocation=*");
+    res.setHeader("Permissions-Policy", "geolocation=(self)");
     next();
   });
 
