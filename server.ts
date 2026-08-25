@@ -441,3 +441,4 @@ Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales withi
 }
 
 startServer();
+// Trigger Vercel deployment: Tue Aug 25 01:12:41 AM UTC 2026
