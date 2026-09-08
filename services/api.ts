@@ -347,68 +347,76 @@ export const api = {
         }
         
         
-let { data, error } = await supabase.from(table).upsert(payload).select().single();
-if (table === 'Deals') {
-    console.log("Upsert response data:", data);
-}
+        try {
+            let { data, error } = await supabase.from(table).upsert(payload).select().single();
+            if (table === 'Deals') {
+                console.log("Upsert response data:", data);
+            }
+            
+            let missingColumns: string[] = [];
+            let retryCount = 0;
+            
+            while (error && error.message && error.message.includes('Could not find the') && error.message.includes('column') && retryCount < 10) {
+                 const match = error.message.match(/Could not find the '([^']+)' column/);
+                 if (match && match[1]) {
+                     const missingColumn = match[1];
+                     console.warn(`Table ${table} does not have column ${missingColumn}. Stripping it and retrying.`);
+                     
+                     if (missingColumn === 'documents') {
+                         console.error("FATAL: Supabase is complaining about missing 'documents' column. Schema cache needs reload.");
+                         break; // Do not strip documents, let it fail so user knows
+                     }
+                     missingColumns.push(missingColumn);
+                     delete payload[missingColumn];
+                     
+                     const retry = await supabase.from(table).upsert(payload).select().single();
+                     data = retry.data;
+                     error = retry.error;
+                     retryCount++;
+                 } else {
+                     break;
+                 }
+            }
+            
+            // Fallback for tables that don't have organization_id yet (Schema cache stale)
+            if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find')) && payload.organization_id) {
+                console.warn(`Table ${table} does not have organization_id. Saving without it but keeping it in local state.`);
+                const fallbackPayload = { ...payload };
+                delete fallbackPayload.organization_id;
+                const fallback = await supabase.from(table).upsert(fallbackPayload).select().single();
+                data = fallback.data;
+                error = fallback.error;
+                if (data) {
+                    // Re-inject so the frontend retains knowledge of the org id and doesn't wipe it
+                    data.organization_id = payload.organization_id;
+                }
+            }
 
-        
-        let missingColumns: string[] = [];
-        let retryCount = 0;
-        
-        while (error && error.message && error.message.includes('Could not find the') && error.message.includes('column') && retryCount < 10) {
-             const match = error.message.match(/Could not find the '([^']+)' column/);
-             if (match && match[1]) {
-                 const missingColumn = match[1];
-                 console.warn(`Table ${table} does not have column ${missingColumn}. Stripping it and retrying.`);
-                 
-    if (missingColumn === 'documents') {
-        console.error("FATAL: Supabase is complaining about missing 'documents' column. Schema cache needs reload.");
-        break; // Do not strip documents, let it fail so user knows
-    }
-    missingColumns.push(missingColumn);
-    delete payload[missingColumn];
-    
-                 const retry = await supabase.from(table).upsert(payload).select().single();
-                 data = retry.data;
-                 error = retry.error;
-                 retryCount++;
-             } else {
-                 break;
-             }
-        }
-        
-        // Fallback for tables that don't have organization_id yet (Schema cache stale)
-        if (error && error.message && error.message.includes('organization_id') && (error.message.includes('not exist') || error.message.includes('Could not find')) && payload.organization_id) {
-            console.warn(`Table ${table} does not have organization_id. Saving without it but keeping it in local state.`);
-            const fallbackPayload = { ...payload };
-            delete fallbackPayload.organization_id;
-            const fallback = await supabase.from(table).upsert(fallbackPayload).select().single();
-            data = fallback.data;
-            error = fallback.error;
-            if (data) {
-                // Re-inject so the frontend retains knowledge of the org id and doesn't wipe it
-                data.organization_id = payload.organization_id;
+            if (error) {
+                if (error.code === '42P01' || (error.message && error.message.includes('relation') && error.message.includes('does not exist'))) {
+                     console.warn(`Table ${table} does not exist yet. Faking save success.`);
+                     return processIncomingItem(item, table);
+                }
+                console.error(`Error saving to ${table}:`, JSON.stringify(error, null, 2));
+                throw error;
             }
-        }
-
-        if (error) {
-            if (error.code === '42P01' || (error.message && error.message.includes('relation') && error.message.includes('does not exist'))) {
-                 console.warn(`Table ${table} does not exist yet. Faking save success.`);
-                 return processIncomingItem(item, table);
+            
+            if (data && missingColumns.length > 0) {
+                // Re-inject so frontend state isn't missing the property
+                for (const col of missingColumns) {
+                     data[col] = item[col];
+                }
             }
-            console.error(`Error saving to ${table}:`, JSON.stringify(error, null, 2));
-            throw error;
-        }
-        
-        if (data && missingColumns.length > 0) {
-            // Re-inject so frontend state isn't missing the property
-            for (const col of missingColumns) {
-                 data[col] = item[col];
+            
+            return processIncomingItem(data, table);
+        } catch (err: any) {
+            console.error(`Caught exception saving to ${table}:`, err);
+            if (err.message && err.message.includes('Failed to fetch')) {
+                console.warn("Network error or Supabase is paused. Returning payload to simulate successful save locally.");
+                return processIncomingItem(payload, table);
             }
+            throw err;
         }
-        
-        return processIncomingItem(data, table);
     },
 
     saveBatch: async (items: any[], table: string) => {
