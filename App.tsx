@@ -1699,12 +1699,16 @@ export default function App() {
 
   const getFilteredDeals = () => {
     let filtered = [...(deals || [])].filter(Boolean); 
-    if (location.pathname === '/dfd-scouter') {
-        filtered = filtered.filter(d => d.pipelineType === 'dfd');
-    } else if (location.pathname === '/off-market-pipeline') {
-        filtered = filtered.filter(d => d.pipelineType === 'off-market');
-    } else if (location.pathname === '/pipeline') {
-        filtered = filtered.filter(d => d.pipelineType === 'mls' || !d.pipelineType || false);
+    const isGlobalSearch = globalSearchQuery.trim().length > 0;
+
+    if (!isGlobalSearch) {
+        if (location.pathname === '/dfd-scouter') {
+            filtered = filtered.filter(d => d.pipelineType === 'dfd');
+        } else if (location.pathname === '/off-market-pipeline') {
+            filtered = filtered.filter(d => d.pipelineType === 'off-market');
+        } else if (location.pathname === '/pipeline') {
+            filtered = filtered.filter(d => d.pipelineType === 'mls' || !d.pipelineType || false);
+        }
     }
     const activeSearch = globalSearchQuery.trim() || pipelineSearch.trim();
     if (activeSearch) {
@@ -1765,15 +1769,21 @@ export default function App() {
   };
   const filteredDeals = getFilteredDeals();
   const getOrderedDeals = () => {
-    if (location.pathname !== '/pipeline' && location.pathname !== '/jv-pipeline') return filteredDeals;
+    if (location.pathname !== '/pipeline' && location.pathname !== '/jv-pipeline' && location.pathname !== '/off-market-pipeline') return filteredDeals;
     let statusesToShow: string[] = [];
     if (location.pathname === '/jv-pipeline') {
-        if (pipelineStage === 'All Deals') statusesToShow = DFD_PIPELINE_STATUSES;
+        if (pipelineStage === 'All Deals') {
+            const uniqueStatuses = Array.from(new Set(filteredDeals.map(d => d.offerDecision))).filter(Boolean) as string[];
+            statusesToShow = Array.from(new Set([...DFD_PIPELINE_STATUSES, ...uniqueStatuses]));
+        }
         else if (pipelineStage === 'Available') statusesToShow = ['Available'];
         else if (pipelineStage === 'No Longer Available') statusesToShow = ['No Longer Available'];
     } else {
         if (filterConfig.type === 'Show Counter Offers Only') statusesToShow = COUNTER_STATUSES;
-        else if (pipelineStage === 'All Deals') statusesToShow = OFFER_DECISIONS;
+        else if (pipelineStage === 'All Deals') {
+            const uniqueStatuses = Array.from(new Set(filteredDeals.map(d => d.offerDecision))).filter(Boolean) as string[];
+            statusesToShow = Array.from(new Set([...OFFER_DECISIONS, ...uniqueStatuses]));
+        }
         else {
             switch(pipelineStage) {
                 case 'Potential': statusesToShow = POTENTIAL_STATUSES; break;
