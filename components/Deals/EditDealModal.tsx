@@ -855,10 +855,18 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         try {
             const savedDeal = await onSave(undefined, false, dealRef.current);
             if (savedDeal && savedDeal.id) {
+                let changed = false;
                 if (dealRef.current.id !== savedDeal.id) {
                     console.log("ID Updated from server:", savedDeal.id);
                     dealRef.current.id = savedDeal.id;
-                    setDeal(prev => ({ ...prev, id: savedDeal.id }));
+                    changed = true;
+                }
+                if (savedDeal.createdAt && dealRef.current.createdAt !== savedDeal.createdAt) {
+                    dealRef.current.createdAt = savedDeal.createdAt;
+                    changed = true;
+                }
+                if (changed) {
+                    setDeal(prev => ({ ...prev, id: savedDeal.id, createdAt: savedDeal.createdAt }));
                 }
             }
             initialDealJson.current = JSON.stringify(dealRef.current);

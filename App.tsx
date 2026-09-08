@@ -1474,7 +1474,7 @@ export default function App() {
                 setDealModalZIndex('z-[120]');
             } else {
                 setEditingDeal(prev => {
-                    if (!prev) return saved;
+                    if (!prev) return null;
                     // Preserve local state keystrokes! Only update DB-generated fields
                     if (prev.id === saved.id || !prev.id) {
                         return { ...prev, id: saved.id, createdAt: saved.createdAt || prev.createdAt };
