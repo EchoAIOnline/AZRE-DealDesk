@@ -310,7 +310,7 @@ export interface Contact {
 export interface EmailList {
   id: string;
   name: string;
-  source: 'buyer' | 'agent';
+  source: 'buyer' | 'agent' | 'wholesaler';
   type: 'list' | 'segment';
   segmentRule?: string; // 'all', 'new_lead', 'vetted', etc.
   createdAt: string;

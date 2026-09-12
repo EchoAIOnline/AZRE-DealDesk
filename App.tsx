@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Home, Users, Layout, Settings, Loader2, MapPin, Filter, LogOut, CheckCircle, Calculator, User as UserIcon, X, XCircle, Pencil, Upload, RefreshCw, Save, Menu, Search, ChevronDown, User, Calendar, FileSpreadsheet, Download, Moon, Sun, Monitor, AlertCircle, Database, Briefcase } from 'lucide-react';
+import { Plus, Home, Users, Layout, Settings, Loader2, MapPin, Filter, LogOut, CheckCircle, Calculator, User as UserIcon, X, XCircle, Pencil, Upload, RefreshCw, Save, Menu, Search, ChevronDown, User, Calendar, FileSpreadsheet, Download, Moon, Sun, Monitor, AlertCircle, Database, Briefcase, Globe, Sparkles } from 'lucide-react';
 import { api, DEFAULT_DEALS, sendEmail, executeAdminSql, setOrganizationId, supabase } from './services/api';
 import { activityLogService } from './services/activityLogService';
 import { useAppStore } from './store/useAppStore';
@@ -38,6 +38,8 @@ import { LoiDesigner } from './components/LoiDesigner/LoiDesigner';
 import { MarketOracle } from './components/MarketOracle/MarketOracle';
 import { MessageCenter } from './components/MessageCenter/MessageCenter';
 import { UploadQueue } from './components/UploadQueue';
+import { WebEmbedModal } from './components/Shared/WebEmbedModal';
+import { GeminiChat } from './components/GeminiChat/GeminiChat';
 import { mockAcquisitionsMessages, mockDispositionsMessages } from './services/mockData';
 import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64, calculateDaysRemaining } from './services/utils';
 import { User as UserType, Deal, Agent, Brokerage, FilterConfig, CalcData, Buyer, BuyBox, Wholesaler, Contact, EmailList } from './types';
@@ -72,6 +74,10 @@ export default function App() {
 
   // Notification State
   const [moveNotification, setMoveNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
+
+  // Gemini Chat State
+  const [isGeminiChatOpen, setIsGeminiChatOpen] = useState(false);
+  const [isWebEmbedOpen, setIsWebEmbedOpen] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('azre-theme') as 'dark' | 'light' | 'system';
@@ -605,7 +611,7 @@ export default function App() {
           if (editingWholesaler && editingWholesaler.id === wholesalerId) setEditingWholesaler(saved);
           
           setEditingDeal(prev => {
-              if (prev && prev.agentName && (prev.agentName || '').toLowerCase() === (saved.name || '').toLowerCase() && prev.pipelineType === 'jv') {
+              if (prev && prev.agentName && (prev.agentName || '').toLowerCase() === (saved.name || '').toLowerCase()) {
                   return {
                       ...prev,
                       agentPhone: saved.phone || prev.agentPhone,
@@ -1243,12 +1249,13 @@ export default function App() {
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
               const phoneStr = String(b.phone || "");
               const phoneClean = phoneStr.replace(/\D/g, '');
+              const locationStr = String(b.buyBox?.locations || "").toLowerCase();
 
               const matchesEmail = emailStr.includes(query) || 
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word) || locationStr.includes(word));
             return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
@@ -1298,17 +1305,24 @@ export default function App() {
               const emailNoSpaces = emailStr.replace(/\s+/g, '');
               const phoneStr = String(b.phone || "");
               const phoneClean = phoneStr.replace(/\D/g, '');
+              const locationStr = String(b.buyBox?.locations || "").toLowerCase();
 
               const matchesEmail = emailStr.includes(query) || 
                                    (queryNoSpaces.length > 2 && emailNoSpaces.includes(queryNoSpaces)) ||
                                    (extractedQueryEmail.length > 0 && emailStr.includes(extractedQueryEmail));
 
-              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word));
+              const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word) || locationStr.includes(word));
             return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
           });
       }
+
+      if (filterConfig.type === 'Target Location' && filterConfig.value) {
+          const query = (filterConfig.value || "").toLowerCase();
+          filtered = filtered.filter(b => (b.buyBox?.locations || '').toLowerCase().includes(query));
+      }
+
       return filtered;
-  }, [buyers, globalSearchQuery, buyerSearch]);
+  }, [buyers, globalSearchQuery, buyerSearch, filterConfig]);
 
   
   const handleUpdateUserProfile = async (userUpdates: UserType) => { 
@@ -2039,8 +2053,16 @@ export default function App() {
                   <input type="text" placeholder="Global Search..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder-gray-500" value={globalSearchQuery} onChange={(e) => setGlobalSearchQuery(e.target.value)} />
               </div>
               <div className="flex items-center gap-3">
+                  <button onClick={() => setIsWebEmbedOpen(true)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Open Web Viewer">
+                     <Globe size={20} />
+                  </button>
                   {isSyncing && <div className="flex items-center gap-2 text-xs text-blue-400 animate-pulse"><RefreshCw size={14} className="animate-spin"/> Syncing DB...</div>}
-                  <button onClick={handleAddDeal} className="bg-blue-600 hover:bg-blue-50 text-white p-3 rounded-full shadow-lg shrink-0 transition-transform active:scale-95"><Plus size={24} /></button>
+                  <button onClick={() => handleAddDeal()} className="hidden md:flex items-center gap-2 bg-gray-800 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white px-3 py-2 rounded-lg shadow-sm transition-colors text-sm font-medium">
+                      <Plus size={16} /> New Deal
+                  </button>
+                  <button onClick={() => setIsGeminiChatOpen(!isGeminiChatOpen)} className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-lg shrink-0 transition-transform active:scale-95" title="Open AI Assistant">
+                      <Sparkles size={24} />
+                  </button>
               </div>
           </div>
           
@@ -2056,6 +2078,7 @@ export default function App() {
                     onUpdate={updateDeal}
                     onDelete={handleDeleteDeal}
                     onMove={(id, dec) => updateDeal(id, {offerDecision: dec})}
+                    onAddDeal={handleAddDeal}
                  />
                } />
                <Route path="/pipeline" element={
@@ -2417,6 +2440,8 @@ export default function App() {
           </div>
       )}
       <UploadQueue />
+      <GeminiChat isOpen={isGeminiChatOpen} onClose={() => setIsGeminiChatOpen(false)} />
+      <WebEmbedModal isOpen={isWebEmbedOpen} onClose={() => setIsWebEmbedOpen(false)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { X, LayoutGrid, MapPin, DollarSign, CheckCircle, Home, ArrowRight, Targe
 import { Deal, Buyer } from '../../types';
 import { formatCurrency, formatPhoneNumber } from '../../services/utils';
 import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, GOOGLE_MAPS_API_KEY } from '../../constants';
+import { MatchingEngine } from '../../services/matchingLogic';
 
 interface DealMatchModalProps {
     buyer: Buyer;
@@ -35,142 +36,12 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
         return url;
     };
 
-    // Helper to parse location string into structured data
-    const parseLocations = (locString: string) => {
-        const zips: string[] = [];
-        const counties: string[] = [];
-        const cities: string[] = [];
-        const neighborhoods: string[] = [];
-
-        if (!locString) return { zips, counties, cities, neighborhoods };
-
-        locString.split(',').map(s => s.trim()).forEach(part => {
-            const lower = part.toLowerCase();
-            // Check for explicit prefixes or patterns
-            if (lower.startsWith('zip code:')) zips.push(part.replace(/zip code:/i, '').trim());
-            else if (lower.startsWith('county:')) counties.push(lower.replace('county:', '').trim().replace(' county', ''));
-            else if (lower.startsWith('city:')) cities.push(lower.replace('city:', '').trim());
-            else if (lower.startsWith('neighborhood:')) neighborhoods.push(lower.replace('neighborhood:', '').trim());
-            // Heuristic checks
-            else if (/^\d{5}$/.test(part)) zips.push(part);
-            else if (part.includes('county')) counties.push(lower.replace('county', '').trim());
-            else if (part) neighborhoods.push(lower);
-        });
-        return { zips, counties, cities, neighborhoods };
-    };
-
     const matches = useMemo(() => {
-        const bb = buyer.buyBox;
-        if (!bb) return [];
-
-        const matchingStages = [...POTENTIAL_STATUSES, ...UNDER_CONTRACT_STATUSES];
-        const { zips, counties, cities, neighborhoods } = parseLocations(bb.locations || "");
-
-        // 1. STRATEGY PRE-CALC
-        const buyerStrategies = (bb.propertyTypes || []).map(t => {
-            let low = t.toLowerCase();
-            return low === 'new construction' ? 'new build' : low;
-        }).filter(Boolean);
-
-        return deals.map(deal => {
-            const reasons: string[] = []; // Explicitly typed to allow push
-
-            // --- 1. GUARD: Pipeline Stage ---
-            if (!matchingStages.includes(deal.offerDecision)) return { deal, isMatch: false, reasons: [] as string[] };
-
-            // Deal Props
-            const dealPrice = deal.listPrice || 0;
-            const dealArv = deal.renovationARV || 0;
-            const dealReno = deal.renovationEstimate || 0;
-            const dealSqft = deal.sqft || 0;
-            const dealYear = deal.yearBuilt || 0;
-            
-            // --- 2. STRATEGY MATCH (Strict) ---
-            const dealStrategies = (deal.dealType || []).map(s => {
-                let low = s.toLowerCase();
-                return low === 'new construction' ? 'new build' : low;
-            }).filter(Boolean);
-
-            if (buyerStrategies.length > 0) {
-                if (dealStrategies.length === 0) return { deal, isMatch: false, reasons: [] as string[] };
-                const hasOverlap = dealStrategies.some(s => buyerStrategies.includes(s));
-                if (!hasOverlap) return { deal, isMatch: false, reasons: [] as string[] };
-                reasons.push("Strategy Match");
-            }
-
-            // --- 3. FINANCIALS (Strict) ---
-            if (bb.minPrice && dealPrice < bb.minPrice) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.maxPrice && dealPrice > bb.maxPrice) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.minArv && dealArv < bb.minArv) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.maxArv && bb.maxArv > 0 && dealArv > bb.maxArv) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.maxRenoBudget && dealReno > bb.maxRenoBudget) return { deal, isMatch: false, reasons: [] as string[] };
-
-            // --- 4. SPECS (Strict) ---
-            if (bb.minBedrooms && (deal.bedrooms || 0) < bb.minBedrooms) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.minBathrooms && (deal.bathrooms || 0) < bb.minBathrooms) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.minSqft && dealSqft < bb.minSqft) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.maxSqft && bb.maxSqft > 0 && dealSqft > bb.maxSqft) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.earliestYearBuilt && dealYear < bb.earliestYearBuilt) return { deal, isMatch: false, reasons: [] as string[] };
-            if (bb.latestYearBuilt && bb.latestYearBuilt > 0 && dealYear > bb.latestYearBuilt) return { deal, isMatch: false, reasons: [] as string[] };
-
-            reasons.push("Criteria Match");
-
-            // --- 5. LOCATION (Hierarchical Logic) ---
-            const dealZip = deal.address.match(/\d{5}/)?.[0] || "";
-            const dealCounty = (deal.county || "").toLowerCase().replace(' county', '').trim();
-            const dealCity = (deal.subMarket || "").toLowerCase().trim();
-            const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
-
-            // Priority 1: Zip Gatekeeper
-            // If buyer has Zips defined, ONLY match those zips. Ignore County matches.
-            if (zips.length > 0) {
-                if (!dealZip || !zips.includes(dealZip)) return { deal, isMatch: false, reasons: [] as string[] };
-                reasons.push(`Zip Match (${dealZip})`);
-            } else {
-                // Priority 3: County Fallback (Only if no Zips are defined)
-                let geoMatch = false;
-                if (counties.length > 0) {
-                    const ctyMatch = counties.some(c => dealCounty.includes(c));
-                    if (ctyMatch) geoMatch = true;
-                } 
-                if (cities.length > 0) {
-                    const cityMatch = cities.includes(dealCity);
-                    if (cityMatch) geoMatch = true;
-                }
-                
-                // If buyer has no location preferences at all, assume open? 
-                // For strict matching, usually we require at least one location match if any locations are set.
-                // If bb.locations is empty, we pass (Open Buy Box).
-                if (!bb.locations || bb.locations.trim() === '') geoMatch = true;
-                
-                // If locations exist but none matched:
-                if ((counties.length > 0 || cities.length > 0) && !geoMatch) return { deal, isMatch: false, reasons: [] as string[] };
-                
-                if (geoMatch && (counties.length > 0 || cities.length > 0)) reasons.push("Location Match");
-            }
-
-            // Priority 2: Neighborhood Context (Expanded for City/County tags)
-            // Only enforce neighborhood match if the buyer HAS neighborhood prefs AND the deal HAS a neighborhood.
-            if (neighborhoods.length > 0 && dealNeighborhood) {
-                // We check if ANY of the buyer's text tags match the Property's Neighborhood OR City OR County.
-                // This allows a buyer with tag "Atlanta" to still match a "Grant Park" property inside Atlanta.
-                const isNbMatch = neighborhoods.some(n => {
-                    const lowerN = n.toLowerCase().trim();
-                    if (!lowerN) return false;
-                    return (
-                        (dealNeighborhood && (dealNeighborhood.includes(lowerN) || lowerN.includes(dealNeighborhood))) ||
-                        (dealCity && (dealCity.includes(lowerN) || lowerN.includes(dealCity))) ||
-                        (dealCounty && (dealCounty.includes(lowerN) || lowerN.includes(dealCounty)))
-                    );
-                });
-
-                if (!isNbMatch) return { deal, isMatch: false, reasons: [] as string[] };
-                reasons.push(`Neighborhood Match`);
-            }
-
-            return { deal, isMatch: true, reasons };
-        })
-        .filter(m => m.isMatch);
+        return MatchingEngine.findDealsForBuyer(buyer, deals).map(result => ({
+            deal: result.deal,
+            isMatch: result.match.isMatch,
+            reasons: result.match.matchedCriteria
+        }));
     }, [buyer, deals]);
 
     return (

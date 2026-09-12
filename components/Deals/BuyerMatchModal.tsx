@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { X, Users, MapPin, DollarSign, CheckCircle, Phone, Mail, Building, ArrowRight, Target } from 'lucide-react';
 import { Deal, Buyer } from '../../types';
 import { formatCurrency, formatPhoneNumber, processPhotoUrl } from '../../services/utils';
+import { MatchingEngine } from '../../services/matchingLogic';
 
 interface BuyerMatchModalProps {
     deal: Deal;
@@ -12,147 +13,13 @@ interface BuyerMatchModalProps {
 
 export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, onClose, onViewBuyer }) => {
     const matches = useMemo(() => {
-        const dealZip = deal.address.match(/\d{5}/)?.[0] || "";
-        const dealSubMarket = (deal.subMarket || "").toLowerCase().trim();
-        const dealCounty = (deal.county || "").toLowerCase().trim();
-        const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
-        
-        const dealPrice = deal.listPrice || 0;
-        const dealArv = deal.renovationARV || 0;
-        const dealReno = deal.renovationEstimate || 0;
-        const dealSqft = deal.sqft || 0;
-        const dealYear = deal.yearBuilt || 0;
-        
-        const dealStrategies = (deal.dealType || []).map(s => {
-            let low = s.toLowerCase();
-            return low === 'new construction' ? 'new build' : low;
-        }).filter(Boolean);
-
-        return buyers.map(buyer => {
-            const bb = buyer.buyBox;
-            const reasons: string[] = [];
-            let matchScore = 0;
-
-            if (!bb) return { buyer, matchScore: 0, reasons: [] as string[] };
-            
-            // --- 1. MANDATORY: Min ARV Match ---
-            const minArv = bb.minArv || 0;
-            if (minArv > 0 && dealArv < minArv) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            // --- 2. MANDATORY: Max ARV Match ---
-            const maxArv = bb.maxArv || 0;
-            if (maxArv > 0 && dealArv > maxArv) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            // --- 3. MANDATORY: Reno Budget Match ---
-            const maxReno = bb.maxRenoBudget || 0;
-            if (maxReno > 0 && dealReno > maxReno) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            // --- 4. MANDATORY: Sqft Match ---
-            const minSqft = bb.minSqft || 0;
-            const maxSqft = bb.maxSqft || 0;
-            if (dealSqft > 0) {
-                if (minSqft > 0 && dealSqft < minSqft) return { buyer, matchScore: 0, reasons: [] as string[] };
-                if (maxSqft > 0 && dealSqft > maxSqft) return { buyer, matchScore: 0, reasons: [] as string[] };
-            }
-
-            // --- 5. MANDATORY: Year Built Match ---
-            const earliestYear = bb.earliestYearBuilt || 0;
-            const latestYear = bb.latestYearBuilt || 0;
-            if (dealYear > 0) {
-                if (earliestYear > 0 && dealYear < earliestYear) return { buyer, matchScore: 0, reasons: [] as string[] };
-                if (latestYear > 0 && dealYear > latestYear) return { buyer, matchScore: 0, reasons: [] as string[] };
-            }
-
-            // --- 6. MANDATORY: Location Match (Strict Hierarchical Logic) ---
-            const locationsLower = (bb.locations || "").toLowerCase();
-            const buyerZips: string[] = locationsLower.match(/\d{5}/g) || [];
-            let isLocationMatch = false;
-
-            // Step A: Zip Code is the primary Gatekeeper
-            if (buyerZips.length > 0) {
-                if (dealZip && buyerZips.includes(dealZip)) {
-                    // Extract non-numeric tags that aren't "county"
-                    const neighborhoodTags = locationsLower.split(',')
-                        .map(loc => loc.trim())
-                        .filter(loc => loc !== "" && isNaN(Number(loc)) && !loc.includes('county'));
-
-                    if (neighborhoodTags.length > 0) {
-                        // Match if the property neighborhood is one of their preferred tags
-                        const hasDirectNeighborhoodMatch = neighborhoodTags.includes(dealNeighborhood);
-                        
-                        // If they have tags but none match this neighborhood, only match if the tags 
-                        // don't apply to the property's submarket/neighborhood context
-                        isLocationMatch = hasDirectNeighborhoodMatch || !locationsLower.includes(dealNeighborhood);
-                    } else {
-                        // No neighborhood tags, buyer wants the whole Zip
-                        isLocationMatch = true;
-                    }
-                }
-            } 
-            // Step B: County Fallback (Only if NO Zips are specified)
-            else if (dealCounty && locationsLower.includes(dealCounty)) {
-                isLocationMatch = true;
-            }
-
-            if (!isLocationMatch) return { buyer, matchScore: 0, reasons: [] as string[] }; 
-            
-            matchScore += 3; 
-            reasons.push("Location Match");
-
-            // --- 7. MANDATORY: Strategy Match ---
-            const buyerStrategies = (bb.propertyTypes || []).map(t => t.toLowerCase()).filter(Boolean);
-            const strategyIntersection = dealStrategies.filter(s => buyerStrategies.includes(s));
-            const isStrategyMatch = dealStrategies.length === 0 || buyerStrategies.length === 0 || strategyIntersection.length > 0;
-
-            if (!isStrategyMatch) return { buyer, matchScore: 0, reasons: [] as string[] }; 
-
-            if (strategyIntersection.length > 0) {
-                matchScore += 2;
-                reasons.push(`Strategy Match (${strategyIntersection.join(', ')})`);
-            } else if (buyerStrategies.length === 0) {
-                matchScore += 1;
-                reasons.push("Broad Strategy Buyer");
-            }
-
-            // --- 8. SCORING: Budget Match ---
-            const priceMin = bb.minPrice || 0;
-            const priceMax = bb.maxPrice || Infinity;
-            const isPriceMatch = dealPrice >= priceMin && (priceMax === 0 || dealPrice <= priceMax);
-            
-            if (isPriceMatch && dealPrice > 0) {
-                matchScore += 2;
-                reasons.push("Budget Match");
-            } else if (dealPrice > 0 && !isPriceMatch) {
-                matchScore -= 1; 
-            }
-
-            if ((minArv > 0 && dealArv >= minArv) || (maxArv > 0 && dealArv <= maxArv)) {
-                matchScore += 1;
-                reasons.push("ARV Match");
-            }
-
-            if (maxReno > 0 && dealReno <= maxReno) {
-                matchScore += 1;
-                reasons.push("Reno Budget Match");
-            }
-
-            if (dealYear > 0 && (earliestYear > 0 || latestYear > 0)) {
-                matchScore += 1;
-                reasons.push("Year Built Match");
-            }
-
-            const bedMatch = deal.bedrooms ? deal.bedrooms >= (bb.minBedrooms || 0) : true;
-            const bathMatch = deal.bathrooms ? deal.bathrooms >= (bb.minBathrooms || 0) : true;
-            
-            if (bedMatch && bathMatch && (deal.bedrooms || deal.bathrooms)) {
-                matchScore += 1;
-                reasons.push("Specs Match");
-            }
-
-            return { buyer, matchScore, reasons };
-        })
-        .filter(m => m.matchScore > 0) 
-        .sort((a, b) => b.matchScore - a.matchScore);
+        return MatchingEngine.findBuyersForDeal(deal, buyers)
+            .map(result => ({
+                buyer: result.buyer,
+                matchScore: result.match.score,
+                reasons: result.match.matchedCriteria
+            }))
+            .sort((a, b) => b.matchScore - a.matchScore);
     }, [deal, buyers]);
 
     return (

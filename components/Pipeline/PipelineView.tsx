@@ -93,7 +93,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 const agentFirstName = agent ? agent.name.split(' ')[0] : (deal.agentName ? deal.agentName.split(' ')[0] : "Agent");
                 const agentName = agent ? agent.name : (deal.agentName || "Agent");
                 const offerPriceStr = deal.offerPrice ? formatCurrency(deal.offerPrice) : "[Offer Price]";
-                const propAddress = deal.street || "[Property Address]";
+                const propAddress = deal.address || "[Property Address]";
 
                 let body = template.emailBody || "";
                 if (template.loiBody) {

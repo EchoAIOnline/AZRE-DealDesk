@@ -24,6 +24,7 @@ import {
     DECLINED_STATUSES, 
     CLOSED_STATUSES 
 } from '../../constants';
+import { MatchingEngine } from '../../services/matchingLogic';
 
 interface EditDealModalProps {
     deal: Deal;
@@ -607,8 +608,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 body: JSON.stringify({ 
                     address: deal.address,
                     sqft: deal.sqft,
-                    beds: deal.beds,
-                    baths: deal.baths
+                    beds: deal.bedrooms,
+                    baths: deal.bathrooms
                 })
             });
             const result = await response.json();
@@ -897,132 +898,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
 
     // --- BUYER ANALYTICS LOGIC ---
     const matchedBuyers = useMemo(() => {
-        const dealZip = deal.address.match(/\d{5}/)?.[0] || "";
-        const dealSubMarket = (deal.subMarket || "").toLowerCase().trim();
-        const dealCounty = (deal.county || "").toLowerCase().trim();
-        const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
-        
-        const dealPrice = deal.listPrice || 0;
-        const dealArv = deal.renovationARV || 0;
-        const dealReno = deal.renovationEstimate || 0;
-        const dealSqft = deal.sqft || 0;
-        const dealYear = deal.yearBuilt || 0;
-        
-        const dealStrategies = (deal.dealType || []).map(s => {
-            let low = s.toLowerCase();
-            return low === 'new construction' ? 'new build' : low;
-        }).filter(Boolean);
-
-        return buyers.map(buyer => {
-            const bb = buyer.buyBox;
-            const reasons: string[] = [];
-            let matchScore = 0;
-
-            if (!bb) return { buyer, matchScore: 0, reasons: [] as string[] };
-            
-            const minArv = bb.minArv || 0;
-            if (minArv > 0 && dealArv < minArv) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            const maxArv = bb.maxArv || 0;
-            if (maxArv > 0 && dealArv > maxArv) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            const maxReno = bb.maxRenoBudget || 0;
-            if (maxReno > 0 && dealReno > maxReno) return { buyer, matchScore: 0, reasons: [] as string[] };
-
-            const minSqft = bb.minSqft || 0;
-            const maxSqft = bb.maxSqft || 0;
-            if (dealSqft > 0) {
-                if (minSqft > 0 && dealSqft < minSqft) return { buyer, matchScore: 0, reasons: [] as string[] };
-                if (maxSqft > 0 && dealSqft > maxSqft) return { buyer, matchScore: 0, reasons: [] as string[] };
-            }
-
-            const earliestYear = bb.earliestYearBuilt || 0;
-            const latestYear = bb.latestYearBuilt || 0;
-            if (dealYear > 0) {
-                if (earliestYear > 0 && dealYear < earliestYear) return { buyer, matchScore: 0, reasons: [] as string[] };
-                if (latestYear > 0 && dealYear > latestYear) return { buyer, matchScore: 0, reasons: [] as string[] };
-            }
-
-            const locationsLower = (bb.locations || "").toLowerCase();
-            const buyerZips: string[] = locationsLower.match(/\d{5}/g) || [];
-            let isLocationMatch = false;
-
-            if (buyerZips.length > 0) {
-                if (dealZip && buyerZips.includes(dealZip)) {
-                    const neighborhoodTags = locationsLower.split(',')
-                        .map(loc => loc.trim())
-                        .filter(loc => loc !== "" && isNaN(Number(loc)) && !loc.includes('county'));
-
-                    if (neighborhoodTags.length > 0) {
-                        const hasDirectNeighborhoodMatch = neighborhoodTags.includes(dealNeighborhood);
-                        isLocationMatch = hasDirectNeighborhoodMatch || !locationsLower.includes(dealNeighborhood);
-                    } else {
-                        isLocationMatch = true;
-                    }
-                }
-            } 
-            else if (dealCounty && locationsLower.includes(dealCounty)) {
-                isLocationMatch = true;
-            }
-
-            if (!isLocationMatch) return { buyer, matchScore: 0, reasons: [] as string[] }; 
-            
-            matchScore += 3; 
-            reasons.push("Location Match");
-
-            const buyerStrategies = (bb.propertyTypes || []).map(t => t.toLowerCase()).filter(Boolean);
-            const strategyIntersection = dealStrategies.filter(s => buyerStrategies.includes(s));
-            const isStrategyMatch = dealStrategies.length === 0 || buyerStrategies.length === 0 || strategyIntersection.length > 0;
-
-            if (!isStrategyMatch) return { buyer, matchScore: 0, reasons: [] as string[] }; 
-
-            if (strategyIntersection.length > 0) {
-                matchScore += 2;
-                reasons.push(`Strategy Match (${strategyIntersection.join(', ')})`);
-            } else if (buyerStrategies.length === 0) {
-                matchScore += 1;
-                reasons.push("Broad Strategy Buyer");
-            }
-
-            const priceMin = bb.minPrice || 0;
-            const priceMax = bb.maxPrice || Infinity;
-            const isPriceMatch = dealPrice >= priceMin && (priceMax === 0 || dealPrice <= priceMax);
-            
-            if (isPriceMatch && dealPrice > 0) {
-                matchScore += 2;
-                reasons.push("Budget Match");
-            } else if (dealPrice > 0 && !isPriceMatch) {
-                matchScore -= 1; 
-            }
-
-            if ((minArv > 0 && dealArv >= minArv) || (maxArv > 0 && dealArv <= maxArv)) {
-                matchScore += 1;
-                reasons.push("ARV Match");
-            }
-
-            if (maxReno > 0 && dealReno <= maxReno) {
-                matchScore += 1;
-                reasons.push("Reno Budget Match");
-            }
-
-            if (dealYear > 0 && (earliestYear > 0 || latestYear > 0)) {
-                matchScore += 1;
-                reasons.push("Year Built Match");
-            }
-
-            const bedMatch = deal.bedrooms ? deal.bedrooms >= (bb.minBedrooms || 0) : true;
-            const bathMatch = deal.bathrooms ? deal.bathrooms >= (bb.minBathrooms || 0) : true;
-            
-            if (bedMatch && bathMatch && (deal.bedrooms || deal.bathrooms)) {
-                matchScore += 1;
-                reasons.push("Specs Match");
-            }
-
-            return { buyer, matchScore, reasons };
-        })
-        .filter(m => m.matchScore > 0) 
-        .sort((a, b) => b.matchScore - a.matchScore)
-        .map(m => m.buyer);
+        return MatchingEngine.findBuyersForDeal(deal, buyers)
+            .map(result => result.buyer);
     }, [deal, buyers]);
 
     const availableMatchedBuyers = useMemo(() => {
@@ -1619,9 +1496,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 dealRef.current = { ...deal, documents: newDocs };
                 setDeal(dealRef.current);
                 if (onUpdate) {
-                    onUpdate(deal.id, { documents: newDocs }).catch((err: any) => {
-                         alert(`Error saving document to database: ${err.message}`);
-                    });
+                    onUpdate(deal.id, { documents: newDocs });
                 } else {
                     triggerSave();
                 }

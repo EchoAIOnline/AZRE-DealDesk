@@ -73,7 +73,7 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
                             {deal.address}
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
-                            {deal.city}, {deal.state} {deal.zip}
+                            {deal.agentName || 'No Agent'}
                         </p>
                     </div>
                     <ChevronDown size={16} className="text-gray-600 group-hover:text-gray-500 dark:text-gray-400" />

@@ -100,7 +100,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     // Sort deals by newest first for Recent Deals section
     const recentDeals = useMemo(() => {
         return [...deals]
-            .filter(d => !d.pipelineType || d.pipelineType === 'main')
+            .filter(d => !d.pipelineType || d.pipelineType === 'mls' || d.pipelineType === 'off-market' || d.pipelineType === 'dfd')
             .sort((a, b) => {
                 const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                 const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
