@@ -477,7 +477,7 @@ Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales withi
       }
 
       const token = authHeader.replace("Bearer ", "");
-      if (token !== process.env.AI_EMPLOYEE_API_KEY) {
+      if (token !== process.env.DEALDESK_API_KEY) {
         return res.status(403).json({ error: "Invalid API key" });
       }
 

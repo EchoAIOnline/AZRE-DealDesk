@@ -177,6 +177,10 @@ export interface Deal {
   offerDecisionTracking?: OfferDecisionTrack[];
   renovationWorkflow?: RenovationWorkflow;
   documents?: DealDocument[];
+  ownerLLCName?: string | null;
+  ownerPersonalName?: string | null;
+  ownerAddress?: string | null;
+  ownerPhones?: string[];
 }
 
 export interface Agent {

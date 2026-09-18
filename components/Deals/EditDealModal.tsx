@@ -1835,6 +1835,87 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div><label className="text-xs text-gray-500 block mb-1">Lock Box Code</label><input className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.lockBoxCode || ''} onChange={e => updateDealState({lockBoxCode: e.target.value})} onBlur={handleAutoSave} placeholder="1234" /></div>
                             </div>
                             <div><label className="text-xs text-gray-500 block mb-1 font-bold uppercase">Listing Description</label><textarea className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-3 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none h-48 resize-y min-h-[120px]" value={deal.listingDescription || ''} onChange={e => updateDealState({listingDescription: e.target.value})} onBlur={handleAutoSave} placeholder="Paste full property description here..." /></div>
+                            {/* Owner's Information */}
+                            <div className="pt-4 mt-6 border-t border-gray-200 dark:border-gray-800">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                                    <User size={14}/> Owner's Information
+                                </h3>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">Owner LLC Name</label>
+                                        <input 
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" 
+                                            value={deal.ownerLLCName || ''} 
+                                            onChange={e => updateDealState({ownerLLCName: e.target.value})} 
+                                            onBlur={handleAutoSave} 
+                                            placeholder="e.g. AZRE Holdings LLC" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">Owner Personal Name</label>
+                                        <input 
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" 
+                                            value={deal.ownerPersonalName || ''} 
+                                            onChange={e => updateDealState({ownerPersonalName: e.target.value})} 
+                                            onBlur={handleAutoSave} 
+                                            placeholder="e.g. Jane Doe" 
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-xs text-gray-500 block mb-1">Owner Address</label>
+                                        <input 
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" 
+                                            value={deal.ownerAddress || ''} 
+                                            onChange={e => updateDealState({ownerAddress: e.target.value})} 
+                                            onBlur={handleAutoSave} 
+                                            placeholder="e.g. 123 Main St, Atlanta, GA 30301" 
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-xs text-gray-500 block mb-2">Owner Phone Numbers</label>
+                                        <div className="space-y-2">
+                                            {(deal.ownerPhones || []).map((phone, idx) => (
+                                                <div key={idx} className="flex gap-2">
+                                                    <input 
+                                                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" 
+                                                        value={phone} 
+                                                        onChange={(e) => {
+                                                            const newPhones = [...(deal.ownerPhones || [])];
+                                                            newPhones[idx] = e.target.value;
+                                                            updateDealState({ ownerPhones: newPhones });
+                                                        }}
+                                                        onBlur={handleAutoSave}
+                                                        placeholder="(555) 555-5555" 
+                                                    />
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newPhones = [...(deal.ownerPhones || [])];
+                                                            newPhones.splice(idx, 1);
+                                                            updateDealState({ ownerPhones: newPhones });
+                                                            setTimeout(handleAutoSave, 0);
+                                                        }}
+                                                        className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    const newPhones = [...(deal.ownerPhones || []), ''];
+                                                    updateDealState({ ownerPhones: newPhones });
+                                                }}
+                                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                            >
+                                                <Plus size={14} /> Add Phone Number
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                        </div>
                    </div>
 
