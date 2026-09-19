@@ -2057,9 +2057,6 @@ export default function App() {
                      <Globe size={20} />
                   </button>
                   {isSyncing && <div className="flex items-center gap-2 text-xs text-blue-400 animate-pulse"><RefreshCw size={14} className="animate-spin"/> Syncing DB...</div>}
-                  <button onClick={() => handleAddDeal()} className="hidden md:flex items-center gap-2 bg-gray-800 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white px-3 py-2 rounded-lg shadow-sm transition-colors text-sm font-medium">
-                      <Plus size={16} /> New Deal
-                  </button>
                   <button onClick={() => setIsGeminiChatOpen(!isGeminiChatOpen)} className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-full shadow-lg shrink-0 transition-transform active:scale-95" title="Open AI Assistant">
                       <Sparkles size={24} />
                   </button>
