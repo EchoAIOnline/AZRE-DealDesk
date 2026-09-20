@@ -37,17 +37,23 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
     };
 
     const matches = useMemo(() => {
-        return MatchingEngine.findDealsForBuyer(buyer, deals).map(result => ({
-            deal: result.deal,
-            isMatch: result.match.isMatch,
-            reasons: result.match.matchedCriteria,
-            tier: result.match.tier,
-            score: result.match.score
-        }));
+        try {
+            if (!buyer || !deals) return [];
+            return MatchingEngine.findDealsForBuyer(buyer, deals).map(result => ({
+                deal: result.deal,
+                isMatch: result.match.isMatch,
+                reasons: result.match.matchedCriteria,
+                tier: result.match.tier,
+                score: result.match.score
+            }));
+        } catch (err) {
+            console.error("Error computing deal matches for buyer:", err);
+            return [];
+        }
     }, [buyer, deals]);
 
     return (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); onClose(); }}>
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                 
                 {/* Header */}

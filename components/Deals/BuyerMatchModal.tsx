@@ -13,17 +13,23 @@ interface BuyerMatchModalProps {
 
 export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, onClose, onViewBuyer }) => {
     const matches = useMemo(() => {
-        return MatchingEngine.findBuyersForDeal(deal, buyers)
-            .map(result => ({
-                buyer: result.buyer,
-                matchScore: result.match.score,
-                tier: result.match.tier,
-                reasons: result.match.matchedCriteria
-            }));
+        try {
+            if (!deal || !buyers) return [];
+            return MatchingEngine.findBuyersForDeal(deal, buyers)
+                .map(result => ({
+                    buyer: result.buyer,
+                    matchScore: result.match.score,
+                    tier: result.match.tier,
+                    reasons: result.match.matchedCriteria
+                }));
+        } catch (err) {
+            console.error("Error computing buyer matches for deal:", err);
+            return [];
+        }
     }, [deal, buyers]);
 
     return (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); onClose(); }}>
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                 
                 {/* Modal Header */}

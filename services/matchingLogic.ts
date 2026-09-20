@@ -15,14 +15,17 @@ export interface MatchResult {
 }
 
 // Helper to parse location string into structured categories
-const parseLocations = (locString: string) => {
+const parseLocations = (locString: any) => {
     const zips: string[] = [];
     const counties: string[] = [];
     const cities: string[] = [];
     const neighborhoods: string[] = [];
-    if (!locString || !locString.trim()) return { zips, counties, cities, neighborhoods };
+    if (!locString) return { zips, counties, cities, neighborhoods };
 
-    locString.split(',').map(s => s.trim()).filter(Boolean).forEach(part => {
+    const str = String(locString).trim();
+    if (!str) return { zips, counties, cities, neighborhoods };
+
+    str.split(',').map(s => s.trim()).filter(Boolean).forEach(part => {
         const lower = part.toLowerCase();
         if (lower.startsWith('zip code:') || lower.startsWith('zip:')) {
             const z = part.replace(/zip( code)?:/i, '').trim();
@@ -51,7 +54,8 @@ const parseLocations = (locString: string) => {
     return { zips, counties, cities, neighborhoods };
 };
 
-const normalizeStrategy = (strat: string): string => {
+const normalizeStrategy = (strat: any): string => {
+    if (!strat || typeof strat !== 'string') return '';
     const s = strat.trim().toLowerCase();
     if (s === 'new build' || s === 'new construction') return 'new construction';
     if (s === 'renovation' || s === 'reno' || s === 'fix & flip' || s === 'flip') return 'renovation';
@@ -61,6 +65,7 @@ const normalizeStrategy = (strat: string): string => {
 };
 
 const formatStrategyName = (strat: string): string => {
+    if (!strat) return '';
     if (strat === 'new construction') return 'New Construction';
     if (strat === 'multi-family') return 'Multi-Family';
     return strat.charAt(0).toUpperCase() + strat.slice(1);
@@ -68,6 +73,18 @@ const formatStrategyName = (strat: string): string => {
 
 export const MatchingEngine = {
     evaluateMatch(buyer: Buyer, deal: Deal): MatchResult {
+        if (!buyer || !deal) {
+            return {
+                isMatch: false,
+                score: 0,
+                matchedCriteria: [],
+                failedReasons: ["Missing buyer or deal data"],
+                level1Passed: false,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
         const bb = buyer.buyBox;
         if (!bb) {
             return { 
@@ -102,7 +119,8 @@ export const MatchingEngine = {
         // LEVEL ONE: LOCATION MATCHING
         // ==========================================
         // Requirement: If location field is empty, Option B: Match no deals (require at least 1 target location)
-        if (!bb.locations || !bb.locations.trim()) {
+        const rawLocations = bb.locations ? String(bb.locations).trim() : '';
+        if (!rawLocations) {
             return {
                 isMatch: false,
                 score: 0,
@@ -114,7 +132,7 @@ export const MatchingEngine = {
             };
         }
 
-        const { zips, counties, cities, neighborhoods } = parseLocations(bb.locations || "");
+        const { zips, counties, cities, neighborhoods } = parseLocations(rawLocations);
         if (zips.length === 0 && counties.length === 0 && cities.length === 0 && neighborhoods.length === 0) {
             return {
                 isMatch: false,
@@ -127,11 +145,12 @@ export const MatchingEngine = {
             };
         }
 
-        const dealZip = deal.address.match(/\b\d{5}\b/)?.[0] || "";
+        const dealAddressSafe = (deal.address || "");
+        const dealZip = dealAddressSafe.match(/\b\d{5}\b/)?.[0] || "";
         const dealCounty = (deal.county || "").toLowerCase().replace('county', '').trim();
         const dealCity = (deal.subMarket || "").toLowerCase().trim();
         const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
-        const dealAddressLower = (deal.address || "").toLowerCase();
+        const dealAddressLower = dealAddressSafe.toLowerCase();
 
         let zipMatch = false;
         let cityMatch = false;
@@ -210,8 +229,11 @@ export const MatchingEngine = {
         // ==========================================
         // LEVEL TWO: STRATEGY MATCHING
         // ==========================================
-        const buyerStrategies = (bb.propertyTypes || []).map(normalizeStrategy).filter(Boolean);
-        const dealStrategies = (deal.dealType || []).map(normalizeStrategy).filter(Boolean);
+        const rawBuyerProp = Array.isArray(bb.propertyTypes) ? bb.propertyTypes : (typeof bb.propertyTypes === 'string' ? (bb.propertyTypes as string).split(',') : []);
+        const buyerStrategies = rawBuyerProp.map(normalizeStrategy).filter(Boolean);
+
+        const rawDealType = Array.isArray(deal.dealType) ? deal.dealType : (typeof deal.dealType === 'string' ? (deal.dealType as string).split(',') : []);
+        const dealStrategies = rawDealType.map(normalizeStrategy).filter(Boolean);
 
         let level2Passed = false;
         let strategyOverlaps: string[] = [];
@@ -389,16 +411,20 @@ export const MatchingEngine = {
     },
 
     findDealsForBuyer(buyer: Buyer, deals: Deal[]): { deal: Deal; match: MatchResult }[] {
+        if (!buyer || !deals || !Array.isArray(deals)) return [];
         return deals
+            .filter(deal => !!deal)
             .map(deal => ({ deal, match: this.evaluateMatch(buyer, deal) }))
-            .filter(result => result.match.isMatch)
+            .filter(result => result.match && result.match.isMatch)
             .sort((a, b) => b.match.score - a.match.score);
     },
 
     findBuyersForDeal(deal: Deal, buyers: Buyer[]): { buyer: Buyer; match: MatchResult }[] {
+        if (!deal || !buyers || !Array.isArray(buyers)) return [];
         return buyers
+            .filter(buyer => !!buyer)
             .map(buyer => ({ buyer, match: this.evaluateMatch(buyer, deal) }))
-            .filter(result => result.match.isMatch)
+            .filter(result => result.match && result.match.isMatch)
             .sort((a, b) => b.match.score - a.match.score);
     }
 };
