@@ -847,17 +847,18 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4 content-start">
                                     <div className="col-span-full mb-2">
                                         <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Investment Strategy</label>
-                                        <div className="flex gap-3">
-                                            {['Renovation', 'New Build', 'Rental'].map(type => (
+                                        <div className="flex gap-2">
+                                            {['Renovation', 'New Build', 'Rental', 'Multi-Family'].map(type => (
                                                 <button
                                                     key={type}
                                                     type="button"
                                                     onClick={() => togglePropertyType(type)}
-                                                    className={`flex-1 py-3 rounded-lg text-sm font-bold border transition-all shadow-sm active:scale-95 flex items-center justify-center ${
+                                                    className={`flex-1 py-3 rounded-lg text-xs md:text-sm font-bold border transition-all shadow-sm active:scale-95 flex items-center justify-center ${
                                                         (formData.buyBox.propertyTypes || []).includes(type)
                                                             ? type === 'Renovation' ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                                                             : type === 'New Build' ? 'bg-green-600 text-white border-green-600 hover:bg-green-700'
-                                                            : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+                                                            : type === 'Rental' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+                                                            : 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
                                                             : 'bg-white dark:bg-gray-800 text-gray-500 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                                                     }`}
                                                 >

@@ -17,9 +17,9 @@ export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, 
             .map(result => ({
                 buyer: result.buyer,
                 matchScore: result.match.score,
+                tier: result.match.tier,
                 reasons: result.match.matchedCriteria
-            }))
-            .sort((a, b) => b.matchScore - a.matchScore);
+            }));
     }, [deal, buyers]);
 
     return (
@@ -45,7 +45,7 @@ export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, 
                 {/* Buyer List */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {matches.length > 0 ? (
-                        matches.map(({ buyer, matchScore, reasons }) => (
+                        matches.map(({ buyer, matchScore, tier, reasons }) => (
                             <div 
                                 key={buyer.id} 
                                 onClick={() => onViewBuyer(buyer.id)}
@@ -70,8 +70,14 @@ export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, 
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${matchScore >= 6 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                                            {matchScore >= 6 ? 'Strong Match' : 'Possible Match'}
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                            tier === 'Perfect Match'
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                                : tier === 'Strong Match'
+                                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                        }`}>
+                                            {tier || (matchScore >= 90 ? 'Perfect Match' : matchScore >= 75 ? 'Strong Match' : 'Possible Match')}
                                         </span>
                                         <span className="text-[10px] text-gray-400 font-medium">{buyer.propertiesBought || 0} Previous Deals</span>
                                     </div>

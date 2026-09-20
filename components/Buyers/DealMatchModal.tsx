@@ -40,7 +40,9 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
         return MatchingEngine.findDealsForBuyer(buyer, deals).map(result => ({
             deal: result.deal,
             isMatch: result.match.isMatch,
-            reasons: result.match.matchedCriteria
+            reasons: result.match.matchedCriteria,
+            tier: result.match.tier,
+            score: result.match.score
         }));
     }, [buyer, deals]);
 
@@ -67,7 +69,7 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {matches.length > 0 ? (
-                        matches.map(({ deal, reasons }, idx) => {
+                        matches.map(({ deal, reasons, tier }) => {
                             const userPhoto = deal.photos && deal.photos.length > 0 && deal.photos[0].length > 10 ? deal.photos[0] : null;
                             const streetViewUrl = GOOGLE_MAPS_API_KEY 
                                 ? `https://maps.googleapis.com/maps/api/streetview?size=300x300&location=${encodeURIComponent(deal.address)}&fov=70&key=${GOOGLE_MAPS_API_KEY}`
@@ -117,8 +119,14 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1 shrink-0 text-right">
-                                            <span className="px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-900">
-                                                VERIFIED MATCH
+                                            <span className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                                                tier === 'Perfect Match'
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                                    : tier === 'Strong Match'
+                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                            }`}>
+                                                {tier || 'VERIFIED MATCH'}
                                             </span>
                                             <div className="text-sm font-bold text-gray-900 dark:text-white">
                                                 {formatCurrency(buyerSalesPrice)}

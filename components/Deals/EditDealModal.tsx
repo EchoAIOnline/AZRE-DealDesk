@@ -1953,7 +1953,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     <div>
                                         <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Deal Strategy (Multi-Select)</label>
                                         <div className="grid grid-cols-2 gap-1.5">
-                                            {['Renovation', 'Rental', 'New Construction', 'Wholesale'].map(type => (
+                                            {['Renovation', 'Rental', 'New Construction', 'Multi-Family'].map(type => (
                                                 <button
                                                     key={type}
                                                     type="button"

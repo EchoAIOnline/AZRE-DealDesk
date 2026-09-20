@@ -3,5 +3,8 @@
   "description": "A comprehensive real estate deal management system featuring pipeline tracking, agent database, deal analysis, and team collaboration tools.",
   "requestFramePermissions": [
     "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

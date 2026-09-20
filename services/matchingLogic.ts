@@ -1,183 +1,404 @@
 import { Deal, Buyer } from '../types';
 import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES } from '../constants';
 
+export type MatchTier = 'Perfect Match' | 'Strong Match' | 'Possible Match';
+
 export interface MatchResult {
   isMatch: boolean;
   score: number;
+  tier?: MatchTier;
   matchedCriteria: string[];
   failedReasons: string[];
+  level1Passed: boolean;
+  level2Passed: boolean;
+  level3Passed: boolean;
 }
 
-// Helper to parse location string into structured data
+// Helper to parse location string into structured categories
 const parseLocations = (locString: string) => {
     const zips: string[] = [];
     const counties: string[] = [];
     const cities: string[] = [];
     const neighborhoods: string[] = [];
-    if (!locString) return { zips, counties, cities, neighborhoods };
+    if (!locString || !locString.trim()) return { zips, counties, cities, neighborhoods };
 
-    locString.split(',').map(s => s.trim()).forEach(part => {
+    locString.split(',').map(s => s.trim()).filter(Boolean).forEach(part => {
         const lower = part.toLowerCase();
-        if (lower.startsWith('zip code:')) zips.push(part.replace(/zip code:/i, '').trim());
-        else if (lower.startsWith('county:')) counties.push(lower.replace('county:', '').trim().replace(' county', ''));
-        else if (lower.startsWith('city:')) cities.push(lower.replace('city:', '').trim());
-        else if (lower.startsWith('neighborhood:')) neighborhoods.push(lower.replace('neighborhood:', '').trim());
-        else if (/^\d{5}$/.test(part)) zips.push(part);
-        else if (part.includes('county')) counties.push(lower.replace('county', '').trim());
-        else if (part) neighborhoods.push(lower);
+        if (lower.startsWith('zip code:') || lower.startsWith('zip:')) {
+            const z = part.replace(/zip( code)?:/i, '').trim();
+            if (z) zips.push(z);
+        } else if (lower.startsWith('county:')) {
+            const c = lower.replace('county:', '').replace('county', '').trim();
+            if (c) counties.push(c);
+        } else if (lower.startsWith('city:')) {
+            const c = lower.replace('city:', '').trim();
+            if (c) cities.push(c);
+        } else if (lower.startsWith('neighborhood:')) {
+            const n = lower.replace('neighborhood:', '').trim();
+            if (n) neighborhoods.push(n);
+        } else if (/^\d{5}$/.test(part)) {
+            zips.push(part);
+        } else if (lower.includes('county')) {
+            const c = lower.replace('county', '').trim();
+            if (c) counties.push(c);
+        } else {
+            // Unprefixed entry - treat as potential city or neighborhood
+            cities.push(lower);
+            neighborhoods.push(lower);
+        }
     });
 
     return { zips, counties, cities, neighborhoods };
+};
+
+const normalizeStrategy = (strat: string): string => {
+    const s = strat.trim().toLowerCase();
+    if (s === 'new build' || s === 'new construction') return 'new construction';
+    if (s === 'renovation' || s === 'reno' || s === 'fix & flip' || s === 'flip') return 'renovation';
+    if (s === 'rental' || s === 'buy & hold' || s === 'hold') return 'rental';
+    if (s === 'multi-family' || s === 'multifamily') return 'multi-family';
+    return s;
+};
+
+const formatStrategyName = (strat: string): string => {
+    if (strat === 'new construction') return 'New Construction';
+    if (strat === 'multi-family') return 'Multi-Family';
+    return strat.charAt(0).toUpperCase() + strat.slice(1);
 };
 
 export const MatchingEngine = {
     evaluateMatch(buyer: Buyer, deal: Deal): MatchResult {
         const bb = buyer.buyBox;
         if (!bb) {
-            return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["No Buy Box Criteria"] };
+            return { 
+                isMatch: false, 
+                score: 0, 
+                matchedCriteria: [], 
+                failedReasons: ["No Buy Box Criteria"], 
+                level1Passed: false, 
+                level2Passed: false, 
+                level3Passed: false 
+            };
         }
 
-        const matchingStages = [...POTENTIAL_STATUSES, ...UNDER_CONTRACT_STATUSES];
-
-        // 1. GUARD: Pipeline Stage Filter
-        if (!matchingStages.includes(deal.offerDecision)) {
-             return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Deal not in active pipeline stage"] };
-        }
-
-        // --- Extracted Attributes ---
-        const { zips, counties, cities, neighborhoods } = parseLocations(bb.locations || "");
-        
-        const buyerStrategies = (bb.propertyTypes || []).map(t => {
-            let low = t.toLowerCase();
-            return low === 'new construction' ? 'new build' : low;
-        }).filter(Boolean);
-
-        const dealStrategies = (deal.dealType || []).map(s => {
-            let low = s.toLowerCase();
-            return low === 'new construction' ? 'new build' : low;
-        }).filter(Boolean);
-
-        const dealPrice = deal.listPrice || 0;
-        const dealArv = deal.renovationARV || 0;
-        const dealReno = deal.renovationEstimate || 0;
-        const dealSqft = deal.sqft || 0;
-        const dealYear = deal.yearBuilt || 0;
-        
-        const dealZip = deal.address.match(/\d{5}/)?.[0] || "";
-        const dealCounty = (deal.county || "").toLowerCase().replace(' county', '').trim();
-        const dealCity = (deal.subMarket || "").toLowerCase().trim();
-        const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
-
-        // Check if buy box is empty
-        const hasLocations = bb.locations && bb.locations.trim() !== '';
-        const hasStrategies = bb.propertyTypes && bb.propertyTypes.length > 0;
-        const hasFinancials = (bb.minPrice && bb.minPrice > 0) || (bb.maxPrice && bb.maxPrice > 0) || (bb.minArv && bb.minArv > 0) || (bb.maxArv && bb.maxArv > 0) || (bb.maxRenoBudget && bb.maxRenoBudget > 0);
-        const hasSpecs = (bb.minBedrooms && bb.minBedrooms > 0) || (bb.minBathrooms && bb.minBathrooms > 0) || (bb.minSqft && bb.minSqft > 0) || (bb.maxSqft && bb.maxSqft > 0) || (bb.earliestYearBuilt && bb.earliestYearBuilt > 0) || (bb.latestYearBuilt && bb.latestYearBuilt > 0);
-        
-        // 2. GUARD: If Buy Box is completely empty, reject match.
-        if (!hasLocations && !hasStrategies && !hasFinancials && !hasSpecs) {
-            return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Empty Buy Box"] };
+        // Active pipeline stages check (including Available for Wholesaler/DFD deals)
+        const matchingStages = [...POTENTIAL_STATUSES, ...UNDER_CONTRACT_STATUSES, 'Available'];
+        if (deal.offerDecision && !matchingStages.includes(deal.offerDecision)) {
+             return { 
+                 isMatch: false, 
+                 score: 0, 
+                 matchedCriteria: [], 
+                 failedReasons: ["Deal not in active pipeline stage"], 
+                 level1Passed: false, 
+                 level2Passed: false, 
+                 level3Passed: false 
+             };
         }
 
         const matchedCriteria: string[] = [];
         const failedReasons: string[] = [];
 
-        // 3. LOCATION LOGIC (Strict City/Zip Code)
-        if (hasLocations) {
-            let locationMatched = false;
-            
-            if (zips.length > 0 && dealZip && zips.includes(dealZip)) {
-                locationMatched = true;
-                matchedCriteria.push(`Zip Match (${dealZip})`);
+        // ==========================================
+        // LEVEL ONE: LOCATION MATCHING
+        // ==========================================
+        // Requirement: If location field is empty, Option B: Match no deals (require at least 1 target location)
+        if (!bb.locations || !bb.locations.trim()) {
+            return {
+                isMatch: false,
+                score: 0,
+                matchedCriteria: [],
+                failedReasons: ["No target location specified in Buy Box"],
+                level1Passed: false,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
+        const { zips, counties, cities, neighborhoods } = parseLocations(bb.locations || "");
+        if (zips.length === 0 && counties.length === 0 && cities.length === 0 && neighborhoods.length === 0) {
+            return {
+                isMatch: false,
+                score: 0,
+                matchedCriteria: [],
+                failedReasons: ["No valid target location specified in Buy Box"],
+                level1Passed: false,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
+        const dealZip = deal.address.match(/\b\d{5}\b/)?.[0] || "";
+        const dealCounty = (deal.county || "").toLowerCase().replace('county', '').trim();
+        const dealCity = (deal.subMarket || "").toLowerCase().trim();
+        const dealNeighborhood = (deal.neighborhood || "").toLowerCase().trim();
+        const dealAddressLower = (deal.address || "").toLowerCase();
+
+        let zipMatch = false;
+        let cityMatch = false;
+        let countyMatch = false;
+        let neighborhoodMatch = false;
+
+        // Zip Code Match
+        if (zips.length > 0 && dealZip && zips.includes(dealZip)) {
+            zipMatch = true;
+            matchedCriteria.push(`Zip Match (${dealZip})`);
+        }
+
+        // City Match
+        if (cities.length > 0) {
+            const matchedCity = cities.find(c => (dealCity && (dealCity === c || dealCity.includes(c) || c.includes(dealCity))) || dealAddressLower.includes(c));
+            if (matchedCity) {
+                cityMatch = true;
+                matchedCriteria.push(`City Match (${deal.subMarket || matchedCity})`);
             }
-            
-            if (!locationMatched && cities.length > 0 && cities.includes(dealCity)) {
-                locationMatched = true;
-                matchedCriteria.push("Location Match (City)");
+        }
+
+        // County Match
+        if (counties.length > 0 && dealCounty) {
+            const matchedCounty = counties.find(c => dealCounty.includes(c) || c.includes(dealCounty));
+            if (matchedCounty) {
+                countyMatch = true;
+                matchedCriteria.push(`County Match (${deal.county || matchedCounty})`);
             }
-            
-            if (!locationMatched && counties.length > 0 && counties.some(c => dealCounty.includes(c))) {
-                locationMatched = true;
-                matchedCriteria.push("Location Match (County)");
+        }
+
+        // Neighborhood Match
+        if (neighborhoods.length > 0) {
+            const matchedNb = neighborhoods.find(n => (dealNeighborhood && (dealNeighborhood.includes(n) || n.includes(dealNeighborhood))) || dealAddressLower.includes(n));
+            if (matchedNb) {
+                neighborhoodMatch = true;
+                matchedCriteria.push(`Neighborhood Match (${deal.neighborhood || matchedNb})`);
             }
-            
-            if (!locationMatched && neighborhoods.length > 0) {
-                const isNbMatch = neighborhoods.some(n => {
-                    const lowerN = n.toLowerCase().trim();
-                    if (!lowerN) return false;
-                    return (
-                        (dealNeighborhood && (dealNeighborhood.includes(lowerN) || lowerN.includes(dealNeighborhood))) ||
-                        (dealCity && (dealCity.includes(lowerN) || lowerN.includes(dealCity))) ||
-                        (dealCounty && (dealCounty.includes(lowerN) || lowerN.includes(dealCounty))) ||
-                        (dealZip && dealZip === lowerN)
-                    );
-                });
-                if (isNbMatch) {
-                    locationMatched = true;
-                    matchedCriteria.push("Location Match (Neighborhood)");
+        }
+
+        // Level One Verdict (Scenario A: Conditional Refinement Rule)
+        // - If buyer has specified target Zip Code(s), a match REQUIRES matching at least one of their target Zip Codes.
+        //   (e.g., if a buyer targets City: Phoenix with Zip: 85018, a deal in 85033 Phoenix is excluded).
+        // - If buyer specified City, County, or Neighborhood WITHOUT any Zip Codes, they buy anywhere in that area.
+        let level1Passed = false;
+
+        if (zips.length > 0) {
+            if (zipMatch) {
+                level1Passed = true;
+            } else {
+                level1Passed = false;
+                if (cityMatch || countyMatch || neighborhoodMatch) {
+                    failedReasons.push(`Zip Code Mismatch: Deal is in zip ${dealZip || 'N/A'}, but buyer's buy box strictly targets zip(s): ${zips.join(', ')}`);
+                } else {
+                    failedReasons.push("Location Mismatch");
                 }
             }
-
-            if (!locationMatched) {
-                return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Location Mismatch"] };
+        } else {
+            level1Passed = cityMatch || countyMatch || neighborhoodMatch;
+            if (!level1Passed) {
+                failedReasons.push("Location Mismatch");
             }
         }
 
-        // 4. STRATEGY MATCH (Strict)
-        if (buyerStrategies.length > 0) {
-            if (dealStrategies.length === 0) {
-                return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["No Deal Strategy"] };
+        if (!level1Passed) {
+            return {
+                isMatch: false,
+                score: 0,
+                matchedCriteria: [],
+                failedReasons: failedReasons.length > 0 ? failedReasons : ["Location Mismatch"],
+                level1Passed: false,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
+        // ==========================================
+        // LEVEL TWO: STRATEGY MATCHING
+        // ==========================================
+        const buyerStrategies = (bb.propertyTypes || []).map(normalizeStrategy).filter(Boolean);
+        const dealStrategies = (deal.dealType || []).map(normalizeStrategy).filter(Boolean);
+
+        let level2Passed = false;
+        let strategyOverlaps: string[] = [];
+
+        // Strategy Unset rule:
+        // If buyer has no strategy selected but has location set, match by location.
+        // If deal has no strategy selected, match by location only.
+        if (buyerStrategies.length === 0 || dealStrategies.length === 0) {
+            level2Passed = true;
+            matchedCriteria.push("Strategy Match (Open / Any Strategy)");
+        } else {
+            strategyOverlaps = buyerStrategies.filter(s => dealStrategies.includes(s));
+            if (strategyOverlaps.length > 0) {
+                level2Passed = true;
+                matchedCriteria.push(`Strategy Match (${strategyOverlaps.map(formatStrategyName).join(', ')})`);
+            } else {
+                level2Passed = false;
+                failedReasons.push(`Strategy Mismatch: Buyer wants [${buyerStrategies.map(formatStrategyName).join(', ')}] vs Deal is [${dealStrategies.map(formatStrategyName).join(', ')}]`);
             }
-            const hasOverlap = dealStrategies.some(s => buyerStrategies.includes(s));
-            if (!hasOverlap) {
-                return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Strategy Mismatch"] };
+        }
+
+        // If both sides explicitly declared strategies and had zero overlap, reject candidate
+        if (!level2Passed) {
+            return {
+                isMatch: false,
+                score: 25,
+                matchedCriteria,
+                failedReasons,
+                level1Passed: true,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
+        // ==========================================
+        // LEVEL THREE: FINANCIALS, SPECS & EXEMPTION
+        // ==========================================
+        let pricePassed = true;
+        let arvPassed = true;
+        let specsPassed = true;
+
+        // 1. Purchase Price Check against deal.offerPrice (fallback to listPrice if offerPrice not set)
+        const effectivePrice = (deal.offerPrice && deal.offerPrice > 0) ? deal.offerPrice : (deal.listPrice || 0);
+        if (bb.minPrice && bb.minPrice > 0 && effectivePrice > 0 && effectivePrice < bb.minPrice) {
+            pricePassed = false;
+            failedReasons.push(`Offer price below minimum ($${effectivePrice.toLocaleString()} < $${bb.minPrice.toLocaleString()})`);
+        }
+        if (bb.maxPrice && bb.maxPrice > 0 && effectivePrice > 0 && effectivePrice > bb.maxPrice) {
+            pricePassed = false;
+            failedReasons.push(`Offer price above maximum ($${effectivePrice.toLocaleString()} > $${bb.maxPrice.toLocaleString()})`);
+        }
+        if ((bb.minPrice || bb.maxPrice) && pricePassed && effectivePrice > 0) {
+            matchedCriteria.push(`Offer Price Match ($${effectivePrice.toLocaleString()})`);
+        }
+
+        // 2. ARV Cross-Check
+        // Strategy-driven ARV resolution:
+        // - If New Build/New Construction was matched, check newConstructionARV
+        // - If Renovation/Rental was matched, check renovationARV
+        // - Modal toggle overrides (deal.newConstructionARVToggle vs deal.renovationARVToggle)
+        const isNewConstructionMatch = strategyOverlaps.includes('new construction') || dealStrategies.includes('new construction');
+        let dealArvToEvaluate = 0;
+
+        if (isNewConstructionMatch && deal.newConstructionARV && deal.newConstructionARV > 0) {
+            dealArvToEvaluate = deal.newConstructionARV;
+        } else if (deal.newConstructionARVToggle && deal.newConstructionARV && deal.newConstructionARV > 0) {
+            dealArvToEvaluate = deal.newConstructionARV;
+        } else if (deal.renovationARV && deal.renovationARV > 0) {
+            dealArvToEvaluate = deal.renovationARV;
+        } else if (deal.newConstructionARV && deal.newConstructionARV > 0) {
+            dealArvToEvaluate = deal.newConstructionARV;
+        }
+
+        const hasMinArv = bb.minArv && bb.minArv > 0;
+        const hasMaxArv = bb.maxArv && bb.maxArv > 0;
+
+        if (hasMinArv || hasMaxArv) {
+            if (dealArvToEvaluate > 0) {
+                if (hasMinArv && dealArvToEvaluate < bb.minArv!) {
+                    arvPassed = false;
+                    failedReasons.push(`ARV below minimum ($${dealArvToEvaluate.toLocaleString()} < $${bb.minArv!.toLocaleString()})`);
+                }
+                if (hasMaxArv && dealArvToEvaluate > bb.maxArv!) {
+                    arvPassed = false;
+                    failedReasons.push(`ARV above maximum ($${dealArvToEvaluate.toLocaleString()} > $${bb.maxArv!.toLocaleString()})`);
+                }
+                if (arvPassed) {
+                    matchedCriteria.push(`ARV Match ($${dealArvToEvaluate.toLocaleString()})`);
+                }
             }
-            matchedCriteria.push("Strategy Match");
         }
 
-        // 5. FINANCIALS (Strict)
-        if (bb.minPrice && dealPrice < bb.minPrice) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Price below minimum"] };
-        if (bb.maxPrice && dealPrice > bb.maxPrice) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Price above maximum"] };
-        if (bb.minArv && dealArv < bb.minArv) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["ARV below minimum"] };
-        if (bb.maxArv && bb.maxArv > 0 && dealArv > bb.maxArv) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["ARV above maximum"] };
-        if (bb.maxRenoBudget && dealReno > bb.maxRenoBudget) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Reno budget above maximum"] };
-
-        if (hasFinancials) {
-             matchedCriteria.push("Financials Match");
+        // 3. Beds, Baths & SqFt + New Build Exemption
+        // "New Build Exemption: For deals tagged strictly as 'New Construction' where lot acquisition or teardown is intended,
+        // consider bypassing existing structure beds/baths/sqft checks unless the buyer explicitly tracks lot size."
+        if (isNewConstructionMatch) {
+            specsPassed = true;
+            matchedCriteria.push("New Build Exemption (Lot / Teardown Specs Bypassed)");
+        } else {
+            // Beds check
+            if (bb.minBedrooms && bb.minBedrooms > 0) {
+                if ((deal.bedrooms || 0) < bb.minBedrooms) {
+                    specsPassed = false;
+                    failedReasons.push(`Bedrooms below minimum (${deal.bedrooms || 0} < ${bb.minBedrooms})`);
+                } else {
+                    matchedCriteria.push(`Beds Match (${deal.bedrooms || 0}+)`);
+                }
+            }
+            // Baths check
+            if (bb.minBathrooms && bb.minBathrooms > 0) {
+                if ((deal.bathrooms || 0) < bb.minBathrooms) {
+                    specsPassed = false;
+                    failedReasons.push(`Bathrooms below minimum (${deal.bathrooms || 0} < ${bb.minBathrooms})`);
+                } else {
+                    matchedCriteria.push(`Baths Match (${deal.bathrooms || 0}+)`);
+                }
+            }
+            // SqFt checks
+            if (bb.minSqft && bb.minSqft > 0) {
+                if ((deal.sqft || 0) < bb.minSqft) {
+                    specsPassed = false;
+                    failedReasons.push(`SqFt below minimum (${deal.sqft || 0} < ${bb.minSqft})`);
+                } else {
+                    matchedCriteria.push(`Min SqFt Match (${deal.sqft || 0}+)`);
+                }
+            }
+            if (bb.maxSqft && bb.maxSqft > 0) {
+                if ((deal.sqft || 0) > bb.maxSqft) {
+                    specsPassed = false;
+                    failedReasons.push(`SqFt above maximum (${deal.sqft || 0} > ${bb.maxSqft})`);
+                } else {
+                    matchedCriteria.push(`Max SqFt Match (${deal.sqft || 0})`);
+                }
+            }
         }
 
-        // 6. SPECS (Strict)
-        if (bb.minBedrooms && (deal.bedrooms || 0) < bb.minBedrooms) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Too few bedrooms"] };
-        if (bb.minBathrooms && (deal.bathrooms || 0) < bb.minBathrooms) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Too few bathrooms"] };
-        if (bb.minSqft && dealSqft < bb.minSqft) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["SqFt below minimum"] };
-        if (bb.maxSqft && bb.maxSqft > 0 && dealSqft > bb.maxSqft) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["SqFt above maximum"] };
-        if (bb.earliestYearBuilt && dealYear < bb.earliestYearBuilt) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Built too early"] };
-        if (bb.latestYearBuilt && bb.latestYearBuilt > 0 && dealYear > bb.latestYearBuilt) return { isMatch: false, score: 0, matchedCriteria: [], failedReasons: ["Built too late"] };
+        const level3Passed = pricePassed && arvPassed && specsPassed;
 
-        if (hasSpecs) {
-             matchedCriteria.push("Specs Match");
+        // ==========================================
+        // GRADED / SCORED MATCH CALCULATIONS
+        // ==========================================
+        let score = 60;
+        let tier: MatchTier = 'Possible Match';
+
+        if (level3Passed) {
+            if (strategyOverlaps.length > 0) {
+                score = 100;
+                tier = 'Perfect Match';
+            } else {
+                score = 90;
+                tier = 'Strong Match';
+            }
+        } else {
+            // Check if only minor Level 3 criteria failed
+            const failedCount = (pricePassed ? 0 : 1) + (arvPassed ? 0 : 1) + (specsPassed ? 0 : 1);
+            if (failedCount === 1) {
+                score = 80;
+                tier = 'Strong Match';
+            } else {
+                score = 65;
+                tier = 'Possible Match';
+            }
         }
 
-        // Calculate score
-        let score = 0;
-        if (matchedCriteria.some(r => r.includes("Match"))) score += 2; // Baseline
-        if (matchedCriteria.includes("Strategy Match")) score += 2;
-        if (matchedCriteria.includes("Financials Match")) score += 2;
-        if (matchedCriteria.includes("Specs Match")) score += 1;
-        if (matchedCriteria.some(r => r.includes("Zip Match") || r.includes("Location Match"))) score += 3;
-
-        return { isMatch: true, score, matchedCriteria, failedReasons: [] };
+        return {
+            isMatch: true,
+            score,
+            tier,
+            matchedCriteria,
+            failedReasons,
+            level1Passed: true,
+            level2Passed: true,
+            level3Passed
+        };
     },
 
     findDealsForBuyer(buyer: Buyer, deals: Deal[]): { deal: Deal; match: MatchResult }[] {
         return deals
             .map(deal => ({ deal, match: this.evaluateMatch(buyer, deal) }))
-            .filter(result => result.match.isMatch);
+            .filter(result => result.match.isMatch)
+            .sort((a, b) => b.match.score - a.match.score);
     },
 
     findBuyersForDeal(deal: Deal, buyers: Buyer[]): { buyer: Buyer; match: MatchResult }[] {
         return buyers
             .map(buyer => ({ buyer, match: this.evaluateMatch(buyer, deal) }))
-            .filter(result => result.match.isMatch);
+            .filter(result => result.match.isMatch)
+            .sort((a, b) => b.match.score - a.match.score);
     }
 };

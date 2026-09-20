@@ -209,7 +209,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 <option value="">All Types</option>
                                 <option value="Renovation">Renovation</option>
                                 <option value="Rental">Rental</option>
-                                <option value="Wholesale">Wholesale</option>
+                                <option value="Multi-Family">Multi-Family</option>
                                 <option value="New Construction">New Construction</option>
                             </select>
                         </div>
