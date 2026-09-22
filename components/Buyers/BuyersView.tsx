@@ -63,6 +63,20 @@ export const BuyersView: React.FC<BuyersViewProps> = ({
                             </select>
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Investment Strategy</label>
+                            <select 
+                                className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2" 
+                                onChange={e => { if(e.target.value) setFilterConfig({type: 'Investment Strategy', value: e.target.value}); else setFilterConfig({type: 'All', value: ''}); }} 
+                                value={filterConfig.type === 'Investment Strategy' ? filterConfig.value : ''}
+                            >
+                                <option value="">All Strategies</option>
+                                <option value="Renovation">Renovation</option>
+                                <option value="New Build">New Build</option>
+                                <option value="Rental">Rental</option>
+                                <option value="Multi-Family">Multi-Family</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-bold text-gray-500 uppercase">Target Location</label>
                             <input type="text" className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 focus:border-blue-500 outline-none" placeholder="Zip, City, or County..." value={filterConfig.type === 'Target Location' ? filterConfig.value : ''} onChange={e => { if (e.target.value) setFilterConfig({type: 'Target Location', value: e.target.value}); else setFilterConfig({type: 'All', value: ''}); }} />
                         </div>

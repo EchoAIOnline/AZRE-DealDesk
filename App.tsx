@@ -1263,6 +1263,21 @@ export default function App() {
           filtered = filtered.filter(b => b.status && b.status.includes(buyerStage));
       }
       if (filterConfig.type === 'Buyer Status' && filterConfig.value) filtered = filtered.filter(b => b.status && b.status.includes(filterConfig.value));
+      if (filterConfig.type === 'Investment Strategy' && filterConfig.value) {
+          const val = filterConfig.value.toLowerCase();
+          filtered = filtered.filter(b => {
+              const types = Array.isArray(b.buyBox?.propertyTypes) 
+                  ? b.buyBox.propertyTypes 
+                  : (typeof b.buyBox?.propertyTypes === 'string' ? (b.buyBox.propertyTypes as string).split(',').map(s => s.trim()) : []);
+              return types.some(t => {
+                  const tLower = t.toLowerCase();
+                  if (val === 'new build' || val === 'new construction') {
+                      return tLower === 'new build' || tLower === 'new construction';
+                  }
+                  return tLower === val;
+              });
+          });
+      }
       if (filterConfig.type === 'Target Location' && filterConfig.value) {
           const query = (filterConfig.value || "").toLowerCase();
           filtered = filtered.filter(b => (b.buyBox?.locations || '').toLowerCase().includes(query));
@@ -1313,6 +1328,22 @@ export default function App() {
 
               const matchesWords = queryWords.length > 0 && queryWords.every(word => nameStr.includes(word) || compStr.includes(word) || emailStr.includes(word) || phoneStr.includes(word) || locationStr.includes(word));
             return matchesWords || matchesEmail || (isPhoneSearch && phoneClean.includes(cleanQuery));
+          });
+      }
+
+      if (filterConfig.type === 'Investment Strategy' && filterConfig.value) {
+          const val = filterConfig.value.toLowerCase();
+          filtered = filtered.filter(b => {
+              const types = Array.isArray(b.buyBox?.propertyTypes) 
+                  ? b.buyBox.propertyTypes 
+                  : (typeof b.buyBox?.propertyTypes === 'string' ? (b.buyBox.propertyTypes as string).split(',').map(s => s.trim()) : []);
+              return types.some(t => {
+                  const tLower = t.toLowerCase();
+                  if (val === 'new build' || val === 'new construction') {
+                      return tLower === 'new build' || tLower === 'new construction';
+                  }
+                  return tLower === val;
+              });
           });
       }
 

@@ -308,6 +308,12 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
     const currentStatuses = formData.status ? formData.status.split(',').map(s => s.trim()).filter(s => s) : [];
 
+    const targetLocations = useMemo(() => {
+        return formData.buyBox?.locations
+            ? formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s)
+            : [];
+    }, [formData.buyBox?.locations]);
+
     const parseWidget = (text: string) => {
         const parts = text.split(':');
         if (parts.length > 1) {
@@ -476,7 +482,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm ${zIndex}`} onClick={handleCloseClick}>
+        <div className={`fixed inset-0 bg-black/80 flex items-center justify-center p-4 ${zIndex}`} onClick={handleCloseClick}>
             
             <NavigationArrows 
                 onPrev={() => handleNavigationClick('prev')}
@@ -491,13 +497,13 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                 
                 <SavedNotification show={showSavedNotification} error={showErrorNotification} errorMessage={errorMessage} />
 
-                <button onClick={handleCloseClick} className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors backdrop-blur-md z-50"><X size={20}/></button>
+                <button onClick={handleCloseClick} className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors z-50"><X size={20}/></button>
 
                 {deals && deals.length > 0 && (
                     <button 
                         type="button" 
                         onClick={() => setShowDealMatcher(true)}
-                        className="absolute top-4 right-16 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex items-center justify-center backdrop-blur-md border border-white/20 active:scale-95 z-50
+                        className="absolute top-4 right-16 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex items-center justify-center border border-white/20 active:scale-95 z-50
                                    py-1.5 px-4 rounded-lg gap-2 text-xs shadow-md"
                     >
                         <LayoutGrid size={16} /> 
@@ -955,8 +961,11 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                 <label className="text-xs text-gray-500 block mb-2 uppercase font-bold flex items-center gap-2">
                                     <MapPin size={12} /> Target Area Map
                                 </label>
-                                <div className="h-[500px] w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-inner relative bg-gray-100 dark:bg-gray-900">
-                                    <BuyerTargetMap locations={formData.buyBox?.locations ? formData.buyBox.locations.split(',').map(s => s.trim()).filter(s => s) : []} />
+                                <div 
+                                    className="h-[500px] w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-inner relative bg-gray-100 dark:bg-gray-900"
+                                    style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+                                >
+                                    <BuyerTargetMap locations={targetLocations} />
                                 </div>
                             </div>
                         </section>

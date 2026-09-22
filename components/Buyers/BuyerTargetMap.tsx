@@ -16,6 +16,11 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
     const locationsString = JSON.stringify(locations);
 
     useEffect(() => {
+        if ((window as any).google?.maps && (window as any).google.maps.places) {
+            setIsMapLoaded(true);
+            return;
+        }
+
         // Load the script if it's not already there
         if (!(window as any).google?.maps) {
             loadGoogleMapsScript(GOOGLE_MAPS_API_KEY);
@@ -27,13 +32,21 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                 clearInterval(interval);
                 setIsMapLoaded(true);
             }
-        }, 100);
+        }, 50);
         
         return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
+        return () => {
+            shapesRef.current.forEach(shape => shape.setMap(null));
+            shapesRef.current = [];
+        };
+    }, []);
+
+    useEffect(() => {
         if (!isMapLoaded || !mapRef.current) return;
+        let isCancelled = false;
 
         const google = (window as any).google;
 
@@ -54,137 +67,126 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
         const map = mapInstanceRef.current;
         const placesService = new google.maps.places.PlacesService(map);
 
-        // Feature Layers
-        const localityLayer = map.getFeatureLayer('LOCALITY');
-        const postalCodeLayer = map.getFeatureLayer('POSTAL_CODE');
-        // ADMINISTRATIVE_AREA_LEVEL_2 is not enabled on this Map ID, so we skip it to prevent errors
+        // Process locations and apply markers/circles
+        const processLocations = async () => {
+            const bounds = new google.maps.LatLngBounds();
+            let hasBounds = false;
+            
+            // Clear existing circles
+            shapesRef.current.forEach(shape => shape.setMap(null));
+            shapesRef.current = [];
+            
+            const parsedLocationsStr = JSON.parse(locationsString);
 
-        // Helper to fetch Place ID
-        const getPlaceId = (query: string): Promise<string | null> => {
-            return new Promise((resolve) => {
+            // Parse location strings into type and value
+            const parsedLocations = parsedLocationsStr.map((loc: string) => {
+                const parts = loc.split(':');
+                if (parts.length > 1) {
+                    return { type: parts[0].trim(), value: parts.slice(1).join(':').trim() };
+                }
+                return { type: 'Location', value: loc };
+            });
+
+            for (const loc of parsedLocations) {
+                if (isCancelled) return;
+                let query = loc.value;
+
+                if (loc.type === 'Zip Code') {
+                    query += ' Zip Code, GA';
+                } else if (loc.type === 'City') {
+                    query += ', GA'; 
+                } else if (loc.type === 'County') {
+                    query += ' County, GA';
+                } else if (loc.type === 'Neighborhood') {
+                    query += ', Atlanta, GA';
+                } else {
+                    query += ', GA';
+                }
+
                 const request = {
                     query: query,
-                    fields: ['place_id', 'geometry'],
+                    fields: ['geometry', 'name'],
                 };
-                placesService.findPlaceFromQuery(request, (results: any[], status: any) => {
-                    if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-                        resolve(results[0].place_id || null);
-                    } else {
-                        resolve(null);
+                
+                await new Promise<void>((resolve) => {
+                     placesService.findPlaceFromQuery(request, (results: any[], status: any) => {
+                        if (isCancelled) {
+                            resolve();
+                            return;
+                        }
+                        if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+                            const geometry = results[0].geometry;
+                            
+                            if (geometry && geometry.location) {
+                                bounds.extend(geometry.location);
+                                hasBounds = true;
+                                
+                                // Determine radius based on type
+                                let radius = 4000; // default 4km
+                                if (loc.type === 'Zip Code') radius = 3000;
+                                if (loc.type === 'City') radius = 8000;
+                                if (loc.type === 'County') radius = 15000;
+                                if (loc.type === 'Neighborhood') radius = 1500;
+                                
+                                // Draw Circle
+                                const circle = new google.maps.Circle({
+                                    strokeColor: '#3b82f6',
+                                    strokeOpacity: 0.8,
+                                    strokeWeight: 2,
+                                    fillColor: '#3b82f6',
+                                    fillOpacity: 0.25,
+                                    map: map,
+                                    center: geometry.location,
+                                    radius: radius,
+                                });
+                                shapesRef.current.push(circle);
+                                
+                                // Add a small marker label
+                                const marker = new google.maps.Marker({
+                                    position: geometry.location,
+                                    map: map,
+                                    icon: {
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 0
+                                    },
+                                    label: {
+                                        text: loc.value,
+                                        color: '#1e3a8a',
+                                        fontWeight: 'bold',
+                                        fontSize: '11px'
+                                    }
+                                });
+                                shapesRef.current.push(marker);
+                            }
+                        }
+                        resolve();
+                    });
+                });
+            }
+
+            if (hasBounds && !isCancelled) {
+                map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+                google.maps.event.addListenerOnce(map, 'idle', () => {
+                    if (!isCancelled && map.getZoom() && map.getZoom()! > 13) {
+                        map.setZoom(13);
                     }
                 });
-            });
+            }
         };
 
-            // Process locations and apply markers/circles
-            const processLocations = async () => {
-                const bounds = new google.maps.LatLngBounds();
-                let hasBounds = false;
-                
-                // Clear existing circles (if we had a state for them, but we are inside useEffect so it's fresh)
-                shapesRef.current.forEach(shape => shape.setMap(null));
-                shapesRef.current = [];
-                
-                const parsedLocationsStr = JSON.parse(locationsString);
+        processLocations();
 
-                // Parse location strings into type and value
-                const parsedLocations = parsedLocationsStr.map((loc: string) => {
-                    const parts = loc.split(':');
-                    if (parts.length > 1) {
-                        return { type: parts[0].trim(), value: parts.slice(1).join(':').trim() };
-                    }
-                    return { type: 'Location', value: loc };
-                });
-
-                for (const loc of parsedLocations) {
-                    let query = loc.value;
-
-                    if (loc.type === 'Zip Code') {
-                        query += ' Zip Code, GA';
-                    } else if (loc.type === 'City') {
-                        query += ', GA'; 
-                    } else if (loc.type === 'County') {
-                        query += ' County, GA';
-                    } else if (loc.type === 'Neighborhood') {
-                        query += ', Atlanta, GA';
-                    } else {
-                        query += ', GA';
-                    }
-
-                    const request = {
-                        query: query,
-                        fields: ['geometry', 'name'],
-                    };
-                    
-                    await new Promise<void>((resolve) => {
-                         placesService.findPlaceFromQuery(request, (results: any[], status: any) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-                                const geometry = results[0].geometry;
-                                
-                                if (geometry && geometry.location) {
-                                    bounds.extend(geometry.location);
-                                    hasBounds = true;
-                                    
-                                    // Determine radius based on type
-                                    let radius = 4000; // default 4km
-                                    if (loc.type === 'Zip Code') radius = 3000;
-                                    if (loc.type === 'City') radius = 8000;
-                                    if (loc.type === 'County') radius = 15000;
-                                    if (loc.type === 'Neighborhood') radius = 1500;
-                                    
-                                    // Draw Circle
-                                    const circle = new google.maps.Circle({
-                                        strokeColor: '#3b82f6',
-                                        strokeOpacity: 0.8,
-                                        strokeWeight: 2,
-                                        fillColor: '#3b82f6',
-                                        fillOpacity: 0.25,
-                                        map: map,
-                                        center: geometry.location,
-                                        radius: radius,
-                                    });
-                                    shapesRef.current.push(circle);
-                                    
-                                    // Add a small marker label
-                                    const marker = new google.maps.Marker({
-                                        position: geometry.location,
-                                        map: map,
-                                        icon: {
-                                            path: google.maps.SymbolPath.CIRCLE,
-                                            scale: 0
-                                        },
-                                        label: {
-                                            text: loc.value,
-                                            color: '#1e3a8a',
-                                            fontWeight: 'bold',
-                                            fontSize: '11px'
-                                        }
-                                    });
-                                    shapesRef.current.push(marker);
-                                }
-                            }
-                            resolve();
-                        });
-                    });
-                }
-
-                if (hasBounds) {
-                    map.fitBounds(bounds);
-                    // Add a little padding to the bounds
-                    const zoom = map.getZoom();
-                    if (zoom) {
-                        setTimeout(() => {
-                             map.setZoom(map.getZoom()! - 1);
-                        }, 100);
-                    }
-                }
-            };
-
-            processLocations();
+        return () => {
+            isCancelled = true;
+        };
 
     }, [isMapLoaded, locationsString]);
 
     return (
-        <div ref={mapRef} className="w-full h-full rounded-xl" />
+        <div 
+            ref={mapRef} 
+            className="w-full h-full rounded-xl" 
+            style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+        />
     );
 };
