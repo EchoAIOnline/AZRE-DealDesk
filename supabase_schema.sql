@@ -150,7 +150,9 @@ CREATE TABLE IF NOT EXISTS public."Buyers" (
     photo TEXT,
     "nextFollowUpDate" DATE,
     "lastContactDate" DATE,
-    about TEXT
+    about TEXT,
+    website TEXT,
+    "socialMediaLinks" JSONB
 );
 
 -- 7. Contacts Table

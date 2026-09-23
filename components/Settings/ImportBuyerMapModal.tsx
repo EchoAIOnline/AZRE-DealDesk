@@ -18,6 +18,8 @@ const FIELD_DEFINITIONS: { key: string, label: string, aliases: string[], type: 
     { key: 'companyName', label: 'Company Name', aliases: ['company', 'entity', 'llc', 'business'], type: 'string' },
     { key: 'email', label: 'Email', aliases: ['email', 'email address', 'mail'], type: 'string' },
     { key: 'phone', label: 'Formatted Phone Number', aliases: ['phone', 'mobile', 'cell', 'number'], type: 'string' },
+    { key: 'website', label: 'Website', aliases: ['website', 'web', 'url', 'site', 'homepage'], type: 'string' },
+    { key: 'socialMedia', label: 'Social Media', aliases: ['social media', 'social', 'linkedin', 'facebook', 'instagram', 'twitter', 'social links'], type: 'string' },
     { key: 'status', label: 'Buyer Status', aliases: ['status', 'lead status', 'stage', 'buyer status'], type: 'string' },
     { key: 'lastContactDate', label: 'Last Contact', aliases: ['last contact', 'last activity', 'activity date', 'last touch', 'last contact date'], type: 'string' },
     { key: 'propertiesBought', label: 'Properties Bought', aliases: ['bought', 'purchased', 'deal count', 'closed'], type: 'number' },
@@ -222,6 +224,9 @@ export const ImportBuyerMapModal: React.FC<ImportBuyerMapModalProps> = ({ file, 
 
                 // Set defaults/fallbacks
                 if (!buyer.name) buyer.name = 'Unknown Name';
+                if (buyer.socialMedia && !buyer.socialMediaLinks) {
+                    buyer.socialMediaLinks = String(buyer.socialMedia).split('\n').map((s: string) => s.trim()).filter(Boolean);
+                }
                 
                 return buyer as Buyer;
             });

@@ -290,6 +290,9 @@ export interface Buyer {
   nextFollowUpDate?: string;
   lastContactDate?: string;
   about?: string;
+  website?: string;
+  socialMedia?: string;
+  socialMediaLinks?: string[] | any;
 }
 
 export interface CalcData {

@@ -365,6 +365,9 @@ export default function App() {
                 const buyerObj = {
                     ...b,
                     subscriptionStatus: b.subscriptionStatus || 'Subscribed',
+                    website: b.website || '',
+                    socialMedia: b.socialMedia || (Array.isArray(b.socialMediaLinks) ? b.socialMediaLinks.join('\n') : (typeof b.socialMediaLinks === 'string' ? b.socialMediaLinks : '')),
+                    socialMediaLinks: Array.isArray(b.socialMediaLinks) ? b.socialMediaLinks : (b.socialMedia ? String(b.socialMedia).split('\n').map((s: string) => s.trim()).filter(Boolean) : []),
                     buyBox: b.buyBox || { 
                         locations: '', minPrice: 0, maxPrice: 0, minArv: 0, maxArv: 0, maxRenoBudget: 0, 
                         earliestYearBuilt: 0, latestYearBuilt: 0, propertyTypes: [], 
@@ -782,7 +785,10 @@ export default function App() {
           propertiesBought: 0, 
           buyBox: { locations: '', minPrice: 0, maxPrice: 0, minArv: 0, maxArv: 0, maxRenoBudget: 0, earliestYearBuilt: 0, latestYearBuilt: 0, propertyTypes: [], minBedrooms: 0, minBathrooms: 0, notes: '' }, 
           notes: [`${getLogTimestamp()}: Buyer created`], 
-          about: '' 
+          about: '',
+          website: '',
+          socialMedia: '',
+          socialMediaLinks: []
       };
       setEditingBuyer(newBuyer);
       setShowAddBuyerModal(true);

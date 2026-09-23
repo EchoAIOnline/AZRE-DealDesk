@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { X, Save, Building, User, Phone, Mail, MapPin, DollarSign, Home, FileText, Plus, Upload, CheckCircle, LayoutGrid, Loader2, ArrowRightLeft, Activity, Ban } from 'lucide-react';
+import { X, Save, Building, User, Phone, Mail, MapPin, DollarSign, Home, FileText, Plus, Upload, CheckCircle, LayoutGrid, Loader2, ArrowRightLeft, Activity, Ban, AlertTriangle, Globe, Share2, ExternalLink } from 'lucide-react';
 import { Buyer, BuyBox, Deal, User as UserType } from '../../types';
 import { formatPhoneNumber, getLogTimestamp, parseNumberFromCurrency, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
 import { COUNTIES, SUB_MARKETS, ATLANTA_NEIGHBORHOODS, GOOGLE_MAPS_API_KEY } from '../../constants';
@@ -35,8 +35,19 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     onMoveToAgent, onMoveToWholesaler,
     zIndex = 'z-[140]'
 }) => {
-    const [formData, _setFormData] = useState<Buyer>({ ...buyer });
-    const formDataRef = useRef<Buyer>({ ...buyer });
+    const getInitialBuyerData = useCallback((b: Buyer): Buyer => {
+        const smText = b.socialMedia || (Array.isArray(b.socialMediaLinks) ? b.socialMediaLinks.join('\n') : (typeof b.socialMediaLinks === 'string' ? b.socialMediaLinks : ''));
+        const smLinks = Array.isArray(b.socialMediaLinks) ? b.socialMediaLinks : (smText ? smText.split('\n').map(s => s.trim()).filter(Boolean) : []);
+        return {
+            ...b,
+            website: b.website || '',
+            socialMedia: smText,
+            socialMediaLinks: smLinks
+        };
+    }, []);
+
+    const [formData, _setFormData] = useState<Buyer>(() => getInitialBuyerData(buyer));
+    const formDataRef = useRef<Buyer>(getInitialBuyerData(buyer));
 
     const setFormData = useCallback((newData: Buyer | ((prev: Buyer) => Buyer)) => {
         if (typeof newData === 'function') {
@@ -55,7 +66,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     
     // Save Logic States
-    const initialBuyerJson = useRef(JSON.stringify(buyer));
+    const initialBuyerJson = useRef(JSON.stringify(getInitialBuyerData(buyer)));
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const [warningSelectedOption, setWarningSelectedOption] = useState<'yes' | 'no'>('yes');
     const [pendingNavigation, setPendingNavigation] = useState<'prev' | 'next' | null>(null);
@@ -79,15 +90,16 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     }, [buyer.id, allBuyers]);
     
     useEffect(() => {
-        setFormData({ ...buyer });
-        initialBuyerJson.current = JSON.stringify(buyer);
+        const initial = getInitialBuyerData(buyer);
+        setFormData(initial);
+        initialBuyerJson.current = JSON.stringify(initial);
         setPendingNavigation(null);
         setSuggestions([]);
         setShowSuggestions(false);
         setWidgetValue("");
         setIsUploadingPhoto(false);
         setShowNameSuggestions(false);
-    }, [buyer.id]);
+    }, [buyer.id, getInitialBuyerData]);
 
     const { triggerSave, showSavedNotification, setShowSavedNotification, showErrorNotification, errorMessage,  handleAutoSave: hookHandleAutoSave } = useAutoSave({
         onSave: async () => {
@@ -104,6 +116,15 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
     const handleChange = (field: keyof Buyer, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSocialMediaChange = (value: string) => {
+        const links = value.split('\n').map(s => s.trim()).filter(Boolean);
+        setFormData(prev => ({
+            ...prev,
+            socialMedia: value,
+            socialMediaLinks: links
+        }));
     };
 
     const updateAndSave = (updates: Partial<Buyer>) => {
@@ -471,13 +492,65 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
         });
     };
 
-    const handleDeactivate = () => {
-        if (window.confirm("Are you sure you want to deactivate this buyer? They will be moved to the Deactivated list.")) {
-            // Replace all statuses with 'Deactivated' and unsubscribe
-            const newData = { ...formData, status: 'Deactivated', subscriptionStatus: 'Unsubscribed' as any };
-            setFormData(newData); // Optimistic
-            onSave(newData, false); // Save
-            onClose(); // Close
+    const [isConfirmingDeactivate, setIsConfirmingDeactivate] = useState(false);
+    const [isConfirmingReactivate, setIsConfirmingReactivate] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
+
+    const isDeactivated = useMemo(() => {
+        return (formData.status || '').split(',').map(s => s.trim()).includes('Deactivated');
+    }, [formData.status]);
+
+    const handleExecuteDeactivate = async () => {
+        setIsDeactivating(true);
+        try {
+            const autoNote = `${getLogTimestamp()} - ${currentUser?.name || 'User'}: Buyer deactivated`;
+            const currentNotes = formData.notes || [];
+            const updatedNotes = [autoNote, ...currentNotes];
+
+            const newData: Buyer = { 
+                ...formData, 
+                status: 'Deactivated', 
+                subscriptionStatus: 'Unsubscribed' as any,
+                notes: updatedNotes
+            };
+            setFormData(newData);
+            formDataRef.current = newData;
+            initialBuyerJson.current = JSON.stringify(newData);
+            await onSave(newData, true);
+        } catch (e) {
+            console.error("Failed to deactivate buyer", e);
+            setIsDeactivating(false);
+            setIsConfirmingDeactivate(false);
+        }
+    };
+
+    const handleExecuteReactivate = async () => {
+        setIsDeactivating(true);
+        try {
+            const autoNote = `${getLogTimestamp()} - ${currentUser?.name || 'User'}: Buyer reactivated`;
+            const currentNotes = formData.notes || [];
+            const updatedNotes = [autoNote, ...currentNotes];
+
+            const remainingStatuses = (formData.status || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s && s !== 'Deactivated');
+            const newStatus = remainingStatuses.length > 0 ? remainingStatuses.join(', ') : 'New Lead';
+
+            const newData: Buyer = { 
+                ...formData, 
+                status: newStatus, 
+                subscriptionStatus: 'Subscribed' as any,
+                notes: updatedNotes
+            };
+            setFormData(newData);
+            formDataRef.current = newData;
+            initialBuyerJson.current = JSON.stringify(newData);
+            await onSave(newData, true);
+        } catch (e) {
+            console.error("Failed to reactivate buyer", e);
+            setIsDeactivating(false);
+            setIsConfirmingReactivate(false);
         }
     };
 
@@ -706,6 +779,43 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                                             </select>
                                         </div>
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1 uppercase font-bold flex items-center justify-between">
+                                        <span className="flex items-center gap-1.5"><Globe size={13} className="text-gray-400" /> Website</span>
+                                        {formData.website && (
+                                            <a 
+                                                href={formData.website.startsWith('http://') || formData.website.startsWith('https://') ? formData.website : `https://${formData.website}`} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="text-[10px] text-blue-500 hover:text-blue-600 flex items-center gap-0.5 normal-case font-normal"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                Visit <ExternalLink size={10} />
+                                            </a>
+                                        )}
+                                    </label>
+                                    <input 
+                                        type="text"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" 
+                                        value={formData.website || ''} 
+                                        onChange={e => handleChange('website', e.target.value)} 
+                                        onBlur={handleAutoSave} 
+                                        placeholder="https://example.com" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1 uppercase font-bold flex items-center gap-1.5">
+                                        <Share2 size={13} className="text-gray-400" /> Social Media
+                                    </label>
+                                    <textarea 
+                                        rows={2}
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none resize-none" 
+                                        value={formData.socialMedia || ''} 
+                                        onChange={e => handleSocialMediaChange(e.target.value)} 
+                                        onBlur={handleAutoSave} 
+                                        placeholder="Social media links, handles..." 
+                                    />
                                 </div>
                             </div>
 
@@ -1050,22 +1160,82 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
 
                     </form>
                 </div>
-            </div>
 
-                <ModalFooter 
-                    onClose={handleCloseClick} 
-                    onSave={() => triggerSave()}
-                    saveLabel="Save Buyer"
-                    showSaveButton={false}
-                >
-                    <button 
-                        type="button" 
-                        onClick={handleDeactivate} 
-                        className="bg-gray-100 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-900/20 text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700"
+                {isConfirmingDeactivate ? (
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-900/50 flex justify-between items-center shrink-0 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm">
+                            <AlertTriangle size={16} /> Are you sure you want to deactivate this buyer? They will be moved to the Deactivated list.
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsConfirmingDeactivate(false)} 
+                                className="px-4 py-2 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleExecuteDeactivate} 
+                                disabled={isDeactivating}
+                                className="px-4 py-2 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-500 shadow-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                                {isDeactivating ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+                                Yes, Deactivate
+                            </button>
+                        </div>
+                    </div>
+                ) : isConfirmingReactivate ? (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border-t border-green-100 dark:border-green-900/50 flex justify-between items-center shrink-0 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold text-sm">
+                            <CheckCircle size={16} /> Reactivate this buyer? They will be restored to active status.
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsConfirmingReactivate(false)} 
+                                className="px-4 py-2 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleExecuteReactivate} 
+                                disabled={isDeactivating}
+                                className="px-4 py-2 rounded bg-green-600 text-white text-xs font-bold hover:bg-green-500 shadow-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                                {isDeactivating ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                                Yes, Reactivate
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <ModalFooter 
+                        onClose={handleCloseClick} 
+                        onSave={() => triggerSave()}
+                        saveLabel="Save Buyer"
+                        showSaveButton={false}
                     >
-                        <Ban size={16} /> Deactivate Buyer
-                    </button>
-                </ModalFooter>
+                        {isDeactivated ? (
+                            <button 
+                                type="button" 
+                                onClick={() => setIsConfirmingReactivate(true)} 
+                                className="bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-green-300 dark:border-green-700 mr-auto"
+                            >
+                                <CheckCircle size={16} /> Reactivate Buyer
+                            </button>
+                        ) : (
+                            <button 
+                                type="button" 
+                                onClick={() => setIsConfirmingDeactivate(true)} 
+                                className="bg-gray-100 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-900/20 text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 mr-auto"
+                            >
+                                <Ban size={16} /> Deactivate Buyer
+                            </button>
+                        )}
+                    </ModalFooter>
+                )}
+            </div>
 
                 {showUnsavedWarning && (
                     <UnsavedChangesModal 

@@ -67,7 +67,9 @@ ALTER TABLE public."Buyers"
 ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT,
 ADD COLUMN IF NOT EXISTS "buyBox" JSONB,
 ADD COLUMN IF NOT EXISTS "about" TEXT,
-ADD COLUMN IF NOT EXISTS "dateAdded" TEXT;
+ADD COLUMN IF NOT EXISTS "dateAdded" TEXT,
+ADD COLUMN IF NOT EXISTS "website" TEXT,
+ADD COLUMN IF NOT EXISTS "socialMediaLinks" JSONB;
 
 -- 5. Create EmailLists table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public."EmailLists" (

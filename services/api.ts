@@ -137,6 +137,21 @@ const processIncomingItem = (item: any, tableName: string) => {
         if (processed.buyBox && typeof processed.buyBox === 'string') {
              try { processed.buyBox = JSON.parse(processed.buyBox); } catch {}
         }
+        if (processed.socialMediaLinks && typeof processed.socialMediaLinks === 'string') {
+            try { processed.socialMediaLinks = JSON.parse(processed.socialMediaLinks); } catch {}
+        }
+        if (Array.isArray(processed.socialMediaLinks)) {
+            processed.socialMedia = processed.socialMediaLinks.join('\n');
+        } else if (typeof processed.socialMediaLinks === 'string') {
+            processed.socialMedia = processed.socialMediaLinks;
+            processed.socialMediaLinks = processed.socialMediaLinks.split('\n').map((s: string) => s.trim()).filter(Boolean);
+        } else if (processed.socialMedia) {
+            processed.socialMediaLinks = String(processed.socialMedia).split('\n').map((s: string) => s.trim()).filter(Boolean);
+        } else {
+            processed.socialMedia = '';
+            processed.socialMediaLinks = [];
+        }
+        processed.website = processed.website || '';
     }
 
     // Process Agents
@@ -331,6 +346,24 @@ export const api = {
             }
             // Remove name if the db doesn't have it, but wait, if it does, it's fine
         }
+
+        if (table === 'Buyers') {
+            if (payload.website !== undefined) {
+                payload.website = payload.website ? String(payload.website).trim() : null;
+            }
+            if (payload.socialMediaLinks !== undefined || payload.socialMedia !== undefined) {
+                let links: string[] = [];
+                if (Array.isArray(payload.socialMediaLinks)) {
+                    links = payload.socialMediaLinks.map((s: any) => String(s).trim()).filter(Boolean);
+                } else if (typeof payload.socialMediaLinks === 'string') {
+                    links = payload.socialMediaLinks.split('\n').map((s: string) => s.trim()).filter(Boolean);
+                } else if (typeof payload.socialMedia === 'string') {
+                    links = payload.socialMedia.split('\n').map((s: string) => s.trim()).filter(Boolean);
+                }
+                payload.socialMediaLinks = links;
+            }
+            delete payload.socialMedia;
+        }
         
         if (table === 'Deals' || table === 'JVDeals') {
             if (payload.interestedBuyers && typeof payload.interestedBuyers === 'object') {
@@ -439,6 +472,23 @@ export const api = {
                     payload.agentFirstName = parts[0];
                     payload.agentLastName = parts.slice(1).join(' ');
                 }
+            }
+            if (table === 'Buyers') {
+                if (payload.website !== undefined) {
+                    payload.website = payload.website ? String(payload.website).trim() : null;
+                }
+                if (payload.socialMediaLinks !== undefined || payload.socialMedia !== undefined) {
+                    let links: string[] = [];
+                    if (Array.isArray(payload.socialMediaLinks)) {
+                        links = payload.socialMediaLinks.map((s: any) => String(s).trim()).filter(Boolean);
+                    } else if (typeof payload.socialMediaLinks === 'string') {
+                        links = payload.socialMediaLinks.split('\n').map((s: string) => s.trim()).filter(Boolean);
+                    } else if (typeof payload.socialMedia === 'string') {
+                        links = payload.socialMedia.split('\n').map((s: string) => s.trim()).filter(Boolean);
+                    }
+                    payload.socialMediaLinks = links;
+                }
+                delete payload.socialMedia;
             }
             if (table === 'Deals' || table === 'JVDeals') {
                 if (payload.interestedBuyers && typeof payload.interestedBuyers === 'object') {
