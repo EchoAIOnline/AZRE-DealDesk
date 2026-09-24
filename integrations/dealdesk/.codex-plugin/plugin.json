@@ -1,0 +1,26 @@
+{
+  "name": "dealdesk",
+  "version": "0.1.0",
+  "description": "Operate AZRE DealDesk through scoped MCP tools.",
+  "author": {
+    "name": "AZRE"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AZRE DealDesk",
+    "shortDescription": "Deal pipeline, buyer matching, and follow-ups.",
+    "longDescription": "Read deals and contacts, screen buyer buy boxes, and make controlled internal updates through a dedicated organization-scoped DealDesk backend.",
+    "developerName": "AZRE",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Review my active acquisition pipeline.",
+      "Find buyers whose buy boxes fit this deal.",
+      "Show deals that need follow-up."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

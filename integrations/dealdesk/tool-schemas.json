@@ -1,0 +1,1525 @@
+[
+  {
+    "name": "search_deals",
+    "description": "Search deals in the configured DealDesk organization. query searches address; filters are exact matches. Follow next_offset for more pages.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "offerDecision": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "subMarket": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "neighborhood": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "county": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "propertyType": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "acquisitionManager": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "include_archived": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "offset",
+        "limit",
+        "include_archived"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "get_deal",
+    "description": "Read one deal, including its _revision for a later update. Archived records can be read by ID.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        }
+      },
+      "required": [
+        "deal_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "search_buyers",
+    "description": "Search buyers in the configured DealDesk organization. query searches name; filters are exact matches. Follow next_offset for more pages.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "companyName": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "include_archived": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "offset",
+        "limit",
+        "include_archived"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "get_buyer",
+    "description": "Read one buyer, including its _revision for a later update. Archived records can be read by ID.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "buyer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        }
+      },
+      "required": [
+        "buyer_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "search_agents",
+    "description": "Search agents in the configured DealDesk organization. query searches name; filters are exact matches. Follow next_offset for more pages.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "brokerage": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "doNotCall": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "include_archived": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "offset",
+        "limit",
+        "include_archived"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "get_agent",
+    "description": "Read one agent, including its _revision for a later update. Archived records can be read by ID.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        }
+      },
+      "required": [
+        "agent_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "search_tasks",
+    "description": "Search tasks in the configured DealDesk organization. query searches title; filters are exact matches. Follow next_offset for more pages.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "entityType": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "entityId": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "assignee": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "include_archived": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "offset",
+        "limit",
+        "include_archived"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "create_deal",
+    "description": "Create a deal. Use a fresh UUID request_id once per intended creation and reuse it if retrying. ",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "mls": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "offerPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "agentName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentPhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentEmail": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "agentBrokerage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "acquisitionManager": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "offerDecision": {
+              "type": "string",
+              "enum": [
+                "No Offer Made Yet",
+                "Seller Counter-Offered",
+                "Monitoring Pending Status Before Offer",
+                "Requires A Buyers Agent",
+                "Made Verbal Offer On Property",
+                "Made Written Offer On Property",
+                "Monitoring Pending Status After Offer",
+                "Monitoring Offer After Seller Declined",
+                "Analyzing",
+                "Seller Accepted Offer",
+                "Agent Sending Contract",
+                "Deal Under Contract",
+                "Listing Removed - Now Off Market",
+                "Offer Declined",
+                "Offer Declined and Sold",
+                "Sold To Another Investor",
+                "Deal Canceled",
+                "Priced Too High To Buy",
+                "No Longer Interested In Buying",
+                "Declined",
+                "Deal No Longer Available",
+                "Deal Successfully Closed"
+              ]
+            },
+            "subMarket": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "neighborhood": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "county": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dealType": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            },
+            "propertyType": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listingDescription": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "originalAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "reducedAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "negotiatedAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "desiredWholesaleProfit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "bedrooms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "bathrooms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "sqft": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "lotSqft": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "yearBuilt": {
+              "type": "integer",
+              "minimum": 1600,
+              "maximum": 2200
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestLevel": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "contactStatus": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "address"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "request_id",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "update_deal",
+    "description": "Update allowed deal fields after reading the record. This records internal data; it never communicates externally or executes an offer. Buy box fields are merged with existing criteria.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "mls": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "offerPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "agentName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentPhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentEmail": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "agentBrokerage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "acquisitionManager": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "offerDecision": {
+              "type": "string",
+              "enum": [
+                "No Offer Made Yet",
+                "Seller Counter-Offered",
+                "Monitoring Pending Status Before Offer",
+                "Requires A Buyers Agent",
+                "Made Verbal Offer On Property",
+                "Made Written Offer On Property",
+                "Monitoring Pending Status After Offer",
+                "Monitoring Offer After Seller Declined",
+                "Analyzing",
+                "Seller Accepted Offer",
+                "Agent Sending Contract",
+                "Deal Under Contract",
+                "Listing Removed - Now Off Market",
+                "Offer Declined",
+                "Offer Declined and Sold",
+                "Sold To Another Investor",
+                "Deal Canceled",
+                "Priced Too High To Buy",
+                "No Longer Interested In Buying",
+                "Declined",
+                "Deal No Longer Available",
+                "Deal Successfully Closed"
+              ]
+            },
+            "subMarket": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "neighborhood": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "county": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dealType": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            },
+            "propertyType": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listingDescription": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "originalAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "reducedAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "negotiatedAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "desiredWholesaleProfit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "bedrooms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "bathrooms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "sqft": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "lotSqft": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "yearBuilt": {
+              "type": "integer",
+              "minimum": 1600,
+              "maximum": 2200
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestLevel": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "contactStatus": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "deal_id",
+        "fields",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "create_buyer",
+    "description": "Create a buyer. Use a fresh UUID request_id once per intended creation and reuse it if retrying. ",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "phone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "New Lead",
+                "Vetted Buyer",
+                "Repeat Buyer",
+                "VIP Buyer",
+                "Deactivated"
+              ]
+            },
+            "buyBox": {
+              "type": "object",
+              "properties": {
+                "locations": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "minPrice": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxPrice": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "minArv": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxArv": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxRenoBudget": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "earliestYearBuilt": {
+                  "type": "integer",
+                  "minimum": 1600,
+                  "maximum": 2200
+                },
+                "latestYearBuilt": {
+                  "type": "integer",
+                  "minimum": 1600,
+                  "maximum": 2200
+                },
+                "propertyTypes": {
+                  "maxItems": 50,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "minBedrooms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "minBathrooms": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "minSqft": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxSqft": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "additionalProperties": false
+            },
+            "propertiesBought": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "about": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "request_id",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "update_buyer",
+    "description": "Update allowed buyer fields after reading the record. This records internal data; it never communicates externally or executes an offer. Buy box fields are merged with existing criteria.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "buyer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "phone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "New Lead",
+                "Vetted Buyer",
+                "Repeat Buyer",
+                "VIP Buyer",
+                "Deactivated"
+              ]
+            },
+            "buyBox": {
+              "type": "object",
+              "properties": {
+                "locations": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "minPrice": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxPrice": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "minArv": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxArv": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxRenoBudget": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "earliestYearBuilt": {
+                  "type": "integer",
+                  "minimum": 1600,
+                  "maximum": 2200
+                },
+                "latestYearBuilt": {
+                  "type": "integer",
+                  "minimum": 1600,
+                  "maximum": 2200
+                },
+                "propertyTypes": {
+                  "maxItems": 50,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "minBedrooms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "minBathrooms": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "minSqft": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "maxSqft": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000000
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "additionalProperties": false
+            },
+            "propertiesBought": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "about": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "buyer_id",
+        "fields",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "create_task",
+    "description": "Create a task. Use a fresh UUID request_id once per intended creation and reuse it if retrying. Tasks are stored in the plugin task table and can be retrieved with search_tasks.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "entityType": {
+              "type": "string",
+              "enum": [
+                "Deals",
+                "Buyers",
+                "Agents"
+              ]
+            },
+            "entityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "dueDate": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "assignee": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "Open",
+                "Completed"
+              ]
+            }
+          },
+          "required": [
+            "title",
+            "entityType",
+            "entityId",
+            "dueDate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "request_id",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "update_offer",
+    "description": "Update a deal’s recorded offer and negotiation fields. Offers live on Deals; this does not send an offer, sign a contract, or transfer money.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "offerPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "offerDecision": {
+              "type": "string",
+              "enum": [
+                "No Offer Made Yet",
+                "Seller Counter-Offered",
+                "Monitoring Pending Status Before Offer",
+                "Requires A Buyers Agent",
+                "Made Verbal Offer On Property",
+                "Made Written Offer On Property",
+                "Monitoring Pending Status After Offer",
+                "Monitoring Offer After Seller Declined",
+                "Analyzing",
+                "Seller Accepted Offer",
+                "Agent Sending Contract",
+                "Deal Under Contract",
+                "Listing Removed - Now Off Market",
+                "Offer Declined",
+                "Offer Declined and Sold",
+                "Sold To Another Investor",
+                "Deal Canceled",
+                "Priced Too High To Buy",
+                "No Longer Interested In Buying",
+                "Declined",
+                "Deal No Longer Available",
+                "Deal Successfully Closed"
+              ]
+            },
+            "negotiatedAskingPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "desiredWholesaleProfit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "deal_id",
+        "fields",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "create_note",
+    "description": "Append one internal note to the existing deal logs or buyer/agent notes, preserving existing entries. Read the record first.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "type": "string",
+          "enum": [
+            "Deals",
+            "Buyers",
+            "Agents"
+          ]
+        },
+        "record_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "record_type",
+        "record_id",
+        "text",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "archive_record",
+    "description": "Reversibly hide a deal, buyer, or agent from plugin searches and matching. The current DealDesk web UI does not filter this archive flag. Requires archive permission.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "type": "string",
+          "enum": [
+            "Deals",
+            "Buyers",
+            "Agents"
+          ]
+        },
+        "record_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "record_type",
+        "record_id",
+        "reason",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "restore_record",
+    "description": "Restore a record archived through the plugin. Requires archive permission.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "record_type": {
+          "type": "string",
+          "enum": [
+            "Deals",
+            "Buyers",
+            "Agents"
+          ]
+        },
+        "record_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The _revision returned by the most recent read; stale edits are rejected."
+        }
+      },
+      "required": [
+        "record_type",
+        "record_id",
+        "expected_revision"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "match_buyers",
+    "description": "Screen one buyer page against a deal’s recorded buy boxes. Returns fit, mismatches and missing data; never treats missing criteria as confirmed fit. Follow next_offset to screen all buyers. No outreach is sent.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "offset": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "limit": {
+          "default": 25,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "deal_id",
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+]

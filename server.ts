@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
+import { makeHandler as makeDealDeskPluginHandler } from "./integrations/dealdesk/backend/handler.mjs";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -490,6 +491,9 @@ Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales withi
       let errorMessage = err.message; try { const parsed = JSON.parse(err.message); if (parsed.error && parsed.error.message) { errorMessage = parsed.error.message; } } catch (e) {} res.status(500).json({ status: "error", message: errorMessage });
     }
   });
+
+  // Dedicated, organization-scoped MCP plugin endpoint.
+  app.post("/api/ai/plugin", makeDealDeskPluginHandler({ createClient }));
 
   // --- AI Employee Operating Endpoint ---
   app.post("/api/ai/operate", async (req, res) => {

@@ -8,7 +8,8 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:plugin": "npm --prefix integrations/dealdesk test"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1079.0",
@@ -26,7 +27,8 @@
     "react-quill-new": "^3.3.3",
     "react-router-dom": "^7.13.1",
     "recharts": "^3.7.0",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.11",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
