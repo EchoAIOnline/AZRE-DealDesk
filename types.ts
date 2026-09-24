@@ -366,11 +366,17 @@ export interface InboxMessage {
   contactPhone: string;
   contactEmail?: string;
   propertyAddress?: string;
+  subject?: string;
   lastMessage: string;
   timestamp: string;
   unread: boolean;
   type: 'SMS' | 'Email';
   direction: 'inbound' | 'outbound';
+  body?: string;
+  bodyPreview?: string;
+  bodyType?: 'html' | 'text';
+  toRecipients?: { name?: string; address: string }[];
+  msEmailData?: any;
 }
 
 export interface OfferTemplate {

@@ -346,8 +346,8 @@ app.get('/api/emails/acquisitions', async (req, res) => {
     return res.status(401).json({ error: 'Not connected to Microsoft' });
   }
   try {
-    // Fetch top 50 emails
-    const response = await fetch('https://graph.microsoft.com/v1.0/me/messages?$top=50&$select=id,subject,bodyPreview,receivedDateTime,from', {
+    // Fetch top 50 emails including full body, recipients, and read status
+    const response = await fetch('https://graph.microsoft.com/v1.0/me/messages?$top=50&$select=id,subject,bodyPreview,body,receivedDateTime,from,toRecipients,hasAttachments,isRead', {
       headers: {
         'Authorization': `Bearer ${msAccessToken}`
       }
@@ -363,6 +363,29 @@ app.get('/api/emails/acquisitions', async (req, res) => {
   } catch (err) {
     console.error('Error fetching emails:', err);
     res.status(500).json({ error: 'Failed to fetch emails' });
+  }
+});
+
+// Single email details endpoint
+app.get('/api/emails/:id', async (req, res) => {
+  if (!msAccessToken) {
+    return res.status(401).json({ error: 'Not connected to Microsoft' });
+  }
+  try {
+    const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(req.params.id)}?$select=id,subject,bodyPreview,body,receivedDateTime,from,toRecipients,hasAttachments,isRead`, {
+      headers: {
+        'Authorization': `Bearer ${msAccessToken}`
+      }
+    });
+    if (response.status === 401) {
+      msAccessToken = null;
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('Error fetching single email:', err);
+    res.status(500).json({ error: 'Failed to fetch email details' });
   }
 });
 
