@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { X, Save, Building, User, Phone, Mail, MapPin, DollarSign, Home, FileText, Plus, Upload, CheckCircle, LayoutGrid, Loader2, ArrowRightLeft, Activity, Ban, AlertTriangle, Globe, Share2, ExternalLink } from 'lucide-react';
+import { X, Save, Building, User, Phone, Mail, MapPin, DollarSign, Home, FileText, Plus, Upload, CheckCircle, LayoutGrid, Loader2, ArrowRightLeft, Activity, Ban, AlertTriangle, Globe, Share2, ExternalLink, Trash2 } from 'lucide-react';
 import { Buyer, BuyBox, Deal, User as UserType } from '../../types';
 import { formatPhoneNumber, getLogTimestamp, parseNumberFromCurrency, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
 import { COUNTIES, SUB_MARKETS, ATLANTA_NEIGHBORHOODS, GOOGLE_MAPS_API_KEY } from '../../constants';
@@ -19,6 +19,7 @@ interface EditBuyerModalProps {
     hasPrevious?: boolean;
     deals?: Deal[];
     onOpenDeal?: (deal: Deal) => void;
+    onDelete?: (id: string) => void | Promise<void>;
     allBuyers?: Buyer[];
     onSwitchToBuyer?: (buyer: Buyer) => void;
     onMoveToAgent?: () => void;
@@ -30,7 +31,7 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
     buyer, onSave, onClose,
     currentUser,
     onNavigate, hasNext = false, hasPrevious = false,
-    deals = [], onOpenDeal,
+    deals = [], onOpenDeal, onDelete,
     allBuyers = [], onSwitchToBuyer,
     onMoveToAgent, onMoveToWholesaler,
     zIndex = 'z-[140]'
@@ -551,6 +552,23 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
             console.error("Failed to reactivate buyer", e);
             setIsDeactivating(false);
             setIsConfirmingReactivate(false);
+        }
+    };
+
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleExecuteDelete = async () => {
+        setIsDeleting(true);
+        try {
+            if (onDelete) {
+                await Promise.resolve(onDelete(formData.id));
+            }
+            onClose();
+        } catch (e) {
+            console.error("Failed to delete buyer", e);
+            setIsDeleting(false);
+            setIsConfirmingDelete(false);
         }
     };
 
@@ -1209,6 +1227,30 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                             </button>
                         </div>
                     </div>
+                ) : isConfirmingDelete ? (
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-900/50 flex justify-between items-center shrink-0 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm">
+                            <AlertTriangle size={16} /> Are you sure you want to delete this buyer? This action cannot be undone.
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsConfirmingDelete(false)} 
+                                className="px-4 py-2 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleExecuteDelete} 
+                                disabled={isDeleting}
+                                className="px-4 py-2 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-500 shadow-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                                {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
                 ) : (
                     <ModalFooter 
                         onClose={handleCloseClick} 
@@ -1216,23 +1258,32 @@ export const EditBuyerModal: React.FC<EditBuyerModalProps> = ({
                         saveLabel="Save Buyer"
                         showSaveButton={false}
                     >
-                        {isDeactivated ? (
+                        <div className="flex items-center gap-3 mr-auto">
+                            {isDeactivated ? (
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsConfirmingReactivate(true)} 
+                                    className="bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-green-300 dark:border-green-700"
+                                >
+                                    <CheckCircle size={16} /> Reactivate Buyer
+                                </button>
+                            ) : (
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsConfirmingDeactivate(true)} 
+                                    className="bg-gray-100 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-900/20 text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700"
+                                >
+                                    <Ban size={16} /> Deactivate Buyer
+                                </button>
+                            )}
                             <button 
                                 type="button" 
-                                onClick={() => setIsConfirmingReactivate(true)} 
-                                className="bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-green-300 dark:border-green-700 mr-auto"
+                                onClick={() => setIsConfirmingDelete(true)} 
+                                className="bg-gray-100 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-900/20 text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700"
                             >
-                                <CheckCircle size={16} /> Reactivate Buyer
+                                <Trash2 size={16} /> Delete Buyer
                             </button>
-                        ) : (
-                            <button 
-                                type="button" 
-                                onClick={() => setIsConfirmingDeactivate(true)} 
-                                className="bg-gray-100 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-900/20 text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 mr-auto"
-                            >
-                                <Ban size={16} /> Deactivate Buyer
-                            </button>
-                        )}
+                        </div>
                     </ModalFooter>
                 )}
             </div>
