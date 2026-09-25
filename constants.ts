@@ -30,11 +30,15 @@ export const DECLINED_STATUSES = [
   'Offer Declined', 
   'Offer Declined and Sold', 
   'Sold To Another Investor', 
-  'Deal Canceled', 
   'Priced Too High To Buy', 
   'No Longer Interested In Buying',
   'Declined',
   'Deal No Longer Available'
+];
+
+export const CANCELED_STATUSES = [
+  'Deal Canceled',
+  'Canceled'
 ];
 
 export const CLOSED_STATUSES = [
@@ -50,6 +54,7 @@ export const OFFER_DECISIONS = [
     ...POTENTIAL_STATUSES,
     ...UNDER_CONTRACT_STATUSES,
     ...DECLINED_STATUSES,
+    ...CANCELED_STATUSES,
     ...CLOSED_STATUSES
 ];
 

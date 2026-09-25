@@ -43,7 +43,7 @@ import { GeminiChat } from './components/GeminiChat/GeminiChat';
 import { mockAcquisitionsMessages, mockDispositionsMessages } from './services/mockData';
 import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64, calculateDaysRemaining } from './services/utils';
 import { User as UserType, Deal, Agent, Brokerage, FilterConfig, CalcData, Buyer, BuyBox, Wholesaler, Contact, EmailList } from './types';
-import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CLOSED_STATUSES, GOOGLE_MAPS_API_KEY, GOOGLE_SCRIPT_URL, COUNTER_STATUSES, SUB_MARKETS, COUNTIES, BUYER_STATUS_TABS, AGENT_STATUS_TABS, WHOLESALER_STATUS_TABS, OFFER_DECISIONS, DFD_PIPELINE_STATUSES } from './constants';
+import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES, GOOGLE_MAPS_API_KEY, GOOGLE_SCRIPT_URL, COUNTER_STATUSES, SUB_MARKETS, COUNTIES, BUYER_STATUS_TABS, AGENT_STATUS_TABS, WHOLESALER_STATUS_TABS, OFFER_DECISIONS, DFD_PIPELINE_STATUSES } from './constants';
 
 export default function App() {
   const location = useLocation();
@@ -1841,6 +1841,7 @@ export default function App() {
                 case 'Under Contract': statusesToShow = UNDER_CONTRACT_STATUSES; break;
                 case 'Closed': statusesToShow = CLOSED_STATUSES; break;
                 case 'Declined': statusesToShow = DECLINED_STATUSES; break;
+                case 'Canceled': statusesToShow = CANCELED_STATUSES; break;
             }
         }
     }

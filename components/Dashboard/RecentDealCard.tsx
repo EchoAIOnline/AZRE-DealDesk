@@ -3,7 +3,7 @@ import { User, ChevronDown, Clock } from 'lucide-react';
 import { Deal } from '../../types';
 import { formatCurrency, processPhotoUrl, calculateDaysRemaining } from '../../services/utils';
 
-import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CLOSED_STATUSES } from '../../constants';
+import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES } from '../../constants';
 
 interface RecentDealCardProps {
     deal: Deal;
@@ -30,6 +30,7 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
         if (UNDER_CONTRACT_STATUSES.includes(status)) return 'bg-green-600 text-white';
         if (CLOSED_STATUSES.includes(status)) return 'bg-purple-600 text-white';
         if (DECLINED_STATUSES.includes(status)) return 'bg-red-600 text-white';
+        if (CANCELED_STATUSES.includes(status)) return 'bg-orange-600 text-white';
         return 'bg-yellow-500 text-white';
     };
 

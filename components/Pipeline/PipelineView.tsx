@@ -3,7 +3,7 @@ import { Layout, X, Mail, Loader2, CheckCircle } from 'lucide-react';
 import { Deal, Agent, FilterConfig, Campaign } from '../../types';
 import { PageNavBar } from '../Shared/PageNavBar';
 import { DealCard } from '../Deals/DealCard';
-import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, DFD_PIPELINE_STATUSES } from '../../constants';
+import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, DFD_PIPELINE_STATUSES } from '../../constants';
 import { useAppStore } from '../../store/useAppStore';
 import { api, sendBulkEmailGAS } from '../../services/api';
 import { generateId, formatCurrency } from '../../services/utils';
@@ -167,7 +167,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         { id: 'Potential', label: 'Potential', count: (filteredDeals || []).filter(d => d && POTENTIAL_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
         { id: 'Under Contract', label: 'Under Contract', count: (filteredDeals || []).filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
         { id: 'Closed', label: 'Closed', count: (filteredDeals || []).filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
-        { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
+        { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' },
+        { id: 'Canceled', label: 'Canceled', count: (filteredDeals || []).filter(d => d && CANCELED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' }
     ];
 
     return (
@@ -296,6 +297,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 case 'Under Contract': statusesToShow = UNDER_CONTRACT_STATUSES; break; 
                                 case 'Closed': statusesToShow = CLOSED_STATUSES; break; 
                                 case 'Declined': statusesToShow = DECLINED_STATUSES; break; 
+                                case 'Canceled': statusesToShow = CANCELED_STATUSES; break; 
                             } 
                         } 
                     }
