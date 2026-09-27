@@ -22,6 +22,7 @@ import {
     POTENTIAL_STATUSES, 
     COUNTER_STATUSES, 
     DECLINED_STATUSES, 
+    CANCELED_STATUSES,
     CLOSED_STATUSES 
 } from '../../constants';
 import { MatchingEngine } from '../../services/matchingLogic';
@@ -1942,11 +1943,11 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     const now = new Date().toISOString();
     if (UNDER_CONTRACT_STATUSES.includes(newStatus) && !UNDER_CONTRACT_STATUSES.includes(deal.offerDecision)) updates.underContractDate = now;
     if (CLOSED_STATUSES.includes(newStatus) && !CLOSED_STATUSES.includes(deal.offerDecision)) updates.closedDate = now;
-    if (DECLINED_STATUSES.includes(newStatus) && !DECLINED_STATUSES.includes(deal.offerDecision)) updates.declinedDate = now;
+    if ((DECLINED_STATUSES.includes(newStatus) || CANCELED_STATUSES.includes(newStatus)) && !DECLINED_STATUSES.includes(deal.offerDecision) && !CANCELED_STATUSES.includes(deal.offerDecision)) updates.declinedDate = now;
     updateDealState(updates); 
     if(onUpdate) onUpdate(deal.id, updates);
     triggerSave(); 
-}}><option disabled>-- Potential Deals --</option>{POTENTIAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Under Contract --</option>{UNDER_CONTRACT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Counter Offers --</option>{COUNTER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Declined / Dead --</option>{DECLINED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Closed --</option>{CLOSED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+}}><option disabled>-- Potential Deals --</option>{POTENTIAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Under Contract --</option>{UNDER_CONTRACT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Counter Offers --</option>{COUNTER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Declined / Dead --</option>{DECLINED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Canceled --</option>{CANCELED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Closed --</option>{CLOSED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
                                 <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}><option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option><option value="Sent LOI Email">Sent LOI Email</option><option value="Sent Initial Text Message">Sent Initial Text Message</option><option value="First Call, No Answer">First Call, No Answer</option><option value="Spoke With Agent">Spoke With Agent</option><option value="Waiting To Hear Back">Waiting To Hear Back</option><option value="Offer Declined">Offer Declined</option><option value="Offer Accepted">Offer Accepted</option></select></div><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}><option value="" disabled>Unassigned</option><option value="Ashari Zakar">Ashari Zakar</option><option value="Angelica Henderson">Angelica Henderson</option><option value="Grias Ramos">Grias Ramos</option></select></div></div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-800/50">

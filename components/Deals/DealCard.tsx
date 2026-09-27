@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Phone, Mail, Briefcase, User, RefreshCw, XCircle, ArrowRight, ChevronUp, ChevronDown, ImageIcon, Pencil, MapPin, DollarSign, Clock } from 'lucide-react';
 import { Deal, Agent } from '../../types';
-import { GOOGLE_MAPS_API_KEY, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CLOSED_STATUSES } from '../../constants';
+import { GOOGLE_MAPS_API_KEY, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES } from '../../constants';
 // ✅ FIXED IMPORT: Added processPhotoUrl
 import { calculateDaysRemaining, formatCurrency, getLogTimestamp, serverFunctions, processPhotoUrl } from '../../services/utils';
 
@@ -19,6 +19,7 @@ interface DealCardProps {
 export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpdate, onDelete, onEdit, selected = false, onSelect }) => {
   const isUnderContract = UNDER_CONTRACT_STATUSES.includes(deal.offerDecision);
   const isDeclined = DECLINED_STATUSES.includes(deal.offerDecision);
+  const isCanceled = CANCELED_STATUSES.includes(deal.offerDecision);
   const isClosed = CLOSED_STATUSES.includes(deal.offerDecision);
   const isCurrent = isUnderContract; 
   
@@ -188,7 +189,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
         )}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900/50 dark:from-gray-900/90 to-transparent pointer-events-none"></div>
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-            <div className={`px-2 py-1 rounded text-xs font-bold shadow-sm ${isClosed ? 'bg-purple-600 text-white' : isUnderContract ? 'bg-green-600 text-white' : isDeclined ? 'bg-red-600 text-white' : 'bg-yellow-500 text-white'}`}>
+            <div className={`px-2 py-1 rounded text-xs font-bold shadow-sm ${isClosed ? 'bg-purple-600 text-white' : isUnderContract ? 'bg-green-600 text-white' : isDeclined ? 'bg-red-600 text-white' : isCanceled ? 'bg-orange-600 text-white' : 'bg-yellow-500 text-white'}`}>
               {deal.offerDecision || 'New'}
             </div>
         </div>
@@ -325,7 +326,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
         )}
         
         <div className="flex gap-2 mt-2 border-t border-gray-200 dark:border-gray-700/50 pt-2">
-            {isDeclined ? (
+            {isDeclined || isCanceled ? (
                 isRestoring ? (
                     <>
                         <button onClick={(e) => { e.stopPropagation(); onMove(deal.id, 'No Offer Made Yet'); setIsRestoring(false); }} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs py-2 rounded font-bold animate-in fade-in">Confirm</button>
