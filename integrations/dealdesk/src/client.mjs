@@ -1,17 +1,18 @@
 import { DomainError, fail } from './domain.mjs';
 
 export class DealDeskClient {
-  constructor({url,apiKey,fetchImpl=fetch,timeout=15000}) {
+  constructor({url,apiKey,fetchImpl=fetch,timeout=15000,previewBypass}) {
     const endpoint=new URL(url);
     if (endpoint.protocol !== 'https:' && !(endpoint.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(endpoint.hostname))) throw new Error('DealDesk URL must use HTTPS (HTTP allowed only on loopback).');
     if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw new Error('DealDesk URL must not contain credentials, query parameters, or fragments.');
     if (!apiKey || apiKey.length < 32) throw new Error('A dedicated DEALDESK_PLUGIN_API_KEY of at least 32 characters is required.');
-    this.url=endpoint.href; this.apiKey=apiKey; this.fetch=fetchImpl; this.timeout=timeout;
+    if (previewBypass && !endpoint.hostname.endsWith('.vercel.app')) throw new Error('Preview credential requires a vercel.app endpoint.');
+    this.previewBypass=previewBypass; this.url=endpoint.href; this.apiKey=apiKey; this.fetch=fetchImpl; this.timeout=timeout;
   }
   async operate(request) {
     let response;
     try {
-      response=await this.fetch(this.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${this.apiKey}`},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(this.timeout)});
+      response=await this.fetch(this.url,{method:'POST',headers:{...(this.previewBypass?{'x-vercel-protection-bypass':this.previewBypass}:{}),'Content-Type':'application/json',Authorization:`Bearer ${this.apiKey}`},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(this.timeout)});
     } catch {
       fail('CONNECTION_ERROR',request.action === 'read' ? 'Could not reach DealDesk.' : 'Write outcome is unknown. Read the record or request_id before retrying.');
     }

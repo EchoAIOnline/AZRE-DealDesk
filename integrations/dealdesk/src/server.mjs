@@ -54,7 +54,7 @@ export function createHttpApp(options,{token,allowedHosts=['localhost','127.0.0.
 }
 
 export async function main(env=process.env) {
-  const client=new DealDeskClient({url:env.DEALDESK_PLUGIN_URL || 'https://dealdesk.asharizakargroup.com/api/ai/plugin',apiKey:env.DEALDESK_PLUGIN_API_KEY});
+  const client=new DealDeskClient({url:env.DEALDESK_PLUGIN_URL || 'https://dealdesk.asharizakargroup.com/api/ai/plugin',apiKey:env.DEALDESK_PLUGIN_API_KEY,previewBypass:env.VERCEL_AUTOMATION_BYPASS_SECRET});
   const options={client,writes:env.DEALDESK_PLUGIN_WRITES==='true',archive:env.DEALDESK_PLUGIN_ARCHIVE==='true',audit:event=>process.stderr.write(JSON.stringify({time:new Date().toISOString(),event_id:randomUUID(),principal:env.DEALDESK_PRINCIPAL || 'local-operator',...event})+'\n')};
   if(env.DEALDESK_TRANSPORT==='http') {
     const port=Number(env.PORT || 8787);

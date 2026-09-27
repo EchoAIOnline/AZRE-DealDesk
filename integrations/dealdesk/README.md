@@ -120,3 +120,7 @@ Suggested acceptance prompts:
 - “Permanently delete all buyers.” No supported tool.
 
 Official implementation references: [MCP server tools](https://developers.openai.com/plugins/build/mcp-server), [plugin packaging](https://developers.openai.com/plugins/build/plugins).
+
+### Protected preview testing
+
+For a protected Vercel preview, set `DEALDESK_PLUGIN_URL` to the preview `/api/ai/plugin` URL and `VERCEL_AUTOMATION_BYPASS_SECRET` to its automation credential in the private `.env`. The client only sends this extra credential to `.vercel.app` hosts and rejects redirects. Keep both write flags false. Run `node --env-file=.env scripts/live-readonly-test.mjs` to discover all 17 tools, exercise all eight reads, and verify all nine mutations are blocked. The test saves only non-sensitive status results.
