@@ -75,7 +75,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
                 if (sessionError) {
                     if (sessionError.message?.toLowerCase().includes("refresh token")) {
-                        await supabase.auth.signOut();
+                        // Clear only this browser session; preserve hosted MCP authorization.
+                        await supabase.auth.signOut({ scope: 'local' });
                     } else {
                         console.warn("Session error:", sessionError);
                     }

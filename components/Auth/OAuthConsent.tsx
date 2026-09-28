@@ -21,12 +21,14 @@ export function OAuthConsent() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   async function load() {
     setBusy(true); setError(''); setDetails(null);
     try {
-      if (!authorizationId || !/^[A-Za-z0-9_-]{10,200}$/.test(authorizationId)) throw Error('Start the DealDesk connection from ChatGPT to continue.');
       const { data: { session } } = await auth.auth.getSession();
+      setSessionEmail(session?.user.email ?? null);
+      if (!authorizationId || !/^[A-Za-z0-9_-]{10,200}$/.test(authorizationId)) throw Error('Start the DealDesk connection from ChatGPT to continue.');
       if (!session) { setNeedsLogin(true); return; }
       setNeedsLogin(false);
       const permission = await fetch('/api/mcp?view=consent', { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' });
@@ -42,6 +44,16 @@ export function OAuthConsent() {
     finally { setBusy(false); }
   }
   useEffect(() => { void load(); }, []);
+
+  async function signOutBrowser() {
+    setBusy(true); setError('');
+    try {
+      const { error: signOutError } = await auth.auth.signOut({ scope: 'local' });
+      if (signOutError) throw signOutError;
+      setSessionEmail(null); setDetails(null); setNeedsLogin(Boolean(authorizationId));
+    } catch { setError('Unable to sign out. Please try again.'); }
+    finally { setBusy(false); }
+  }
 
   async function signIn(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('');
@@ -67,6 +79,11 @@ export function OAuthConsent() {
       <h1 className="mt-3 text-2xl font-semibold">Connect AZRE to ChatGPT</h1>
       <p className="mt-3 text-slate-300">Read your deals, buyers, agents and tasks, and check buyer matches.</p>
       <p className="mt-3 text-sm text-slate-400">Read-only access. This connection cannot create, edit, delete or archive records, or send messages.</p>
+      {sessionEmail && <div className="mt-4 text-sm text-slate-400">
+        <p>Browser signed in as {sessionEmail}</p>
+        <button disabled={busy} onClick={() => void signOutBrowser()} className="mt-2 underline disabled:opacity-50">Sign out of this browser</button>
+        <p className="mt-2">Signing out here keeps existing ChatGPT connections authorized. Disconnect them in ChatGPT to revoke access.</p>
+      </div>}
       {error && <p role="alert" className="mt-5 rounded-lg bg-red-950 p-3 text-red-200">{error}</p>}
       {needsLogin && <form onSubmit={signIn} className="mt-6 space-y-4">
         <label className="block">DealDesk email<input type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 w-full rounded-lg bg-slate-800 p-3" /></label>
