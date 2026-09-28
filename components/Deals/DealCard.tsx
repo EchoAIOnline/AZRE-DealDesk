@@ -38,10 +38,14 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   const daysToEMD = calculateDaysRemaining(deal.emdDate);
 
   let arvToDisplay: number | undefined = undefined;
-  if (deal.renovationARV && deal.renovationARV > 0) {
-    arvToDisplay = deal.renovationARV;
-  } else if (deal.newConstructionARV && deal.newConstructionARV > 0) {
-    arvToDisplay = deal.newConstructionARV;
+  if (deal.newConstructionARVToggle) {
+    arvToDisplay = (deal.newConstructionARV && deal.newConstructionARV > 0) 
+      ? deal.newConstructionARV 
+      : deal.renovationARV;
+  } else {
+    arvToDisplay = (deal.renovationARV && deal.renovationARV > 0) 
+      ? deal.renovationARV 
+      : deal.newConstructionARV;
   }
 
 

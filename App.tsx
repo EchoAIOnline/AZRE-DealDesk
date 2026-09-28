@@ -2380,6 +2380,7 @@ export default function App() {
             zIndex={dealModalZIndex}
             allDeals={deals}
             onSwitchToDeal={handleSwitchToDeal}
+            onUpdate={updateDeal}
         />
       ) : editingDeal ? (
         <EditDealModal 
@@ -2448,6 +2449,7 @@ export default function App() {
             zIndex={dealModalZIndex} 
             allDeals={deals}
             onSwitchToDeal={handleSwitchToDeal}
+            onUpdate={updateDeal}
         />
       ) : null}
       
