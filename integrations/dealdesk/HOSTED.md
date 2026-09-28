@@ -19,7 +19,7 @@ The Vercel function at `/api/mcp` uses the shared DealDesk tools and scoped back
 
 1. Deploy the branch and run lint, build, plugin tests. The new endpoint remains inaccessible until all OAuth setup is complete.
 2. Apply `backend/002-oauth.sql`. It adds a private authorization table and a token hook; it does not change business records. Check any existing token hook before enabling the new one. This hook denies OAuth clients without explicit grants and leaves ordinary sign-ins unchanged.
-3. In Supabase Authentication > OAuth Server, enable OAuth, keep dynamic registration disabled, and configure authorization path `/oauth/consent`. Site URL must be `https://dealdesk.asharizakargroup.com`.
+3. In Supabase Authentication > OAuth Server, enable OAuth, keep dynamic registration disabled, and configure authorization path `/oauth/consent`. The configured Site URL must serve this same production consent page. The deployed project currently preserves `https://azre-dealdesk2.vercel.app` as its Site URL; the MCP resource remains the custom domain above.
 4. Register a public OAuth client for ChatGPT with authorization-code + PKCE and refresh tokens. Copy the exact callback URI from ChatGPT's connection setup; do not use wildcard redirects. No client secret is required for a public client.
 5. Add one grant for that client ID and the approved user's immutable Supabase Auth ID. Set organization/resource exactly as above. Do not derive access from editable user metadata.
 6. Enable `public.dealdesk_oauth_token_hook` in Authentication > Hooks. Verify normal sign-in remains unchanged. Enable no other clients until their authorization model has been reviewed.
