@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { OAuthConsent } from './components/Auth/OAuthConsent';
 
 window.addEventListener('unhandledrejection', (event) => {
   if (event.reason && event.reason.message && event.reason.message.toLowerCase().includes('refresh token')) {
@@ -19,7 +20,7 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      {window.location.pathname === '/oauth/consent' ? <OAuthConsent /> : <App />}
     </BrowserRouter>
   </React.StrictMode>
 );
