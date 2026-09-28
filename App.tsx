@@ -164,7 +164,8 @@ export default function App() {
           }
       }
       try {
-          await supabase.auth.signOut();
+          // Browser logout must not revoke independently authorized OAuth sessions.
+          await supabase.auth.signOut({ scope: 'local' });
       } catch (e: any) {
           if (!e?.message?.toLowerCase().includes("refresh token")) {
               console.error("Error signing out of Supabase:", e);
