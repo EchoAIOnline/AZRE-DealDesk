@@ -19,7 +19,7 @@ interface DealCardProps {
 export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpdate, onDelete, onEdit, selected = false, onSelect }) => {
   const isUnderContract = UNDER_CONTRACT_STATUSES.includes(deal.offerDecision);
   const isDeclined = DECLINED_STATUSES.includes(deal.offerDecision);
-  const isCanceled = CANCELED_STATUSES.includes(deal.offerDecision);
+  const isCanceled = CANCELED_STATUSES.includes(deal.offerDecision) || deal.offerDecision === 'Canceled';
   const isClosed = CLOSED_STATUSES.includes(deal.offerDecision);
   const isCurrent = isUnderContract; 
   

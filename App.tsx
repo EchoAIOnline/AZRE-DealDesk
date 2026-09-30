@@ -318,7 +318,7 @@ export default function App() {
                 pipelineType: pType,
                 logs: Array.isArray(d.logs) ? d.logs : [],
                 dealType: Array.isArray(d.dealType) ? d.dealType : [],
-                offerDecision: d.offerDecision || (['Under Contract', 'Offer Accepted'].includes(d.status) ? 'Deal Under Contract' : 'No Offer Made Yet'),
+                offerDecision: d.offerDecision === 'Canceled' ? 'Deal Canceled' : (d.offerDecision || (['Under Contract', 'Offer Accepted'].includes(d.status) ? 'Deal Under Contract' : 'No Offer Made Yet')),
                 inspectionDate: d.inspectionDate ? String(d.inspectionDate).split('T')[0] : null,
                 emdDate: d.emdDate ? String(d.emdDate).split('T')[0] : null,
                 nextFollowUpDate: d.nextFollowUpDate ? String(d.nextFollowUpDate).split('T')[0] : null,
@@ -1846,10 +1846,10 @@ export default function App() {
             }
         }
     }
-    const filtered = (filteredDeals || []).filter(d => d && statusesToShow.includes(d.offerDecision));
+    const filtered = (filteredDeals || []).filter(d => d && (statusesToShow.includes(d.offerDecision) || (statusesToShow.includes('Deal Canceled') && d.offerDecision === 'Canceled')));
     const groupedDeals: Deal[] = [];
     statusesToShow.forEach(status => {
-        groupedDeals.push(...filtered.filter(d => d.offerDecision === status));
+        groupedDeals.push(...filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled')));
     });
     return groupedDeals;
   };

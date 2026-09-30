@@ -322,7 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
 
     const dealCanceledCount = useMemo(() => {
         const startDate = getStartDateForTimeframe(dealCanceledTimeframe);
-        return deals.filter(d => d.offerDecision === 'Deal Canceled' && new Date(d.createdAt || new Date()) >= startDate).length;
+        return deals.filter(d => (d.offerDecision === 'Deal Canceled' || d.offerDecision === 'Canceled') && new Date(d.createdAt || new Date()) >= startDate).length;
     }, [deals, dealCanceledTimeframe]);
 
     const totalAgentTextsSent = useMemo(() => {

@@ -37,8 +37,7 @@ export const DECLINED_STATUSES = [
 ];
 
 export const CANCELED_STATUSES = [
-  'Deal Canceled',
-  'Canceled'
+  'Deal Canceled'
 ];
 
 export const CLOSED_STATUSES = [

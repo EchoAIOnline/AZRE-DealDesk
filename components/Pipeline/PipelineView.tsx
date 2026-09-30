@@ -168,7 +168,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         { id: 'Under Contract', label: 'Under Contract', count: (filteredDeals || []).filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
         { id: 'Closed', label: 'Closed', count: (filteredDeals || []).filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
         { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' },
-        { id: 'Canceled', label: 'Canceled', count: (filteredDeals || []).filter(d => d && CANCELED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' }
+        { id: 'Canceled', label: 'Canceled', count: (filteredDeals || []).filter(d => d && (CANCELED_STATUSES.includes(d.offerDecision) || d.offerDecision === 'Canceled')).length, activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' }
     ];
 
     return (
@@ -304,7 +304,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                     const stageDeals = orderedDeals; 
                     if (stageDeals.length === 0) return (<div className="text-center py-20 text-gray-500"><p>No deals found in this stage matching your criteria.</p></div>); 
                     return statusesToShow.map(status => { 
-                        const dealsInGroup = stageDeals.filter(d => d.offerDecision === status); 
+                        const dealsInGroup = stageDeals.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled')); 
                         if (dealsInGroup.length === 0) return null; 
                         return (
                             <div key={status} className="mb-10 scroll-mt-24">
