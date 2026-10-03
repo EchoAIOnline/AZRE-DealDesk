@@ -15,6 +15,11 @@ export const POTENTIAL_STATUSES = [
   'Analyzing'
 ];
 
+export const SELLER_ACCEPTED_OFFER_STATUSES = [
+  'Seller Accepted Offer',
+  'Agent Sending Contract'
+];
+
 export const UNDER_CONTRACT_STATUSES = [
   'Seller Accepted Offer', 
   'Agent Sending Contract', 
