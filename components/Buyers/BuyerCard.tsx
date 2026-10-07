@@ -191,6 +191,15 @@ export const BuyerCard: React.FC<BuyerCardProps> = ({ buyer, onEdit, onDelete, o
                         <Mail size={14} className="text-gray-400 dark:text-gray-500 shrink-0"/> 
                         <a href={`mailto:${buyer.email}`} onClick={e => e.stopPropagation()} className="truncate hover:text-blue-500 hover:underline">{buyer.email || <span className="text-gray-400 italic">No Email</span>}</a>
                     </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <DollarSign size={14} className="text-gray-400 dark:text-gray-500 shrink-0"/> 
+                        <span className="truncate">
+                            <span className="font-medium text-gray-500 dark:text-gray-400 mr-1.5">Maximum ARV:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                                {Number(buyer.buyBox?.maxArv) > 0 ? formatCurrency(Number(buyer.buyBox?.maxArv)) : <span className="text-gray-400 italic font-normal">No Limit</span>}
+                            </span>
+                        </span>
+                    </div>
                 </div>
 
                 {/* Expandable Activity & Notes */}

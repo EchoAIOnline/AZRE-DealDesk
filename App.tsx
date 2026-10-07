@@ -1293,6 +1293,7 @@ export default function App() {
           if (buyerSort === 'A-Z') return (a.name || a.companyName || '').localeCompare(b.name || b.companyName || '');
           if (buyerSort === 'Z-A') return (b.name || b.companyName || '').localeCompare(a.name || a.companyName || '');
           if (buyerSort === 'Properties Bought') return (b.propertiesBought || 0) - (a.propertiesBought || 0);
+          if (buyerSort === 'Maximum ARV') return (Number(b.buyBox?.maxArv) || 0) - (Number(a.buyBox?.maxArv) || 0);
           const getDate = (item: any) => {
               if (item.dateAdded) return new Date(item.dateAdded).getTime();
               if (item.createdAt) return new Date(item.createdAt).getTime();

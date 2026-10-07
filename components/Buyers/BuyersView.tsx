@@ -88,6 +88,7 @@ export const BuyersView: React.FC<BuyersViewProps> = ({
                                 <option value="A-Z">A to Z</option>
                                 <option value="Z-A">Z to A</option>
                                 <option value="Properties Bought">Properties Bought</option>
+                                <option value="Maximum ARV">Maximum ARV</option>
                             </select>
                         </div>
                         <div className="col-span-full flex justify-end">
