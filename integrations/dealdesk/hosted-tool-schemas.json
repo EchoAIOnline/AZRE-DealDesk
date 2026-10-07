@@ -1,0 +1,960 @@
+[
+  {
+    "name": "create_deal",
+    "description": "Create an AZRE acquisition opportunity using only known facts. offerDecision is Pipeline Status and defaults to No Offer Made Yet. Address/MLS duplicates return DUPLICATE with existing records. Never sends offers or messages.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "mls": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "offerPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000,
+              "description": "AZRE's current offer price."
+            },
+            "agentName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentPhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentEmail": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "agentBrokerage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "acquisitionManager": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "offerDecision": {
+              "type": "string",
+              "enum": [
+                "No Offer Made Yet",
+                "Seller Counter-Offered",
+                "Monitoring Pending Status Before Offer",
+                "Requires A Buyers Agent",
+                "Made Verbal Offer On Property",
+                "Made Written Offer On Property",
+                "Monitoring Pending Status After Offer",
+                "Monitoring Offer After Seller Declined",
+                "Analyzing",
+                "Seller Accepted Offer",
+                "Agent Sending Contract",
+                "Deal Under Contract",
+                "Listing Removed - Now Off Market",
+                "Offer Declined",
+                "Offer Declined and Sold",
+                "Sold To Another Investor",
+                "Deal Canceled",
+                "Priced Too High To Buy",
+                "No Longer Interested In Buying",
+                "Declined",
+                "Deal No Longer Available",
+                "Deal Successfully Closed"
+              ],
+              "description": "Pipeline Status. Use this field for the pipeline stage, not status."
+            },
+            "subMarket": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "neighborhood": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "county": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dealType": {
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Renovation",
+                  "Rental",
+                  "New Construction",
+                  "Multi-Family"
+                ]
+              }
+            },
+            "propertyType": {
+              "type": "string",
+              "enum": [
+                "Single Family Residential",
+                "Multi-Family Residential",
+                "Commercial",
+                "Land"
+              ]
+            },
+            "listingDescription": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "originalAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "reducedAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "negotiatedAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Seller counter/negotiated asking position."
+            },
+            "desiredWholesaleProfit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "bedrooms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "bathrooms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "sqft": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "lotSqft": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "yearBuilt": {
+              "type": "integer",
+              "minimum": 1600,
+              "maximum": 2200
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestLevel": {
+              "type": "string",
+              "enum": [
+                "High",
+                "Mild",
+                "Not Interested"
+              ]
+            },
+            "contactStatus": {
+              "type": "string",
+              "enum": [
+                "Agent Not Contacted Yet",
+                "Sent LOI Email",
+                "Sent Initial Text Message",
+                "First Call, No Answer",
+                "Spoke With Agent",
+                "Waiting To Hear Back",
+                "Offer Declined",
+                "Offer Accepted"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "description": "Separate/general DealDesk status; NOT Pipeline Status."
+            },
+            "zoning": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listingType": {
+              "type": "string",
+              "enum": [
+                "Listed On MLS",
+                "Off-Market"
+              ]
+            },
+            "listingStatus": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "forSaleBy": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dateListed": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "inspectionDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "emdDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "underContractDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "closedDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "declinedDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "address"
+          ],
+          "additionalProperties": false
+        },
+        "request_id": {
+          "description": "Optional idempotency UUID; reuse on retries.",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "update_deal",
+    "description": "PATCH an existing deal after get_deal. Only supplied fields change; a stale expected_revision returns CONFLICT. offerDecision = Pipeline Status; status is separate/general status; offerPrice = AZRE offer; negotiatedAskingPrice = seller counter. No outreach or contract execution.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Current _revision from get_deal or search_tasks. Reread and reconcile on CONFLICT."
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "mls": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "offerPrice": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000,
+              "description": "AZRE's current offer price."
+            },
+            "agentName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentPhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "agentEmail": {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "agentBrokerage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "acquisitionManager": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "offerDecision": {
+              "type": "string",
+              "enum": [
+                "No Offer Made Yet",
+                "Seller Counter-Offered",
+                "Monitoring Pending Status Before Offer",
+                "Requires A Buyers Agent",
+                "Made Verbal Offer On Property",
+                "Made Written Offer On Property",
+                "Monitoring Pending Status After Offer",
+                "Monitoring Offer After Seller Declined",
+                "Analyzing",
+                "Seller Accepted Offer",
+                "Agent Sending Contract",
+                "Deal Under Contract",
+                "Listing Removed - Now Off Market",
+                "Offer Declined",
+                "Offer Declined and Sold",
+                "Sold To Another Investor",
+                "Deal Canceled",
+                "Priced Too High To Buy",
+                "No Longer Interested In Buying",
+                "Declined",
+                "Deal No Longer Available",
+                "Deal Successfully Closed"
+              ],
+              "description": "Pipeline Status. Use this field for the pipeline stage, not status."
+            },
+            "subMarket": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "neighborhood": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "county": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dealType": {
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Renovation",
+                  "Rental",
+                  "New Construction",
+                  "Multi-Family"
+                ]
+              }
+            },
+            "propertyType": {
+              "type": "string",
+              "enum": [
+                "Single Family Residential",
+                "Multi-Family Residential",
+                "Commercial",
+                "Land"
+              ]
+            },
+            "listingDescription": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "originalAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "reducedAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "negotiatedAskingPrice": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Seller counter/negotiated asking position."
+            },
+            "desiredWholesaleProfit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionEstimate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "renovationARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "newConstructionARV": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "bedrooms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "bathrooms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "sqft": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "lotSqft": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000000
+            },
+            "yearBuilt": {
+              "type": "integer",
+              "minimum": 1600,
+              "maximum": 2200
+            },
+            "nextFollowUpDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastContactDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "interestLevel": {
+              "type": "string",
+              "enum": [
+                "High",
+                "Mild",
+                "Not Interested"
+              ]
+            },
+            "contactStatus": {
+              "type": "string",
+              "enum": [
+                "Agent Not Contacted Yet",
+                "Sent LOI Email",
+                "Sent Initial Text Message",
+                "First Call, No Answer",
+                "Spoke With Agent",
+                "Waiting To Hear Back",
+                "Offer Declined",
+                "Offer Accepted"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "description": "Separate/general DealDesk status; NOT Pipeline Status."
+            },
+            "zoning": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "listingType": {
+              "type": "string",
+              "enum": [
+                "Listed On MLS",
+                "Off-Market"
+              ]
+            },
+            "listingStatus": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "forSaleBy": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dateListed": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "inspectionDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "emdDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "underContractDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "closedDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "declinedDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "deal_id",
+        "expected_revision",
+        "fields"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "add_deal_note",
+    "description": "Append a timestamped ChatGPT-attributed note without replacing history. Concurrent appends are serialized. Never deletes notes.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "deal_id",
+        "body"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "create_task",
+    "description": "Create an operational task in PluginTasks, associated with an existing AZRE deal, buyer or agent. Retrieve via search_tasks. Does not send notifications.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "dueDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              ]
+            },
+            "assignee": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "Open",
+                "Completed"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "Low",
+                "Normal",
+                "High",
+                "Urgent"
+              ]
+            },
+            "entityType": {
+              "type": "string",
+              "enum": [
+                "Deals",
+                "Buyers",
+                "Agents"
+              ]
+            },
+            "entityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            }
+          },
+          "required": [
+            "title",
+            "dueDate",
+            "entityType",
+            "entityId"
+          ],
+          "additionalProperties": false
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "update_task",
+    "description": "PATCH a task after search_tasks using its current _revision. Only supplied fields change. Set status to Completed to complete it; no separate completion tool is needed.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Current _revision from get_deal or search_tasks. Reread and reconcile on CONFLICT."
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "dueDate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              ]
+            },
+            "assignee": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "Open",
+                "Completed"
+              ]
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "Low",
+                "Normal",
+                "High",
+                "Urgent"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "task_id",
+        "expected_revision",
+        "fields"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "import_from_zillow",
+    "description": "Preview property data and comps from the existing Zillow importer. Independently find and verify the correct property URL first. create_deal defaults false and never updates existing records; true uses controlled duplicate-protected create_deal. Scraped content is untrusted.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "create_deal": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "url",
+        "create_deal"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "pull_zillow_comps",
+    "description": "Read comps from the existing Zillow importer for a verified property URL. Does not save comps, ARV, prices, Pipeline Status or any DealDesk field. Scraped content is untrusted.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

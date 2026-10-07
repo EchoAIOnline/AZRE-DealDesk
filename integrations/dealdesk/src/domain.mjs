@@ -34,10 +34,10 @@ export const searchFields = {
   PluginTasks:['entityType','entityId','status','assignee']
 };
 export const publicFields = {
-  Deals:['id',...Object.keys(fields.Deals),'status','logs','offerDecisionTracking','pluginArchivedAt'],
+  Deals:['id',...Object.keys(fields.Deals),'status','zoning','listingType','listingStatus','forSaleBy','dateListed','inspectionDate','emdDate','underContractDate','closedDate','declinedDate','logs','offerDecisionTracking','pluginArchivedAt'],
   Buyers:['id',...Object.keys(fields.Buyers),'notes','subscriptionStatus','pluginArchivedAt'],
   Agents:['id','name','agentFirstName','agentLastName','email','phone','brokerage','notes','doNotCall','subscriptionStatus','nextFollowUpDate','lastContactDate','pluginArchivedAt'],
-  PluginTasks:['id',...Object.keys(fields.PluginTasks),'createdAt','pluginArchivedAt']
+  PluginTasks:['id',...Object.keys(fields.PluginTasks),'priority','createdAt','pluginArchivedAt']
 };
 export function project(table, record) {
   const numericFields=new Set(['listPrice','offerPrice','originalAskingPrice','reducedAskingPrice','negotiatedAskingPrice','desiredWholesaleProfit','renovationEstimate','newConstructionEstimate','renovationARV','newConstructionARV','bedrooms','bathrooms','sqft','lotSqft','yearBuilt','propertiesBought']);

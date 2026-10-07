@@ -20,7 +20,9 @@ before(async () => {
   await pg.exec('CREATE ROLE supabase_auth_admin;');
   const sql = await readFile(new URL('../backend/002-oauth.sql',import.meta.url),'utf8');
   await pg.exec(sql); await pg.exec(sql);
-  await pg.query('INSERT INTO "PluginOAuthGrants" VALUES ($1,$2,$3,$4,true)',[clientId,user,ORGANIZATION,RESOURCE]);
+  await pg.exec(await readFile(new URL('../backend/003-operational.sql',import.meta.url),'utf8'));
+  await pg.exec(await readFile(new URL('../backend/003-operational.sql',import.meta.url),'utf8'));
+  await pg.query('INSERT INTO "PluginOAuthGrants" (client_id,user_id,organization_id,resource,enabled) VALUES ($1,$2,$3,$4,true)',[clientId,user,ORGANIZATION,RESOURCE]);
   await pg.query('INSERT INTO "Deals" (id,address,organization_id) VALUES ($1,$2,$3),($4,$5,$6)',[randomUUID(),'AZRE fixture',ORGANIZATION,randomUUID(),'Other org private address','other']);
   keys = await generateKeyPair('ES256');
   keySet = createLocalJWKSet({keys:[{...await exportJWK(keys.publicKey),kid:'test'}]});
@@ -49,8 +51,9 @@ test('hosted MCP discovers only read tools, reads one organization and rejects a
   const client = new Client({name:'hosted-test',version:'1'});
   await client.connect(new StreamableHTTPClientTransport(new URL(base),{requestInit:{headers:{Authorization:`Bearer ${await token()}`}}}));
   try {
-    const listed = await client.listTools(); assert.equal(listed.tools.length,8);
-    assert.ok(listed.tools.every(tool=>tool.annotations.readOnlyHint && tool._meta.securitySchemes[0].type==='oauth2'));
+    const listed = await client.listTools(); assert.equal(listed.tools.length,10);
+    assert.ok(listed.tools.every(tool=>tool._meta.securitySchemes[0].type==='oauth2'));
+    assert.equal(listed.tools.filter(tool=>tool.annotations.readOnlyHint).length,9);
     const result = await client.callTool({name:'search_deals',arguments:{limit:5}});
     assert.equal(result.structuredContent.records.length,1); assert.equal(result.structuredContent.records[0].address,'AZRE fixture');
     for(const name of ['create_deal','update_deal','create_buyer','update_buyer','create_task','create_note','update_offer','archive_record','restore_record']) {

@@ -31,6 +31,8 @@ export default async function handler(req: any, res: any) {
     // Trigger BrightData scraper synchronously
     const response = await fetch(endpoint, {
       method: 'POST',
+      redirect: 'error',
+      signal: AbortSignal.timeout(45000),
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
