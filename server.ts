@@ -1,3 +1,4 @@
+import { zillow } from './api/mcp';
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import { makeHandler as makeDealDeskPluginHandler } from "./integrations/dealdesk/backend/handler.mjs";
@@ -495,7 +496,7 @@ Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales withi
 
   // Dedicated, organization-scoped MCP plugin endpoint.
   app.post("/api/ai/plugin", makeDealDeskPluginHandler({ createClient }));
-  app.all('/api/mcp', makeHostedHandler({ createClient }));
+  app.all('/api/mcp', makeHostedHandler({ createClient, zillow }));
   app.get(['/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/api/mcp'], (_req, res) => res.json(resourceMetadata));
 
   // --- AI Employee Operating Endpoint ---

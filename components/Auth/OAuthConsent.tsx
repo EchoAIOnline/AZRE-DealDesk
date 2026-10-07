@@ -16,6 +16,7 @@ function returnToChatGPT(value: string) {
 export function OAuthConsent() {
   const authorizationId = new URLSearchParams(window.location.search).get('authorization_id');
   const [details, setDetails] = useState<OAuthAuthorizationDetails | null>(null);
+  const [controlledAccess, setControlledAccess] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +35,7 @@ export function OAuthConsent() {
       const permission = await fetch('/api/mcp?view=consent', { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' });
       if (!permission.ok) throw Error('This DealDesk account is not approved for the AZRE connection.');
       const allowed = await permission.json();
+      setControlledAccess(allowed.access === 'controlled-operations');
       const { data, error: detailError } = await auth.auth.oauth.getAuthorizationDetails(authorizationId);
       if (detailError || !data) throw Error('This connection request has expired. Start again from ChatGPT.');
       if ('redirect_url' in data) { returnToChatGPT(data.redirect_url); return; }
@@ -78,7 +80,7 @@ export function OAuthConsent() {
       <p className="text-emerald-400 text-sm font-semibold tracking-wide">DEALDESK</p>
       <h1 className="mt-3 text-2xl font-semibold">Connect AZRE to ChatGPT</h1>
       <p className="mt-3 text-slate-300">Read your deals, buyers, agents and tasks, and check buyer matches.</p>
-      <p className="mt-3 text-sm text-slate-400">Read-only access. This connection cannot create, edit, delete or archive records, or send messages.</p>
+      <p className="mt-3 text-sm text-slate-400">{controlledAccess ? 'Controlled access: read records, create and edit deals, append notes, and manage tasks. Cannot delete, archive, restore, send messages, or execute contracts.' : 'Read-only access. This connection cannot create, edit, delete or archive records, or send messages.'}</p>
       {sessionEmail && <div className="mt-4 text-sm text-slate-400">
         <p>Browser signed in as {sessionEmail}</p>
         <button disabled={busy} onClick={() => void signOutBrowser()} className="mt-2 underline disabled:opacity-50">Sign out of this browser</button>
@@ -101,7 +103,7 @@ export function OAuthConsent() {
         <p className="mt-2 text-sm text-slate-400">Requested identity permissions: {details.scope || 'Sign-in identity'}</p>
         <div className="mt-6 flex gap-3">
           <button disabled={busy} onClick={() => void decide(false)} className="rounded-lg border border-slate-600 px-5 py-3">Cancel</button>
-          <button disabled={busy} onClick={() => void decide(true)} className="flex-1 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">Allow read-only access</button>
+          <button disabled={busy} onClick={() => void decide(true)} className="flex-1 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">{controlledAccess ? 'Allow controlled access' : 'Allow read-only access'}</button>
         </div>
       </div>}
       {busy && <p role="status" className="mt-5 text-slate-400">Loading…</p>}

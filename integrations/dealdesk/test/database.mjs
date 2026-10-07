@@ -9,7 +9,7 @@ export async function database() {
   await pg.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;');
   await pg.exec(await readFile(new URL('./fixtures/base-schema.sql',import.meta.url),'utf8'));
   await pg.exec(await readFile(new URL('../backend/001-plugin.sql',import.meta.url),'utf8'));
-  const db={from:table=>new Query(pg,table)};
+  const db={from:table=>new Query(pg,table),rpc:async(name,args)=>{try {const r=await pg.query(`SELECT public.${quote(name)}(${Object.keys(args).map((k,i)=>quote(k)+' => $'+(i+1)).join(',')}) AS result`,Object.values(args));return {data:r.rows[0].result,error:null};}catch(error){return {data:null,error};}}};
   return {pg,db};
 }
 class Query {
