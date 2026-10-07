@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { makeHostedHandler } from '../integrations/dealdesk/backend/hosted.mjs';
 
-import zillowHandler from './zillow-data';
+import zillowHandler from './zillow-data.js';
 import { DomainError } from '../integrations/dealdesk/src/domain.mjs';
 
 // Reuse the exact service that powers the frontend; never forward OAuth tokens.
