@@ -13,8 +13,19 @@ const boundedBuyBox = z.object(optional({ locations: z.string().max(2000), minPr
     if (v[lo] != null && v[hi] > 0 && v[lo] > v[hi]) ctx.addIssue({code:'custom',message:`${lo} exceeds ${hi}`});
   }
 });
+// Match types.ts Comparable and the existing frontend JSONB objects. Dates are
+// intentionally strings: the UI accepts free-form dates and blank slots.
+export const comparable = z.object({
+  address:z.string().max(1000), saleDate:z.string().max(1000),
+  salePrice:z.number().finite().min(0).max(1e10),
+  sqft:z.number().finite().min(0).max(1e10).optional(),
+  softenerPercent:z.number().finite().min(0).max(100).optional(),
+}).strict().nullable().describe('Existing Comparable JSON object; null clears this slot. Omitted slots are unchanged. No automatic comp filling.');
+export const comparableFields = Object.fromEntries(
+  ['newConstruction','renovation'].flatMap(kind => [1,2,3].map(n => [kind+'Comparable'+n,comparable]))
+);
 export const fields = {
-  Deals: { address:text, mls:text, listPrice:money, offerPrice:money, agentName:text, agentPhone:text, agentEmail:z.email(), agentBrokerage:text, acquisitionManager:text, offerDecision:z.enum(stages), subMarket:text, neighborhood:text, county:text, dealType:list, propertyType:text, listingDescription:z.string().max(10000), originalAskingPrice:money, reducedAskingPrice:money, negotiatedAskingPrice:money, desiredWholesaleProfit:money, renovationEstimate:money, newConstructionEstimate:money, renovationARV:money, newConstructionARV:money, bedrooms:z.number().int().min(0).max(100), bathrooms:z.number().min(0).max(100), sqft:money, lotSqft:money, yearBuilt:z.number().int().min(1600).max(2200), nextFollowUpDate:date.nullable(), lastContactDate:date.nullable(), interestLevel:text, contactStatus:text },
+  Deals: { ...comparableFields, address:text, mls:text, listPrice:money, offerPrice:money, agentName:text, agentPhone:text, agentEmail:z.email(), agentBrokerage:text, acquisitionManager:text, offerDecision:z.enum(stages), subMarket:text, neighborhood:text, county:text, dealType:list, propertyType:text, listingDescription:z.string().max(10000), originalAskingPrice:money, reducedAskingPrice:money, negotiatedAskingPrice:money, desiredWholesaleProfit:money, renovationEstimate:money, newConstructionEstimate:money, renovationARV:money, newConstructionARV:money, bedrooms:z.number().int().min(0).max(100), bathrooms:z.number().min(0).max(100), sqft:money, lotSqft:money, yearBuilt:z.number().int().min(1600).max(2200), nextFollowUpDate:date.nullable(), lastContactDate:date.nullable(), interestLevel:text, contactStatus:text },
   Buyers: { name:text, companyName:text, email:z.email(), phone:text, status:z.enum(['New Lead','Vetted Buyer','Repeat Buyer','VIP Buyer','Deactivated']), buyBox:boundedBuyBox, propertiesBought:z.number().int().min(0).max(100000), about:z.string().max(5000), nextFollowUpDate:date.nullable(), lastContactDate:date.nullable() },
   Agents: {},
   PluginTasks: { title:text, description:z.string().max(5000), entityType:z.enum(['Deals','Buyers','Agents']), entityId:id, dueDate:date, assignee:text, status:z.enum(['Open','Completed']) }

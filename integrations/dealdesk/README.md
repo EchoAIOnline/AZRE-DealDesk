@@ -130,3 +130,27 @@ For a protected Vercel preview, set `DEALDESK_PLUGIN_URL` to the preview `/api/a
 `add_deal_photos({deal_id, photo_urls, expected_revision, request_id?})` uses the existing `Deals.photos` gallery array. Apply `backend/004-photos.sql` before deploying this tool. Only the existing approved operational user/client grant can append; no photo removal is exposed. Each request accepts 1–10 exact HTTPS `photos.zillowstatic.com` JPEG/PNG/WebP URLs, at most 8 MiB each. Validation pins a public DNS address, refuses redirects and compressed responses, and checks MIME type, signatures and streamed size. Existing photos retain their order; exact duplicate URLs are skipped. A duplicate-only call leaves the revision unchanged but is audited. Optional request IDs replay the original atomic result. Malformed legacy photo data fails closed rather than being replaced.
 
 These remain external URLs, consistent with the gallery's existing add-by-URL workflow. Their future availability is controlled by Zillow; different URLs for the same visual image are not deduplicated. Refresh DealDesk Hosted's tool list in ChatGPT after deployment.
+
+### Dedicated comparable-sale slots
+
+Hosted `create_deal` and `update_deal` accept `newConstructionComparable1–3`
+and `renovationComparable1–3`. Each value is a JSON object matching the frontend
+`Comparable`: required `address` (string), `saleDate` (string, including blank or
+free-form frontend dates), and `salePrice` (nonnegative number); optional `sqft`
+(nonnegative number) and `softenerPercent` (0–100). Unknown object keys are
+rejected. No coercion, trimming, date conversion, or synthetic comps are applied.
+
+Omitted slots are unchanged on updates and remain database-null on creation.
+`null` explicitly clears a slot; the frontend blank object
+`{"address":"","saleDate":"","salePrice":0}` is also preserved exactly.
+A supplied comp replaces that entire slot; supply its complete known object.
+`get_deal` exposes all six fields without changing stored JSON.
+
+Before deploying, verify all six live Deals columns are JSONB, then apply
+`backend/005-comparables.sql`. This migration only updates the existing mutation
+function allowlist and fails closed if the columns do not match. Historical SQL
+files use `comparable1–3` for renovation while the current frontend uses
+`renovationComparable1–3`; do not rename, copy, or backfill those fields without
+first resolving the actual live schema. Deploy the existing Vercel project only
+after the migration succeeds, then verify with newly created disposable records.
+The automated tests use isolated PostgreSQL/PGlite and no production records.
