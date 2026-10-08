@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validatePhotos, photoUrl } from './photos.mjs';
 import { randomUUID } from 'node:crypto';
 import { fields, id, project, DomainError, fail } from './domain.mjs';
 
@@ -30,6 +31,7 @@ export const dealCreate = z.object({...optional(dealFields),address:dealFields.a
 export const dealPatch = z.object(optional(dealFields)).strict().refine(v=>Object.keys(v).length>0,'Supply at least one field.');
 const revision = z.number().int().nonnegative().describe('Current _revision from get_deal or search_tasks. Reread and reconcile on CONFLICT.');
 export const operationalTools = [
+  {name:'add_deal_photos',description:'Append verified Zillow CDN photo URLs to the existing gallery, preserving order and existing photos. Exact URLs are deduplicated. Requires the current deal revision; no deletion. Maximum 10 images, 8 MiB each.',schema:z.object({deal_id:id,photo_urls:z.array(z.string().max(2048).refine(v=>{try{photoUrl(v);return true;}catch{return false;}},'Use a direct photos.zillowstatic.com image URL.')).min(1).max(10),expected_revision:revision,request_id:z.uuid().optional()}).strict()},
   {name:'create_deal',description:'Create an AZRE acquisition opportunity using only known facts. offerDecision is Pipeline Status and defaults to No Offer Made Yet. Address/MLS duplicates return DUPLICATE with existing records. Never sends offers or messages.',schema:z.object({fields:dealCreate,request_id:z.uuid().optional().describe('Optional idempotency UUID; reuse on retries.')}).strict()},
   {name:'update_deal',description:'PATCH an existing deal after get_deal. Only supplied fields change; a stale expected_revision returns CONFLICT. offerDecision = Pipeline Status; status is separate/general status; offerPrice = AZRE offer; negotiatedAskingPrice = seller counter. No outreach or contract execution.',schema:z.object({deal_id:id,expected_revision:revision,fields:dealPatch}).strict()},
   {name:'add_deal_note',description:'Append a timestamped ChatGPT-attributed note without replacing history. Concurrent appends are serialized. Never deletes notes.',schema:z.object({deal_id:id,body:z.string().trim().min(1).max(5000),category:z.string().trim().min(1).max(80).optional(),request_id:z.uuid().optional()}).strict()},
@@ -44,7 +46,10 @@ export async function mutate(db,name,input,identity,source = name) {
   const patch={...(args.fields||{})};
   if(patch.address) patch.address=patch.address.replace(/\s+/g,' ').replace(/\s*,\s*/g,', ').trim();
   if(patch.mls) patch.mls=patch.mls.trim();
-  const {data,error}=await db.rpc('dealdesk_operational_mutation',{
+  const {data,error}=name==='add_deal_photos' ? await db.rpc('dealdesk_add_photos',{
+    p_id:args.deal_id,p_urls:await validatePhotos(args.photo_urls),p_revision:args.expected_revision,
+    p_user:identity.sub,p_client:identity.client_id,p_session:identity.session_id,p_request:args.request_id??null,
+  }) : await db.rpc('dealdesk_operational_mutation',{
     p_tool:name,p_source:source,p_id:args.deal_id||args.task_id||args.request_id||randomUUID(),p_patch:patch,
     p_revision:args.expected_revision??null,p_note:args.body??null,p_category:args.category??null,
     p_user:identity.sub,p_client:identity.client_id,p_session:identity.session_id,

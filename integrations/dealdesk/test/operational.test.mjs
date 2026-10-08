@@ -66,7 +66,7 @@ test('audit is atomic, attributed and retains before/after values; ordinary role
 test('hosted transport exposes exactly the controlled tools and preserves all eight reads',async()=>{
  const server=createHostedServer(db,{identity,writes:true,zillow:async()=>[{address:'Zillow test',mappedComps:[{address:'Comp',price:1}]}]});
  const [a,b]=InMemoryTransport.createLinkedPair();await server.connect(a);const client=new Client({name:'test',version:'1'});await client.connect(b);
- const listed=await client.listTools();assert.equal(listed.tools.length,15);
+ const listed=await client.listTools();assert.equal(listed.tools.length,16);
  for(const name of ['delete_deal','archive_record','restore_record','create_buyer','update_offer']) assert.equal((await client.callTool({name,arguments:{}})).isError,true);
  for(const [table,name] of [['Buyers','buyer'],['Agents','agent']]) await pg.query(`INSERT INTO "${table}"(id,name,organization_id) VALUES($1,$2,$3)`,[randomUUID(),name,ORGANIZATION]);
  for(const name of ['search_deals','search_buyers','search_agents','search_tasks']) assert.ok((await client.callTool({name,arguments:{limit:1}})).structuredContent.records.length);

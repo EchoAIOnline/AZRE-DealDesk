@@ -124,3 +124,9 @@ Official implementation references: [MCP server tools](https://developers.openai
 ### Protected preview testing
 
 For a protected Vercel preview, set `DEALDESK_PLUGIN_URL` to the preview `/api/ai/plugin` URL and `VERCEL_AUTOMATION_BYPASS_SECRET` to its automation credential in the private `.env`. The client only sends this extra credential to `.vercel.app` hosts and rejects redirects. Keep both write flags false. Run `node --env-file=.env scripts/live-readonly-test.mjs` to discover all 17 tools, exercise all eight reads, and verify all nine mutations are blocked. The test saves only non-sensitive status results.
+
+### Append Zillow photos
+
+`add_deal_photos({deal_id, photo_urls, expected_revision, request_id?})` uses the existing `Deals.photos` gallery array. Apply `backend/004-photos.sql` before deploying this tool. Only the existing approved operational user/client grant can append; no photo removal is exposed. Each request accepts 1–10 exact HTTPS `photos.zillowstatic.com` JPEG/PNG/WebP URLs, at most 8 MiB each. Validation pins a public DNS address, refuses redirects and compressed responses, and checks MIME type, signatures and streamed size. Existing photos retain their order; exact duplicate URLs are skipped. A duplicate-only call leaves the revision unchanged but is audited. Optional request IDs replay the original atomic result. Malformed legacy photo data fails closed rather than being replaced.
+
+These remain external URLs, consistent with the gallery's existing add-by-URL workflow. Their future availability is controlled by Zillow; different URLs for the same visual image are not deduplicated. Refresh DealDesk Hosted's tool list in ChatGPT after deployment.
