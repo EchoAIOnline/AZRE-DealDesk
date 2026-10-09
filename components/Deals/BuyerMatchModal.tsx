@@ -16,6 +16,10 @@ export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, 
         try {
             if (!deal || !buyers) return [];
             return MatchingEngine.findBuyersForDeal(deal, buyers)
+                .filter(result => {
+                    const status = (result.buyer?.status || '').toLowerCase();
+                    return !status.includes('deactivated');
+                })
                 .map(result => ({
                     buyer: result.buyer,
                     matchScore: result.match.score,
@@ -55,7 +59,7 @@ export const BuyerMatchModal: React.FC<BuyerMatchModalProps> = ({ deal, buyers, 
                             <div 
                                 key={buyer.id} 
                                 onClick={() => onViewBuyer(buyer.id)}
-                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:border-green-500/50 hover:shadow-md transition-all group cursor-pointer"
+                                className="bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] border interactive-card rounded-xl p-4 group cursor-pointer"
                             >
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-center gap-3">

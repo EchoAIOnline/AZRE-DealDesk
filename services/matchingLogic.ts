@@ -85,6 +85,23 @@ export const MatchingEngine = {
             };
         }
 
+        // Exclude deactivated buyers
+        const isDeactivated = buyer.status ? (
+            buyer.status.toLowerCase().includes('deactivated')
+        ) : false;
+
+        if (isDeactivated) {
+            return {
+                isMatch: false,
+                score: 0,
+                matchedCriteria: [],
+                failedReasons: ["Buyer is deactivated"],
+                level1Passed: false,
+                level2Passed: false,
+                level3Passed: false
+            };
+        }
+
         const bb = buyer.buyBox;
         if (!bb) {
             return { 
@@ -412,6 +429,8 @@ export const MatchingEngine = {
 
     findDealsForBuyer(buyer: Buyer, deals: Deal[]): { deal: Deal; match: MatchResult }[] {
         if (!buyer || !deals || !Array.isArray(deals)) return [];
+        const status = (buyer.status || '').toLowerCase();
+        if (status.includes('deactivated')) return [];
         return deals
             .filter(deal => !!deal)
             .map(deal => ({ deal, match: this.evaluateMatch(buyer, deal) }))
@@ -422,7 +441,12 @@ export const MatchingEngine = {
     findBuyersForDeal(deal: Deal, buyers: Buyer[]): { buyer: Buyer; match: MatchResult }[] {
         if (!deal || !buyers || !Array.isArray(buyers)) return [];
         return buyers
-            .filter(buyer => !!buyer)
+            .filter(buyer => {
+                if (!buyer) return false;
+                const status = (buyer.status || '').toLowerCase();
+                if (status.includes('deactivated')) return false;
+                return true;
+            })
             .map(buyer => ({ buyer, match: this.evaluateMatch(buyer, deal) }))
             .filter(result => result.match && result.match.isMatch)
             .sort((a, b) => b.match.score - a.match.score);

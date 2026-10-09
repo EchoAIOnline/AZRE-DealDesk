@@ -913,7 +913,11 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
             ...buyers.filter(b => manualMatchedIds.includes(b.id) && !matchedBuyers.some(mb => mb.id === b.id))
         ];
 
-        return combinedMatched.filter(b => !interestedIds.includes(b.id) && !passedIds.includes(b.id));
+        return combinedMatched.filter(b => {
+            const status = (b.status || '').toLowerCase();
+            if (status.includes('deactivated')) return false;
+            return !interestedIds.includes(b.id) && !passedIds.includes(b.id);
+        });
     }, [matchedBuyers, deal.dispo?.interestedBuyers, deal.dispo?.passedBuyers, deal.dispo?.manualMatchedBuyers, buyers]);
 
     const interestedBuyersList = useMemo(() => {
@@ -931,6 +935,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         if (!interestedSearchQuery.trim()) return [];
         const query = interestedSearchQuery.toLowerCase();
         return buyers.filter(b => {
+            const status = (b.status || '').toLowerCase();
+            if (status.includes('deactivated')) return false;
             if (deal.dispo?.interestedBuyers?.some(ib => ib.buyerId === b.id)) return false;
             if (deal.dispo?.passedBuyers?.includes(b.id)) return false;
             if (availableMatchedBuyers.some(mb => mb.id === b.id)) return false; // hide if already in matched column

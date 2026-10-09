@@ -703,9 +703,9 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
     const progressPercent = sendingState.total > 0 ? Math.round((sendingState.sent / sendingState.total) * 100) : 0;
 
     return (
-        <div className="flex flex-col h-full w-full bg-[#0f172a] text-gray-200 animate-in fade-in duration-300">
+        <div className="flex flex-col h-full w-full bg-[#0B1220] text-gray-200 animate-in fade-in duration-300">
             {/* ACTION BAR */}
-            <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-[#1e293b] shrink-0 z-[100] relative">
+            <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-[#172235] shrink-0 z-[100] relative">
                 <div className="flex items-center gap-4">
                     <div className="bg-blue-600/20 p-2 rounded-lg">
                         <Mail className="text-blue-500" size={20} />
@@ -760,7 +760,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             {/* SENDING OVERLAY MODAL */}
             {sendingState.isSending && (
                 <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-[#1e293b] border border-slate-700 rounded-2xl w-full max-w-md p-8 shadow-2xl flex flex-col items-center text-center">
+                    <div className="bg-[#172235] border border-slate-700 rounded-2xl w-full max-w-md p-8 shadow-2xl flex flex-col items-center text-center">
                         {sendingState.status === 'completed' ? (
                             <div className="animate-in zoom-in duration-300 flex flex-col items-center">
                                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
@@ -812,7 +812,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             {/* CUSTOM CONFIRMATION MODAL */}
             {showConfirmModal && (
                 <div className="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={handleCancelConfirmation}>
-                    <div className="bg-[#1e293b] border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#172235] border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500">
                                 <Send size={24} />
@@ -859,8 +859,8 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             {/* DELIVERY LOGS MODAL */}
             {showLogsModal && (
                 <div className="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowLogsModal(false)}>
-                    <div className="bg-[#1e293b] border border-slate-700 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
+                    <div className="bg-[#172235] border border-slate-700 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-[#172235]">
                             <div>
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                     <FileText size={20} className="text-blue-500" /> Delivery Logs
@@ -871,9 +871,9 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-auto bg-[#0f172a] p-0 custom-scrollbar">
+                        <div className="flex-1 overflow-auto bg-[#0B1220] p-0 custom-scrollbar">
                             <table className="w-full text-left text-sm text-gray-300">
-                                <thead className="bg-[#1e293b] text-[10px] font-black uppercase tracking-widest text-slate-500 sticky top-0 z-10">
+                                <thead className="bg-[#172235] text-[10px] font-black uppercase tracking-widest text-slate-500 sticky top-0 z-10">
                                     <tr>
                                         <th className="px-6 py-3">Timestamp</th>
                                         <th className="px-6 py-3">Email</th>
@@ -918,13 +918,13 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             )}
 
             {/* MAIN CONTENT AREA */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0f172a] p-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0B1220] p-6">
                 <div className={`max-w-screen-2xl mx-auto flex flex-col ${activeTab === 'content' ? 'h-full' : 'min-h-0'}`}>
                     
                     {activeTab === 'settings' ? (
                         <div className="space-y-6 animate-in slide-in-from-left-4 duration-300 pb-24">
                             {/* Property Selection Toolbar */}
-                            <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4 flex flex-col md:flex-row items-end gap-4 shadow-lg">
+                            <div className="bg-[#172235] border border-slate-700 rounded-xl p-4 flex flex-col md:flex-row items-end gap-4 shadow-lg">
                                 <div className="flex-1 min-w-0 w-full relative">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1.5 block">Select Property from Pipeline</label>
                                     <div className="relative">
@@ -986,7 +986,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">Internal Name</label>
                                 <input 
                                     type="text" 
-                                    className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                                    className="w-full bg-[#172235] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                                     placeholder="e.g. 2024 Q4 Wholesale Blast"
                                     value={campaignData.name}
                                     onChange={(e) => updateCampaign({ name: e.target.value })}
@@ -997,7 +997,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">Subject Line</label>
                                 <input 
                                     type="text" 
-                                    className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                                    className="w-full bg-[#172235] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                                     placeholder="Email subject..."
                                     value={campaignData.subject}
                                     onChange={(e) => updateCampaign({ subject: e.target.value })}
@@ -1009,14 +1009,14 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">From Address</label>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                                        className="w-full bg-[#172235] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                                         value={campaignData.from_email}
                                         onChange={(e) => updateCampaign({ from_email: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">Tags</label>
-                                    <div className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-1.5 flex flex-wrap gap-1.5 min-h-[46px] focus-within:border-blue-500 transition-all">
+                                    <div className="w-full bg-[#172235] border border-slate-700 rounded-lg p-1.5 flex flex-wrap gap-1.5 min-h-[46px] focus-within:border-blue-500 transition-all">
                                         {campaignData.tags.map(tag => (
                                             <span key={tag} className="bg-blue-600/10 text-blue-400 px-2 py-1 rounded text-[10px] font-bold border border-blue-500/20 flex items-center gap-1.5">
                                                 {tag}
@@ -1039,7 +1039,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">Recipient Lists</label>
                                 <button 
                                     onClick={() => setIsListDropdownOpen(!isListDropdownOpen)}
-                                    className={`w-full bg-[#1e293b] border border-slate-700 rounded-lg p-3 text-left flex justify-between items-center transition-all ${isListDropdownOpen ? 'border-blue-500 shadow-lg' : ''}`}
+                                    className={`w-full bg-[#172235] border border-slate-700 rounded-lg p-3 text-left flex justify-between items-center transition-all ${isListDropdownOpen ? 'border-blue-500 shadow-lg' : ''}`}
                                 >
                                     <div className="flex gap-2 items-center overflow-hidden">
                                         {selectedCount === 0 ? (
@@ -1059,7 +1059,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 {isListDropdownOpen && (
                                     <>
                                         <div className="fixed inset-0 z-[90]" onClick={() => setIsListDropdownOpen(false)}></div>
-                                        <div className="absolute top-full left-0 mt-2 bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[95] animate-in fade-in slide-in-from-top-2 duration-200 w-[900px] max-w-[90vw] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
+                                        <div className="absolute top-full left-0 mt-2 bg-[#172235] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[95] animate-in fade-in slide-in-from-top-2 duration-200 w-[900px] max-w-[90vw] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
                                             {/* Column 1 */}
                                             <div className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar">
                                                 {column1Groups.map((group, groupIdx) => (
@@ -1184,7 +1184,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">Content Type</label>
                                     <select 
-                                        className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium appearance-none"
+                                        className="w-full bg-[#172235] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all font-medium appearance-none"
                                         value={campaignData.content_type}
                                         onChange={(e) => updateCampaign({ content_type: e.target.value as any })}
                                     >
@@ -1212,7 +1212,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                     <div className={`transition-all duration-300 ${isScheduling ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-30 pointer-events-none translate-y-2'}`}>
                                         <input 
                                             type="datetime-local" 
-                                            className="w-full bg-[#1e293b] border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono"
+                                            className="w-full bg-[#172235] border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono"
                                             value={campaignData.send_at ? campaignData.send_at.slice(0, 16) : ""}
                                             onChange={(e) => updateCampaign({ send_at: e.target.value })}
                                         />
@@ -1224,7 +1224,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                         <div className="flex flex-col space-y-4 animate-in slide-in-from-right-4 duration-300 flex-1 min-h-0">
                             
                             {/* SUBJECT BANNER */}
-                            <div className="bg-[#1e293b] border border-slate-800 rounded-xl px-6 py-3 flex items-center justify-between shadow-xl">
+                            <div className="bg-[#172235] border border-slate-800 rounded-xl px-6 py-3 flex items-center justify-between shadow-xl">
                                 <div className="flex items-center gap-4">
                                     <div className="bg-blue-600/20 p-2 rounded-lg"><Mail size={16} className="text-blue-500" /></div>
                                     <div className="flex flex-col">
@@ -1238,7 +1238,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                             </div>
 
                             {/* INTEGRATION TOOLBAR */}
-                            <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-3 flex flex-wrap items-center gap-4 shadow-lg">
+                            <div className="bg-[#172235] border border-slate-700 rounded-xl p-3 flex flex-wrap items-center gap-4 shadow-lg">
                                 {/* Property Search Box */}
                                 <div className="flex-1 min-w-[280px] relative">
                                     <div className="relative">
@@ -1334,7 +1334,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                     {showSignatureDropdown && (
                                         <>
                                             <div className="fixed inset-0 z-[55]" onClick={() => setShowSignatureDropdown(false)}></div>
-                                            <div className="absolute top-full right-0 mt-2 bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[80] p-2 animate-in fade-in slide-in-from-top-2 duration-200 min-w-[200px]">
+                                            <div className="absolute top-full right-0 mt-2 bg-[#172235] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[80] p-2 animate-in fade-in slide-in-from-top-2 duration-200 min-w-[200px]">
                                                 {users.length > 0 ? users.map(user => (
                                                     <button 
                                                         key={user.id}
@@ -1383,7 +1383,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             {/* SIGNATURE MODAL */}
             {showSignatureModal && (
                 <div className="fixed inset-0 bg-black/80 z-[160] flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setShowSignatureModal(false)}>
-                    <div className="bg-[#1e293b] border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#172235] border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2"><PenTool size={20} className="text-blue-500"/> Manage User Signatures</h3>
                             <button onClick={() => setShowSignatureModal(false)} className="text-gray-400 hover:text-white transition-colors"><X size={24} /></button>
@@ -1432,7 +1432,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
             {/* TEST EMAIL MODAL */}
             {showTestModal && (
                 <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-[#1e293b] border border-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+                    <div className="bg-[#172235] border border-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles size={20} className="text-blue-500"/> Send Test Message</h3>
                             <button onClick={() => setShowTestModal(false)} className="text-slate-500 hover:text-white"><X size={20}/></button>
@@ -1442,7 +1442,7 @@ export const BuyerBlastCampaignManager: React.FC<BuyerBlastCampaignManagerProps>
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1.5 block">Target Email</label>
                                 <input 
                                     type="email" 
-                                    className="w-full bg-[#0f172a] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                                    className="w-full bg-[#0B1220] border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
                                     placeholder="your-email@domain.com"
                                     value={testEmail}
                                     onChange={(e) => setTestEmail(e.target.value)}

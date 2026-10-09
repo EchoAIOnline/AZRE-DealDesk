@@ -98,7 +98,7 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
   }, [isFilterOpen, onToggleFilter]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex flex-col sticky top-0 z-30 shadow-sm transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1a273d] dark:to-[#172235] border-b border-gray-200 dark:border-gray-700/80 flex flex-col sticky top-0 z-30 shadow-sm transition-colors duration-200">
       <div className="p-4 md:px-8 flex flex-col gap-4">
         
         {/* Top Row: Title, Search, Controls */}
@@ -216,7 +216,7 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
 
       {/* Filter Panel */}
       {isFilterOpen && filterContent && (
-          <div ref={filterPanelRef} className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 animate-in slide-in-from-top-2">
+          <div ref={filterPanelRef} className="border-t border-gray-200 dark:border-gray-700/80 bg-gray-50 dark:bg-[#111a2b] p-4 animate-in slide-in-from-top-2">
               <div className="flex justify-between items-center mb-4">
                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><Filter size={14}/> Active Filters</h3>
                  <button onClick={onToggleFilter} className="text-gray-400 hover:text-gray-900 dark:hover:text-white"><X size={16}/></button>

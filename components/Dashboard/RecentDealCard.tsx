@@ -37,7 +37,7 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
     return (
         <div 
             onClick={() => onClick(deal)}
-            className="bg-white dark:bg-[#1e2330] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700/50 shadow-lg hover:border-blue-500/50 transition-all cursor-pointer group flex flex-col h-full relative"
+            className="bg-white dark:bg-[#172235] dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] rounded-xl overflow-hidden border interactive-card cursor-pointer group flex flex-col h-full relative"
         >
             {/* Image Section */}
             <div className="h-28 w-full relative bg-gray-100 dark:bg-gray-800">
@@ -57,7 +57,7 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
                     </div>
                 )}
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#1e2330] via-transparent to-transparent opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#172235] via-transparent to-transparent opacity-85"></div>
                 
                 {/* Status Badge */}
                 <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold shadow-sm backdrop-blur-sm ${getStatusColor(deal.offerDecision)}`}>

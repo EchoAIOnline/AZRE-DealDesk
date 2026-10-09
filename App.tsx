@@ -2084,14 +2084,14 @@ export default function App() {
       {isMobileMenuOpen && (<div className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />)}
       
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 md:p-4 shadow-lg flex justify-between items-center z-10 shrink-0 gap-4">
+          <div className="bg-white dark:bg-gray-800 dark:bg-gradient-to-r dark:from-[#172235] dark:via-[#19253a] dark:to-[#172235] border-b border-gray-200 dark:border-gray-700/80 p-3 md:p-4 shadow-lg flex justify-between items-center z-10 shrink-0 gap-4">
               <div className="flex items-center gap-3 md:gap-4">
                   <div className="md:hidden"><button onClick={() => setIsMobileMenuOpen(true)} className="bg-blue-600 p-2.5 rounded-lg hover:bg-blue-500 transition-colors shadow-sm"><Menu size={24} className="text-white" /></button></div>
                   <Logo iconSize={32} />
               </div>
               <div className="flex-1 max-w-xl mx-auto relative hidden md:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input type="text" placeholder="Global Search..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder-gray-500" value={globalSearchQuery} onChange={(e) => setGlobalSearchQuery(e.target.value)} />
+                  <input type="text" placeholder="Global Search..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder-gray-500 shadow-inner" value={globalSearchQuery} onChange={(e) => setGlobalSearchQuery(e.target.value)} />
               </div>
               <div className="flex items-center gap-3">
                   <button onClick={() => setIsWebEmbedOpen(true)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Open Web Viewer">

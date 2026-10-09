@@ -34,8 +34,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         const isActive = location.pathname === path || (path === '/dashboard' && location.pathname === '/');
         return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
             isActive 
-            ? 'bg-blue-600/10 text-blue-500 font-bold border border-blue-500/20' 
-            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white border border-transparent'
+            ? 'bg-blue-600/15 text-blue-400 font-bold border border-blue-500/40 shadow-sm shadow-blue-500/10' 
+            : 'text-gray-400 hover:bg-[#1d2b42] hover:text-white border border-transparent'
         } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`;
     };
 

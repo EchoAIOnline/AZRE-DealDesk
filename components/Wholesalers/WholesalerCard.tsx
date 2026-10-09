@@ -18,7 +18,7 @@ export const WholesalerCard: React.FC<WholesalerCardProps> = ({ wholesaler, onEd
     return (
         <div 
           onClick={() => { if(!isDeleting) onView ? onView(wholesaler) : onEdit(wholesaler) }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-orange-500/50 transition group cursor-pointer shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-800/80 flex gap-4 items-start"
+          className="bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] rounded-lg p-4 border interactive-card group cursor-pointer flex gap-4 items-start"
         >
             {/* Left Side: Large Rectangular Profile Picture */}
             <div className="w-24 h-32 shrink-0 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-600 shadow-sm relative">

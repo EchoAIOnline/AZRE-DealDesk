@@ -154,7 +154,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   return (
     <div 
       onClick={() => onEdit(deal)}
-      className={`bg-white dark:bg-gray-800 rounded-lg mb-4 border shadow-md transition hover:border-blue-500/50 cursor-pointer group overflow-hidden ${selected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-700'}`}
+      className={`bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] rounded-lg mb-4 border cursor-pointer group overflow-hidden interactive-card ${selected ? '!border-[#629AFF] !ring-1 !ring-[#629AFF] !shadow-[0_0_16px_rgba(98,154,255,0.35)]' : ''}`}
     >
       <div className="w-full h-32 bg-gray-100 dark:bg-gray-900 relative">
         {onSelect && (
@@ -191,7 +191,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
                 <span className="text-[10px] uppercase tracking-wider">No Image Found</span>
             </div>
         )}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900/50 dark:from-gray-900/90 to-transparent pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900/50 dark:from-[#172235]/95 to-transparent pointer-events-none"></div>
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             <div className={`px-2 py-1 rounded text-xs font-bold shadow-sm ${isClosed ? 'bg-purple-600 text-white' : isUnderContract ? 'bg-green-600 text-white' : isDeclined ? 'bg-red-600 text-white' : isCanceled ? 'bg-orange-600 text-white' : 'bg-yellow-500 text-white'}`}>
               {deal.offerDecision || 'New'}
@@ -239,9 +239,9 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
                 </div>
             </div>
             <div className="flex flex-col items-start">
-                <span className="text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wide font-semibold mb-0.5">My Offer:</span>
+                <span className="text-gray-400 text-[11px] uppercase tracking-wide font-semibold mb-0.5">My Offer:</span>
                 <div className="flex flex-col items-start gap-1">
-                    <span className="text-green-600 dark:text-green-400 font-bold">{deal.offerPrice ? formatCurrency(deal.offerPrice) : '-'}</span>
+                    <span className="text-emerald-400 font-bold tabular-nums tracking-tight">{deal.offerPrice ? formatCurrency(deal.offerPrice) : '-'}</span>
                 </div>
             </div>
             { (arvToDisplay !== undefined && arvToDisplay > 0) && (

@@ -64,7 +64,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onEdit, onDelete, o
     return (
         <div 
           onClick={() => { if(!isDeleting) onView ? onView(agent) : onEdit(agent) }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-purple-500/50 transition group cursor-pointer shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-800/80 flex flex-col gap-4"
+          className="bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] rounded-lg p-4 border interactive-card group cursor-pointer flex flex-col gap-4"
         >
             <div className="flex gap-4 items-start w-full">
             {/* Left Side: Large Rectangular Profile Picture */}

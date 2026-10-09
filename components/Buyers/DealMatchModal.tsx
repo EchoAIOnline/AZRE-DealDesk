@@ -39,6 +39,8 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
     const matches = useMemo(() => {
         try {
             if (!buyer || !deals) return [];
+            const status = (buyer.status || '').toLowerCase();
+            if (status.includes('deactivated')) return [];
             return MatchingEngine.findDealsForBuyer(buyer, deals).map(result => ({
                 deal: result.deal,
                 isMatch: result.match.isMatch,
@@ -88,7 +90,7 @@ export const DealMatchModal: React.FC<DealMatchModalProps> = ({ buyer, deals, on
                                 <div 
                                     key={deal.id} 
                                     onClick={() => onOpenDeal(deal)}
-                                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:border-blue-500/50 hover:shadow-md transition-all group cursor-pointer"
+                                    className="bg-white dark:bg-gray-800 dark:bg-gradient-to-b dark:from-[#1d2b42] dark:to-[#172235] border interactive-card rounded-xl p-4 group cursor-pointer"
                                 >
                                     <div className="flex justify-between items-start mb-3 gap-3">
                                         <div className="flex items-center gap-3 min-w-0 flex-1">
