@@ -16,7 +16,7 @@ const POTENTIAL_STATUSES = [
   'Monitoring Pending Status After Offer', 
   'Monitoring Offer After Seller Declined', 
   'Agent Responded To Offer',
-  'Analyzing' 
+  'Research' 
 ];
 
 const UNDER_CONTRACT_STATUSES = [

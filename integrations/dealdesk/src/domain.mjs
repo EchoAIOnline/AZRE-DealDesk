@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const stages = ['No Offer Made Yet','Seller Counter-Offered','Monitoring Pending Status Before Offer','Requires A Buyers Agent','Made Verbal Offer On Property','Made Written Offer On Property','Monitoring Pending Status After Offer','Monitoring Offer After Seller Declined','Analyzing','Seller Accepted Offer','Agent Sending Contract','Deal Under Contract','Listing Removed - Now Off Market','Offer Declined','Offer Declined and Sold','Sold To Another Investor','Deal Canceled','Priced Too High To Buy','No Longer Interested In Buying','Declined','Deal No Longer Available','Deal Successfully Closed'];
+export const stages = ['No Offer Made Yet','Seller Counter-Offered','Monitoring Pending Status Before Offer','Requires A Buyers Agent','Made Verbal Offer On Property','Made Written Offer On Property','Monitoring Pending Status After Offer','Monitoring Offer After Seller Declined','Research','Analyzing','Seller Accepted Offer','Agent Sending Contract','Deal Under Contract','Listing Removed - Now Off Market','Offer Declined','Offer Declined and Sold','Sold To Another Investor','Deal Canceled','Priced Too High To Buy','No Longer Interested In Buying','Declined','Deal No Longer Available','Deal Successfully Closed'];
 export const activeStages = stages.slice(0, 12);
 export const id = z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/);
 const text = z.string().trim().min(1).max(1000);

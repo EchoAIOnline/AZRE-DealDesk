@@ -12,7 +12,7 @@ export const POTENTIAL_STATUSES = [
   'Made Verbal Offer On Property', 
   'Monitoring Pending Status After Offer', 
   'Monitoring Offer After Seller Declined', 
-  'Analyzing'
+  'Research'
 ];
 
 export const SELLER_ACCEPTED_OFFER_STATUSES = [

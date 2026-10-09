@@ -164,7 +164,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         { id: 'No Longer Available', label: 'No Longer Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'No Longer Available').length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
     ] : [
         { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
-        { id: 'Potential', label: 'Potential', count: (filteredDeals || []).filter(d => d && POTENTIAL_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
+        { id: 'Potential', label: 'Potential', count: (filteredDeals || []).filter(d => d && (POTENTIAL_STATUSES.includes(d.offerDecision) || d.offerDecision === 'Analyzing')).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' }, 
         { id: 'Seller Accepted Offer', label: 'Seller Accepted Offer', count: (filteredDeals || []).filter(d => d && SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400' }, 
         { id: 'Under Contract', label: 'Under Contract', count: (filteredDeals || []).filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision) && !SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
         { id: 'Closed', label: 'Closed', count: (filteredDeals || []).filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
@@ -306,7 +306,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                     const stageDeals = orderedDeals; 
                     if (stageDeals.length === 0) return (<div className="text-center py-20 text-gray-500"><p>No deals found in this stage matching your criteria.</p></div>); 
                     return statusesToShow.map(status => { 
-                        const dealsInGroup = stageDeals.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled')); 
+                        const dealsInGroup = stageDeals.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled') || (status === 'Research' && d.offerDecision === 'Analyzing')); 
                         if (dealsInGroup.length === 0) return null; 
                         return (
                             <div key={status} className="mb-10 scroll-mt-24">

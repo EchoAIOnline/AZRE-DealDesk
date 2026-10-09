@@ -1937,7 +1937,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                         <div className="space-y-4">
                             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2"><h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><Activity size={14}/> Workflow & Strategy</h3></div>
                             <div className="space-y-4">
-                                <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Pipeline Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-blue-500/30 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none font-medium" value={deal.offerDecision === 'Canceled' ? 'Deal Canceled' : (deal.offerDecision || '')} onChange={e => { 
+                                <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Pipeline Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-blue-500/30 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none font-medium" value={deal.offerDecision === 'Canceled' ? 'Deal Canceled' : (deal.offerDecision === 'Analyzing' ? 'Research' : (deal.offerDecision || ''))} onChange={e => { 
     const newStatus = e.target.value;
     const updates: any = { offerDecision: newStatus };
     const now = new Date().toISOString();

@@ -1848,10 +1848,10 @@ export default function App() {
             }
         }
     }
-    const filtered = (filteredDeals || []).filter(d => d && (statusesToShow.includes(d.offerDecision) || (statusesToShow.includes('Deal Canceled') && d.offerDecision === 'Canceled')));
+    const filtered = (filteredDeals || []).filter(d => d && (statusesToShow.includes(d.offerDecision) || (statusesToShow.includes('Deal Canceled') && d.offerDecision === 'Canceled') || (statusesToShow.includes('Research') && d.offerDecision === 'Analyzing')));
     const groupedDeals: Deal[] = [];
     statusesToShow.forEach(status => {
-        groupedDeals.push(...filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled')));
+        groupedDeals.push(...filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled') || (status === 'Research' && d.offerDecision === 'Analyzing')));
     });
     return groupedDeals;
   };
