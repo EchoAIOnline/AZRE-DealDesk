@@ -107,9 +107,9 @@ export function makeHandler({createClient,env=process.env}) {
   return async (req,res) => {
     res.setHeader('Cache-Control','no-store');
     if (req.method !== 'POST') return res.status(405).json({error:{code:'METHOD_NOT_ALLOWED',message:'Use POST.'}});
-    const key = env.DEALDESK_PLUGIN_API_KEY;
-    if (!key || key.length < 32 || key === env.DEALDESK_API_KEY || !env.DEALDESK_PLUGIN_ORGANIZATION_ID || !env.SUPABASE_SERVICE_ROLE_KEY || !env.VITE_SUPABASE_URL) return res.status(503).json({error:{code:'CONFIGURATION',message:'Plugin backend is not configured.'}});
-    if (!equal(req.headers.authorization,`Bearer ${key}`)) return res.status(401).json({error:{code:'UNAUTHORIZED',message:'Authentication required.'}});
+    const keys = [env.DEALDESK_PLUGIN_API_KEY, env.DEALDESK_PLUGIN_API_KEY2].filter(key => typeof key === 'string' && key.length >= 32 && key !== env.DEALDESK_API_KEY);
+    if (!keys.length || !env.DEALDESK_PLUGIN_ORGANIZATION_ID || !env.SUPABASE_SERVICE_ROLE_KEY || !env.VITE_SUPABASE_URL) return res.status(503).json({error:{code:'CONFIGURATION',message:'Plugin backend is not configured.'}});
+    if (!keys.some(key => equal(req.headers.authorization,`Bearer ${key}`))) return res.status(401).json({error:{code:'UNAUTHORIZED',message:'Authentication required.'}});
     try {
       const db = createClient(env.VITE_SUPABASE_URL,env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
       const result = await executeOperation(db,req.body,{organizationId:env.DEALDESK_PLUGIN_ORGANIZATION_ID,writes:env.DEALDESK_PLUGIN_WRITES === 'true',archive:env.DEALDESK_PLUGIN_ARCHIVE === 'true'});
