@@ -40,6 +40,18 @@
             "acquisitionManager": {
               "type": "string",
               "maxLength": 1000
+            },
+            "queueStatus": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "pipelineType": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "listingType": {
+              "type": "string",
+              "maxLength": 1000
             }
           },
           "additionalProperties": false

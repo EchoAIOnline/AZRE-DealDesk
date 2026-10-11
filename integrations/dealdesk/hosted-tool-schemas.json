@@ -1,7 +1,7 @@
 [
   {
     "name": "create_deal",
-    "description": "Create an AZRE acquisition opportunity using only known facts. offerDecision is Pipeline Status and defaults to No Offer Made Yet. Address/MLS duplicates return DUPLICATE with existing records. Never sends offers or messages.",
+    "description": "Create an AZRE acquisition opportunity using only known facts. offerDecision is Pipeline Status and defaults to No Offer Made Yet. Address/MLS duplicates return DUPLICATE with existing records. Defaults queueStatus to In Pipeline; use In Queue for AZRE Queue. Never sends offers or messages.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -334,6 +334,14 @@
                   "type": "null"
                 }
               ]
+            },
+            "queueStatus": {
+              "type": "string",
+              "enum": [
+                "In Queue",
+                "In Pipeline"
+              ],
+              "description": "Queue placement. In Queue routes to AZRE Queue; In Pipeline routes by listingType. Backend synchronizes pipelineType atomically."
             }
           },
           "required": [
@@ -356,7 +364,7 @@
   },
   {
     "name": "update_deal",
-    "description": "PATCH an existing deal after get_deal. Only supplied fields change; a stale expected_revision returns CONFLICT. offerDecision = Pipeline Status; status is separate/general status; offerPrice = AZRE offer; negotiatedAskingPrice = seller counter. No outreach or contract execution.",
+    "description": "PATCH an existing deal after get_deal. Only supplied fields change; a stale expected_revision returns CONFLICT. offerDecision = Pipeline Status; status is separate/general status; offerPrice = AZRE offer; negotiatedAskingPrice = seller counter. queueStatus controls queue placement; pipelineType is derived automatically. No outreach or contract execution.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -701,6 +709,14 @@
                   "type": "null"
                 }
               ]
+            },
+            "queueStatus": {
+              "type": "string",
+              "enum": [
+                "In Queue",
+                "In Pipeline"
+              ],
+              "description": "Queue placement. In Queue routes to AZRE Queue; In Pipeline routes by listingType. Backend synchronizes pipelineType atomically."
             }
           },
           "additionalProperties": false

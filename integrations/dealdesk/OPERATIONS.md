@@ -78,3 +78,30 @@ all eight reads. Cross-tenant write checks should use a missing target ID, or
 local fixtures; never edit an actual other-tenant row. Cleanup only explicitly
 recorded test IDs through admin SQL. Retain their mutation audits. Do not expose
 cleanup as an MCP tool.
+
+## Queue placement
+
+Apply `backend/006-queue.sql` before deploying the queue-aware Hosted server. It
+requires the existing text `Deals.queueStatus` and `Deals.pipelineType` columns
+and the exact reviewed migration-005 function hash. It preserves grants, owner,
+execution permissions, revisions, audits, and existing deal values; there is no
+backfill. Save the previous Vercel deployment for rollback.
+
+`create_deal.fields.queueStatus` and `update_deal.fields.queueStatus` accept only
+`In Queue` and `In Pipeline`. New deals default to In Pipeline and Listed On MLS.
+The atomic mutation function derives pipelineType: In Queue -> azre-queue;
+In Pipeline + Off-Market -> off-market; otherwise -> mls. Changing listingType
+on a queued deal keeps it queued. Omitted queue placement remains unchanged.
+JV/DFD records cannot be reassigned via queueStatus. pipelineType is readable and
+filterable but cannot be directly written through Hosted.
+
+`get_deal`/`search_deals` expose queueStatus and pipelineType; `search_deals`
+accepts exact filters for queueStatus, pipelineType, and listingType. Filters
+match stored values, so older null queueStatus values do not match In Pipeline.
+
+After deployment, refresh the existing connector's tool list. Verify discovery,
+then use only a clearly marked disposable MCP TEST record to test queue entry,
+listing changes, queue exit, stale revisions, and audit entries. Existing
+business deals must not be changed for validation. For rollback, restore the
+previous application deployment first, then apply `006-queue-rollback.sql` only
+if its guard still matches. Rollback preserves all deal values and audit rows.
