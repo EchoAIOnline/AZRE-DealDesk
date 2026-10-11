@@ -39,13 +39,13 @@ export const createSchema = table => {
   return z.object(Object.fromEntries(Object.entries(fields[table]).map(([k,v]) => [k,required.includes(k) ? v : v.optional()]))).strict();
 };
 export const searchFields = {
-  Deals:['address','offerDecision','subMarket','neighborhood','county','propertyType','acquisitionManager'],
+  Deals:['queueStatus','pipelineType','listingType','address','offerDecision','subMarket','neighborhood','county','propertyType','acquisitionManager'],
   Buyers:['name','companyName','email','status'],
   Agents:['name','email','brokerage','doNotCall'],
   PluginTasks:['entityType','entityId','status','assignee']
 };
 export const publicFields = {
-  Deals:['id',...Object.keys(fields.Deals),'status','zoning','listingType','listingStatus','forSaleBy','dateListed','inspectionDate','emdDate','underContractDate','closedDate','declinedDate','logs','offerDecisionTracking','pluginArchivedAt'],
+  Deals:['id','queueStatus','pipelineType',...Object.keys(fields.Deals),'status','zoning','listingType','listingStatus','forSaleBy','dateListed','inspectionDate','emdDate','underContractDate','closedDate','declinedDate','logs','offerDecisionTracking','pluginArchivedAt'],
   Buyers:['id',...Object.keys(fields.Buyers),'notes','subscriptionStatus','pluginArchivedAt'],
   Agents:['id','name','agentFirstName','agentLastName','email','phone','brokerage','notes','doNotCall','subscriptionStatus','nextFollowUpDate','lastContactDate','pluginArchivedAt'],
   PluginTasks:['id',...Object.keys(fields.PluginTasks),'priority','createdAt','pluginArchivedAt']
