@@ -100,8 +100,9 @@ export interface DealDocument {
 
 export interface Deal {
   id: string;
+  _isJV?: boolean;
   createdAt?: string;
-  pipelineType?: 'mls' | 'off-market' | 'dfd'; // New Field to distinguish pipelines
+  pipelineType?: 'mls' | 'off-market' | 'dfd' | 'azre-queue'; // Field to distinguish pipelines
   address: string;
   mls: string;
   listPrice: number;
@@ -117,8 +118,10 @@ export interface Deal {
   thirdAgentId?: string;
   
   acquisitionManager: string;
-  status: string; // Internal system status
+  status?: string; // Removed from Deals table
   offerDecision: string; // Pipeline status
+  queueStatus?: string;
+  queueStatue?: string;
   subMarket: string;
   neighborhood?: string; // New Field
   dealType: string[]; // UPDATED: Changed to string array for multi-select

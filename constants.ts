@@ -54,6 +54,11 @@ export const DFD_PIPELINE_STATUSES = [
   'No Longer Available'
 ];
 
+export const QUEUE_STATUSES = [
+  'In Queue',
+  'In Pipeline'
+];
+
 export const OFFER_DECISIONS = [
     ...POTENTIAL_STATUSES,
     ...UNDER_CONTRACT_STATUSES,

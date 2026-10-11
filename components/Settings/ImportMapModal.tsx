@@ -146,7 +146,6 @@ export const ImportMapModal: React.FC<ImportMapModalProps> = ({ file, onClose, o
                 const deal: any = {
                     id: generateId(),
                     createdAt: new Date().toISOString(),
-                    status: 'Analyzing',
                     offerDecision: 'No Offer Made Yet',
                     dealType: [], // UPDATED to empty array
                     logs: [`${getLogTimestamp()}: Imported from ${file.name}`],

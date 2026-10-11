@@ -1795,8 +1795,13 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div><label className="text-xs text-gray-500 block mb-1">Listing Type</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.listingType || ''} onChange={e => { 
     const val = e.target.value;
     let newPipelineType = deal.pipelineType;
-    if (val === 'Listed On MLS') newPipelineType = 'mls';
-    if (val === 'Off-Market') newPipelineType = 'off-market';
+    if (deal.queueStatus === 'In Queue') {
+        newPipelineType = 'azre-queue';
+    } else if (val === 'Off-Market') {
+        newPipelineType = 'off-market';
+    } else if (val === 'Listed On MLS') {
+        newPipelineType = 'mls';
+    }
     updateDealState({listingType: val, pipelineType: newPipelineType}); 
     if(onUpdate) onUpdate(deal.id, {listingType: val, pipelineType: newPipelineType}); 
     triggerSave(); 
@@ -1943,7 +1948,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                         <div className="space-y-4">
                             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 flex items-center gap-2"><h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><Activity size={14}/> Workflow & Strategy</h3></div>
                             <div className="space-y-4">
-                                <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Pipeline Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-blue-500/30 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none font-medium" value={deal.offerDecision === 'Canceled' ? 'Deal Canceled' : (deal.offerDecision === 'Analyzing' ? 'Research' : (deal.offerDecision || ''))} onChange={e => { 
+                                <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Pipeline Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-blue-500/30 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none font-medium" value={deal.offerDecision === 'Canceled' ? 'Deal Canceled' : (deal.offerDecision || '')} onChange={e => { 
     const newStatus = e.target.value;
     const updates: any = { offerDecision: newStatus };
     const now = new Date().toISOString();
@@ -1954,7 +1959,40 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     if(onUpdate) onUpdate(deal.id, updates);
     triggerSave(); 
 }}><option disabled>-- Potential Deals --</option>{POTENTIAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Under Contract --</option>{UNDER_CONTRACT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Counter Offers --</option>{COUNTER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Declined / Dead --</option>{DECLINED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Canceled --</option>{CANCELED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}<option disabled>-- Closed --</option>{CLOSED_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                                <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}><option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option><option value="Sent LOI Email">Sent LOI Email</option><option value="Sent Initial Text Message">Sent Initial Text Message</option><option value="First Call, No Answer">First Call, No Answer</option><option value="Spoke With Agent">Spoke With Agent</option><option value="Waiting To Hear Back">Waiting To Hear Back</option><option value="Offer Declined">Offer Declined</option><option value="Offer Accepted">Offer Accepted</option></select></div><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}><option value="" disabled>Unassigned</option><option value="Ashari Zakar">Ashari Zakar</option><option value="Angelica Henderson">Angelica Henderson</option><option value="Grias Ramos">Grias Ramos</option></select></div></div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label>
+                                        <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}>
+                                            <option value="Agent Not Contacted Yet">Agent Not Contacted Yet</option>
+                                            <option value="Sent LOI Email">Sent LOI Email</option>
+                                            <option value="Sent Initial Text Message">Sent Initial Text Message</option>
+                                            <option value="First Call, No Answer">First Call, No Answer</option>
+                                            <option value="Spoke With Agent">Spoke With Agent</option>
+                                            <option value="Waiting To Hear Back">Waiting To Hear Back</option>
+                                            <option value="Offer Declined">Offer Declined</option>
+                                            <option value="Offer Accepted">Offer Accepted</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Queue Status</label>
+                                        <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.queueStatus || ''} onChange={e => { 
+                                            const val = e.target.value; 
+                                            let newPipelineType = deal.pipelineType;
+                                            if (val === 'In Queue') {
+                                                newPipelineType = 'azre-queue';
+                                            } else if (val === 'In Pipeline') {
+                                                newPipelineType = deal.listingType === 'Off-Market' ? 'off-market' : 'mls';
+                                            }
+                                            updateDealState({queueStatus: val, pipelineType: newPipelineType}); 
+                                            if(onUpdate) onUpdate(deal.id, {queueStatus: val, pipelineType: newPipelineType}); 
+                                            triggerSave(); 
+                                        }}>
+                                            <option value="">Select...</option>
+                                            <option value="In Queue">In Queue</option>
+                                            <option value="In Pipeline">In Pipeline</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-800/50">
                                     <div>
@@ -1976,7 +2014,26 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                             ))}
                                         </div>
                                     </div>
-                                    <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Interest Level</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.interestLevel || ''} onChange={e => { updateDealState({interestLevel: e.target.value}); if(onUpdate) onUpdate(deal.id, {interestLevel: e.target.value}); triggerSave(); }}><option value="">Interest...</option><option value="High">High</option><option value="Mild">Mild</option><option value="Not Interested">Not Interested</option></select></div>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label>
+                                            <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}>
+                                                <option value="" disabled>Unassigned</option>
+                                                <option value="Ashari Zakar">Ashari Zakar</option>
+                                                <option value="Angelica Henderson">Angelica Henderson</option>
+                                                <option value="Grias Ramos">Grias Ramos</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Interest Level</label>
+                                            <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.interestLevel || ''} onChange={e => { updateDealState({interestLevel: e.target.value}); if(onUpdate) onUpdate(deal.id, {interestLevel: e.target.value}); triggerSave(); }}>
+                                                <option value="">Interest...</option>
+                                                <option value="High">High</option>
+                                                <option value="Mild">Mild</option>
+                                                <option value="Not Interested">Not Interested</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -2325,8 +2382,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                                    {availableMatchedBuyers.length > 0 ? availableMatchedBuyers.map(buyer => (
-                                        <div key={buyer.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">
+                                    {availableMatchedBuyers.length > 0 ? availableMatchedBuyers.map((buyer, idx) => (
+                                        <div key={buyer.id ? `${buyer.id}-${idx}` : idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">
                                             <div className="font-medium text-sm text-gray-900 dark:text-white truncate">{buyer.name || buyer.companyName}</div>
                                             <div className="flex gap-2">
                                                 <button type="button" onClick={() => handleMarkInterested(buyer.id)} className="flex-1 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 py-1.5 rounded text-xs font-medium transition-colors">Interested</button>
@@ -2347,8 +2404,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 </h4>
                                 
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                                    {interestedBuyersList.length > 0 ? interestedBuyersList.map(({ buyer, price }) => (
-                                        <div key={buyer.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">
+                                    {interestedBuyersList.length > 0 ? interestedBuyersList.map(({ buyer, price }, idx) => (
+                                        <div key={buyer.id ? `${buyer.id}-${idx}` : idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col gap-2">
                                             <div className="font-medium text-sm text-gray-900 dark:text-white truncate">{buyer.name || buyer.companyName}</div>
                                             <div className="relative">
                                                 <span className="absolute left-2 top-1.5 text-gray-400 text-xs">$</span>
@@ -2379,8 +2436,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">{passedBuyersList.length}</span>
                                 </h4>
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                                    {passedBuyersList.length > 0 ? passedBuyersList.map(buyer => (
-                                        <div key={buyer.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
+                                    {passedBuyersList.length > 0 ? passedBuyersList.map((buyer, idx) => (
+                                        <div key={buyer.id ? `${buyer.id}-${idx}` : idx} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
                                             <div className="font-medium text-sm text-gray-900 dark:text-white truncate">{buyer.name || buyer.companyName}</div>
                                             <button type="button" onClick={() => {
                                                 const currentPassed = dealRef.current.dispo?.passedBuyers || [];
@@ -2518,7 +2575,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#FF453A] rounded-r-md"></div>
                                 <div className="pl-3 h-full flex flex-col">
                                     {(() => {
-                                        const docs = (deal.documents || []).filter(d => d.category === 'A-B Purchase Contract');
+                                        const docs = Array.from(new Map((deal.documents || []).filter(d => d && d.category === 'A-B Purchase Contract').map((d, idx) => [d.id || `${d.name}-${idx}`, d])).values());
                                         return (
                                             <>
                                                 <div className="flex justify-between items-center mb-4">
@@ -2550,8 +2607,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                     </div>
                                                 ) : (
                                                     <div className="mt-auto">
-                                                        {docs.map(doc => (
-                                                            <div key={doc.id} className="border border-red-200 dark:border-[#1E3A2B] bg-red-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
+                                                        {docs.map((doc, idx) => (
+                                                            <div key={doc.id ? `${doc.id}-${idx}` : idx} className="border border-red-200 dark:border-[#1E3A2B] bg-red-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
                                                                 <div className="flex items-center gap-3 overflow-hidden">
                                                                     <div className="w-8 h-10 bg-white/50 dark:bg-white/5 rounded flex flex-col justify-center items-center shrink-0 border border-black/5 dark:border-white/5">
                                                                         <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
@@ -2588,7 +2645,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#32D74B] rounded-r-md"></div>
                                 <div className="pl-3 h-full flex flex-col">
                                     {(() => {
-                                        const docs = (deal.documents || []).filter(d => d.category === 'B-C Purchase Contract');
+                                        const docs = Array.from(new Map((deal.documents || []).filter(d => d && d.category === 'B-C Purchase Contract').map((d, idx) => [d.id || `${d.name}-${idx}`, d])).values());
                                         return (
                                             <>
                                                 <div className="flex justify-between items-center mb-4">
@@ -2620,8 +2677,8 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                     </div>
                                                 ) : (
                                                     <div className="mt-auto">
-                                                        {docs.map(doc => (
-                                                            <div key={doc.id} className="border border-green-200 dark:border-[#1E3A2B] bg-green-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
+                                                        {docs.map((doc, idx) => (
+                                                            <div key={doc.id ? `${doc.id}-${idx}` : idx} className="border border-green-200 dark:border-[#1E3A2B] bg-green-50 dark:bg-[#0A1A10] rounded-lg p-3 flex items-center justify-between group">
                                                                 <div className="flex items-center gap-3 overflow-hidden">
                                                                     <div className="w-8 h-10 bg-white/50 dark:bg-white/5 rounded flex flex-col justify-center items-center shrink-0 border border-black/5 dark:border-white/5">
                                                                         <FileIcon size={18} className="text-gray-500 dark:text-gray-300" />
@@ -2675,12 +2732,12 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                 </label>
                                 
                                 {(() => {
-                                    const docs = (deal.documents || []).filter(d => d.category === 'Other Documents');
+                                    const docs = Array.from(new Map((deal.documents || []).filter(d => d && d.category === 'Other Documents').map((d, idx) => [d.id || `${d.name}-${idx}`, d])).values());
                                     if (docs.length > 0) {
                                         return (
                                             <div className="mt-5 space-y-2">
-                                                {docs.map(doc => (
-                                                    <div key={doc.id} className="flex justify-between items-center bg-white dark:bg-[#1A1D24] p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 group transition-colors">
+                                                {docs.map((doc, idx) => (
+                                                    <div key={doc.id ? `${doc.id}-${idx}` : idx} className="flex justify-between items-center bg-white dark:bg-[#1A1D24] p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 group transition-colors">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                                                                 <FileIcon size={14} className="text-gray-500 dark:text-gray-400" />
@@ -2812,7 +2869,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                             {zillowDuplicateData.matches.map(match => (
                                 <div key={match.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                                     <div className="font-semibold text-gray-900 dark:text-white">{match.address || 'Unknown Address'}</div>
-                                    <div className="text-xs text-gray-500 mt-1">MLS: {match.mls || 'N/A'} • Status: {match.status || 'Active'}</div>
+                                    <div className="text-xs text-gray-500 mt-1">MLS: {match.mls || 'N/A'}{match.offerDecision ? ` • ${match.offerDecision}` : ''}</div>
                                     <button
                                         onClick={() => {
                                             setZillowDuplicateData(null);

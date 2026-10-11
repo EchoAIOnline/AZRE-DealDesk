@@ -223,7 +223,6 @@ async function handleScrape() {
         // Metadata
         data.acquisitionManager = stored.user_name || 'Extension User';
         data.createdAt = new Date().toISOString();
-        data.status = 'Analyzing';
         data.offerDecision = 'No Offer Made Yet';
         data.logs = [\`\${logTimestamp}: Imported via Chrome Extension\`];
         data.id = Math.random().toString(36).substr(2, 9);

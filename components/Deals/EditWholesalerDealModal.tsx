@@ -1068,7 +1068,20 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
                                     </div>
                                 </div>
 
-                                <div><label className="text-xs text-gray-500 block mb-1">Listing Type</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.listingType || ''} onChange={e => { updateDealState({listingType: e.target.value}); if(onUpdate) onUpdate(deal.id, {listingType: e.target.value}); triggerSave(); }}><option value="">Select...</option><option value="Listed On MLS">Listed On MLS</option><option value="Off-Market">Off-Market</option></select></div>
+                                <div><label className="text-xs text-gray-500 block mb-1">Listing Type</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.listingType || ''} onChange={e => { 
+    const val = e.target.value;
+    let newPipelineType = deal.pipelineType;
+    if (deal.queueStatus === 'In Queue') {
+        newPipelineType = 'azre-queue';
+    } else if (val === 'Off-Market') {
+        newPipelineType = 'off-market';
+    } else if (val === 'Listed On MLS') {
+        newPipelineType = 'mls';
+    }
+    updateDealState({listingType: val, pipelineType: newPipelineType}); 
+    if(onUpdate) onUpdate(deal.id, {listingType: val, pipelineType: newPipelineType}); 
+    triggerSave(); 
+}}><option value="">Select...</option><option value="Listed On MLS">Listed On MLS</option><option value="Off-Market">Off-Market</option></select></div>
                             </div>
 
                             <div className="grid md:grid-cols-4 gap-4">
@@ -1141,7 +1154,34 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
     if(onUpdate) onUpdate(deal.id, updates);
     triggerSave(); 
 }}><option disabled>-- Pipeline Status --</option><option value="Available">Available</option><option value="No Longer Available">No Longer Available</option></select></div>
-                                <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}><option value="Have Not Spoken With Wholesaler">Have Not Spoken With Wholesaler</option><option value="Spoke With Wholesaler">Spoke With Wholesaler</option></select></div><div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}><option value="" disabled>Unassigned</option><option value="Ashari Zakar">Ashari Zakar</option><option value="Angelica Henderson">Angelica Henderson</option><option value="Grias Ramos">Grias Ramos</option></select></div></div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Contact Status</label>
+                                        <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.contactStatus || ''} onChange={e => { updateDealState({contactStatus: e.target.value}); if(onUpdate) onUpdate(deal.id, {contactStatus: e.target.value}); triggerSave(); }}>
+                                            <option value="Have Not Spoken With Wholesaler">Have Not Spoken With Wholesaler</option>
+                                            <option value="Spoke With Wholesaler">Spoke With Wholesaler</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Queue Status</label>
+                                        <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.queueStatus || ''} onChange={e => { 
+                                            const val = e.target.value; 
+                                            let newPipelineType = deal.pipelineType;
+                                            if (val === 'In Queue') {
+                                                newPipelineType = 'azre-queue';
+                                            } else if (val === 'In Pipeline') {
+                                                newPipelineType = deal.listingType === 'Off-Market' ? 'off-market' : 'mls';
+                                            }
+                                            updateDealState({queueStatus: val, pipelineType: newPipelineType}); 
+                                            if(onUpdate) onUpdate(deal.id, {queueStatus: val, pipelineType: newPipelineType}); 
+                                            triggerSave(); 
+                                        }}>
+                                            <option value="">Select...</option>
+                                            <option value="In Queue">In Queue</option>
+                                            <option value="In Pipeline">In Pipeline</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-800/50">
                                     <div>
@@ -1163,7 +1203,26 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
                                             ))}
                                         </div>
                                     </div>
-                                    <div><label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Interest Level</label><select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.interestLevel || ''} onChange={e => { updateDealState({interestLevel: e.target.value}); if(onUpdate) onUpdate(deal.id, {interestLevel: e.target.value}); triggerSave(); }}><option value="">Interest...</option><option value="High">High</option><option value="Mild">Mild</option><option value="Not Interested">Not Interested</option></select></div>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Acq. Manager</label>
+                                            <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-xs" value={deal.acquisitionManager || ""} onChange={e => { updateDealState({acquisitionManager: e.target.value}); if(onUpdate) onUpdate(deal.id, {acquisitionManager: e.target.value}); triggerSave(); }}>
+                                                <option value="" disabled>Unassigned</option>
+                                                <option value="Ashari Zakar">Ashari Zakar</option>
+                                                <option value="Angelica Henderson">Angelica Henderson</option>
+                                                <option value="Grias Ramos">Grias Ramos</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Interest Level</label>
+                                            <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" value={deal.interestLevel || ''} onChange={e => { updateDealState({interestLevel: e.target.value}); if(onUpdate) onUpdate(deal.id, {interestLevel: e.target.value}); triggerSave(); }}>
+                                                <option value="">Interest...</option>
+                                                <option value="High">High</option>
+                                                <option value="Mild">Mild</option>
+                                                <option value="Not Interested">Not Interested</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

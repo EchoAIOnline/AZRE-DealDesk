@@ -79,6 +79,9 @@ const processIncomingItem = (item: any, tableName: string) => {
             processed.offerDecision = 'Deal Successfully Closed';
         }
         
+        processed.queueStatus = processed.queueStatus || (processed as any).queueStatue || undefined;
+        delete (processed as any).status;
+        
         processed.photos = cleanArrayField(processed.photos, false).filter(Boolean);
         
         // Map Documents (from Supabase) back to documents for the frontend
@@ -115,6 +118,19 @@ const processIncomingItem = (item: any, tableName: string) => {
             if (extractedDocs.length > 0) {
                 processed.documents = [...(processed.documents || []), ...extractedDocs];
             }
+        }
+        
+        // Deduplicate documents by id or url to prevent duplicate items and React keys
+        if (Array.isArray(processed.documents)) {
+            const seenDocKeys = new Set<string>();
+            processed.documents = processed.documents.filter((doc: any, idx: number) => {
+                if (!doc) return false;
+                const docKey = String(doc.id || doc.url || `${doc.name || 'doc'}-${idx}`);
+                if (seenDocKeys.has(docKey)) return false;
+                seenDocKeys.add(docKey);
+                if (!doc.id) doc.id = docKey;
+                return true;
+            });
         }
         
         processed.interestedBuyers = cleanArrayField(processed.interestedBuyers, false);
@@ -372,6 +388,11 @@ export const api = {
             if (payload.buyersWhoPassed && typeof payload.buyersWhoPassed === 'object') {
                 payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
             }
+            if (payload.queueStatus === undefined && (payload as any).queueStatue !== undefined) {
+                payload.queueStatus = (payload as any).queueStatue;
+            }
+            delete (payload as any).queueStatue;
+            delete payload.status;
             
             
             
@@ -497,6 +518,11 @@ export const api = {
                 if (payload.buyersWhoPassed && typeof payload.buyersWhoPassed === 'object') {
                     payload.buyersWhoPassed = JSON.stringify(payload.buyersWhoPassed);
                 }
+                if (payload.queueStatus === undefined && (payload as any).queueStatue !== undefined) {
+                    payload.queueStatus = (payload as any).queueStatue;
+                }
+                delete (payload as any).queueStatue;
+                delete payload.status;
                 
                 
                 

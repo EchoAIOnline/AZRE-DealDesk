@@ -99,8 +99,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
 
     // Sort deals by newest first for Recent Deals section
     const recentDeals = useMemo(() => {
-        return [...deals]
-            .filter(d => !d.pipelineType || d.pipelineType === 'mls' || d.pipelineType === 'off-market' || d.pipelineType === 'dfd')
+        const unique = Array.from(new Map(deals.map(d => [d.id, d])).values());
+        return unique
+            .filter(d => !d.pipelineType || d.pipelineType === 'mls' || d.pipelineType === 'off-market' || d.pipelineType === 'dfd' || d.pipelineType === 'azre-queue')
             .sort((a, b) => {
                 const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                 const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -774,8 +775,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                         <button onClick={() => navigate('/pipeline')} className="text-sm text-blue-400 hover:text-blue-300 hover:underline">View Pipeline</button>
                     </div>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                        {recentDeals.slice(0, 10).map(deal => (
-                            <div key={deal.id} className="min-w-[260px] w-[260px] shrink-0">
+                        {recentDeals.slice(0, 10).map((deal, idx) => (
+                            <div key={deal.id ? `${deal.id}-${idx}` : idx} className="min-w-[260px] w-[260px] shrink-0">
                                 <RecentDealCard 
                                     deal={deal} 
                                     onClick={onEdit}
