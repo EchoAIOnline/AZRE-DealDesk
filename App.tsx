@@ -1795,67 +1795,130 @@ export default function App() {
     );
   };
 
+  const normalizeSearchStr = (str: string) => {
+      if (!str) return "";
+      let s = String(str).toLowerCase().replace(/[,.]/g, ' ');
+      s = s.replace(/\b(rd|road)\b/g, 'road');
+      s = s.replace(/\b(st|street)\b/g, 'street');
+      s = s.replace(/\b(ave|avenue)\b/g, 'avenue');
+      s = s.replace(/\b(dr|drive)\b/g, 'drive');
+      s = s.replace(/\b(ln|lane)\b/g, 'lane');
+      s = s.replace(/\b(blvd|boulevard)\b/g, 'boulevard');
+      s = s.replace(/\b(ct|court)\b/g, 'court');
+      s = s.replace(/\b(pl|place)\b/g, 'place');
+      s = s.replace(/\b(ter|terrace)\b/g, 'terrace');
+      s = s.replace(/\b(pkwy|parkway)\b/g, 'parkway');
+      s = s.replace(/\b(hwy|highway)\b/g, 'highway');
+      s = s.replace(/\b(cir|circle)\b/g, 'circle');
+      return s;
+  };
+
+  const doesDealMatchSearch = (d: Deal, query: string) => {
+      if (!d || !query) return false;
+      const queryTerms = normalizeSearchStr(query).split(/\s+/).filter(t => t.length > 0);
+      if (queryTerms.length === 0) return true;
+      const addr = normalizeSearchStr(d.address || "");
+      const mls = normalizeSearchStr(d.mls || "");
+      const agent = normalizeSearchStr(d.agentName || "");
+      return queryTerms.every(term => 
+          addr.includes(term) || 
+          mls.includes(term) || 
+          agent.includes(term)
+      );
+  };
+
+  const getDealPipelinePath = (d: Deal): string => {
+      if (d.pipelineType === 'dfd' || d._isJV) return '/dfd-scouter';
+      if (d.queueStatus === 'In Queue' || (!d.queueStatus && d.pipelineType === 'azre-queue')) {
+          return '/azre-queue';
+      }
+      if (d.queueStatus === 'In Pipeline') {
+          return d.listingType === 'Off-Market' ? '/off-market-pipeline' : '/pipeline';
+      }
+      if (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') {
+          return '/off-market-pipeline';
+      }
+      return '/pipeline';
+  };
+
+  const handleGlobalSearchSubmit = (searchQuery?: string) => {
+      const q = (searchQuery !== undefined ? searchQuery : globalSearchQuery).trim();
+      if (!q) return;
+
+      const matchingDeals = (deals || []).filter(d => doesDealMatchSearch(d, q));
+      if (matchingDeals.length > 0) {
+          const currentPipelineMatch = matchingDeals.find(d => getDealPipelinePath(d) === location.pathname);
+          const targetDeal = currentPipelineMatch || matchingDeals[0];
+          const targetPath = getDealPipelinePath(targetDeal);
+
+          if (targetPath === '/pipeline' || targetPath === '/off-market-pipeline') {
+              setPipelineStage('All Deals');
+          } else if (targetPath === '/azre-queue') {
+              setAzreQueueStage('All Deals');
+          }
+
+          if (location.pathname !== targetPath) {
+              navigate(targetPath);
+          }
+      }
+  };
+
+  useEffect(() => {
+      const q = globalSearchQuery.trim();
+      if (q.length < 3) return;
+
+      const timer = setTimeout(() => {
+          const matchingDeals = (deals || []).filter(d => doesDealMatchSearch(d, q));
+          if (matchingDeals.length > 0) {
+              const currentPipelineMatch = matchingDeals.find(d => getDealPipelinePath(d) === location.pathname);
+              if (!currentPipelineMatch) {
+                  const targetDeal = matchingDeals[0];
+                  const targetPath = getDealPipelinePath(targetDeal);
+                  if (targetPath === '/pipeline' || targetPath === '/off-market-pipeline') {
+                      setPipelineStage('All Deals');
+                  } else if (targetPath === '/azre-queue') {
+                      setAzreQueueStage('All Deals');
+                  }
+                  if (location.pathname !== targetPath) {
+                      navigate(targetPath);
+                  }
+              }
+          }
+      }, 700);
+
+      return () => clearTimeout(timer);
+  }, [globalSearchQuery, deals, location.pathname]);
+
   const getFilteredDeals = () => {
     let filtered = [...(deals || [])].filter(Boolean); 
-    const isGlobalSearch = globalSearchQuery.trim().length > 0;
 
-    if (!isGlobalSearch) {
-        if (location.pathname === '/dfd-scouter') {
-            filtered = filtered.filter(d => d.pipelineType === 'dfd' || d._isJV);
-        } else if (location.pathname === '/off-market-pipeline') {
-            filtered = filtered.filter(d => {
-                if (d.pipelineType === 'dfd' || d._isJV) return false;
-                if (d.queueStatus === 'In Queue') return false;
-                if (d.queueStatus === 'In Pipeline') return d.listingType === 'Off-Market';
-                return (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') && d.pipelineType !== 'azre-queue';
-            });
-        } else if (location.pathname === '/azre-queue') {
-            filtered = filtered.filter(d => {
-                if (d.pipelineType === 'dfd' || d._isJV) return false;
-                if (d.queueStatus === 'In Pipeline') return false;
-                return d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue';
-            });
-        } else if (location.pathname === '/pipeline') {
-            filtered = filtered.filter(d => {
-                if (d.pipelineType === 'dfd' || d._isJV) return false;
-                if (d.queueStatus === 'In Queue') return false;
-                if (d.queueStatus === 'In Pipeline') return d.listingType !== 'Off-Market';
-                return (d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue';
-            });
-        }
+    if (location.pathname === '/dfd-scouter') {
+        filtered = filtered.filter(d => d.pipelineType === 'dfd' || d._isJV);
+    } else if (location.pathname === '/off-market-pipeline') {
+        filtered = filtered.filter(d => {
+            if (d.pipelineType === 'dfd' || d._isJV) return false;
+            if (d.queueStatus === 'In Queue') return false;
+            if (d.queueStatus === 'In Pipeline') return d.listingType === 'Off-Market';
+            return (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') && d.pipelineType !== 'azre-queue';
+        });
+    } else if (location.pathname === '/azre-queue') {
+        filtered = filtered.filter(d => {
+            if (d.pipelineType === 'dfd' || d._isJV) return false;
+            if (d.queueStatus === 'In Pipeline') return false;
+            return d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue';
+        });
+    } else if (location.pathname === '/pipeline') {
+        filtered = filtered.filter(d => {
+            if (d.pipelineType === 'dfd' || d._isJV) return false;
+            if (d.queueStatus === 'In Queue') return false;
+            if (d.queueStatus === 'In Pipeline') return d.listingType !== 'Off-Market';
+            return (d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue';
+        });
     }
+
     const activeSearch = globalSearchQuery.trim() || pipelineSearch.trim();
     if (activeSearch) {
-        const normalizeStr = (str: string) => {
-            if (!str) return "";
-            let s = String(str).toLowerCase().replace(/[,.]/g, ' ');
-            s = s.replace(/\b(rd|road)\b/g, 'road');
-            s = s.replace(/\b(st|street)\b/g, 'street');
-            s = s.replace(/\b(ave|avenue)\b/g, 'avenue');
-            s = s.replace(/\b(dr|drive)\b/g, 'drive');
-            s = s.replace(/\b(ln|lane)\b/g, 'lane');
-            s = s.replace(/\b(blvd|boulevard)\b/g, 'boulevard');
-            s = s.replace(/\b(ct|court)\b/g, 'court');
-            s = s.replace(/\b(pl|place)\b/g, 'place');
-            s = s.replace(/\b(ter|terrace)\b/g, 'terrace');
-            s = s.replace(/\b(pkwy|parkway)\b/g, 'parkway');
-            s = s.replace(/\b(hwy|highway)\b/g, 'highway');
-            s = s.replace(/\b(cir|circle)\b/g, 'circle');
-            return s;
-        };
-        const queryTerms = normalizeStr(activeSearch).split(/\s+/).filter(t => t.length > 0);
-        
-        filtered = filtered.filter(d => {
-            const addr = normalizeStr(d.address || "");
-            const mls = normalizeStr(d.mls || "");
-            const agent = normalizeStr(d.agentName || "");
-            
-            return queryTerms.every(term => 
-                addr.includes(term) || 
-                mls.includes(term) || 
-                agent.includes(term)
-            );
-        });
+        filtered = filtered.filter(d => doesDealMatchSearch(d, activeSearch));
     }
     if (filterConfig.type !== 'All') {
         filtered = filtered.filter(d => {
@@ -2164,8 +2227,30 @@ export default function App() {
                   <Logo iconSize={32} />
               </div>
               <div className="flex-1 max-w-xl mx-auto relative hidden md:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input type="text" placeholder="Global Search..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder-gray-500 shadow-inner" value={globalSearchQuery} onChange={(e) => setGlobalSearchQuery(e.target.value)} />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors" size={18} onClick={() => handleGlobalSearchSubmit()} />
+                  <input 
+                      type="text" 
+                      placeholder="Global Search..." 
+                      className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg py-2 pl-10 pr-9 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder-gray-500 shadow-inner" 
+                      value={globalSearchQuery} 
+                      onChange={(e) => setGlobalSearchQuery(e.target.value)} 
+                      onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleGlobalSearchSubmit();
+                          }
+                      }}
+                  />
+                  {globalSearchQuery && (
+                      <button 
+                          type="button" 
+                          onClick={() => setGlobalSearchQuery('')} 
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                          title="Clear search"
+                      >
+                          <X size={16} />
+                      </button>
+                  )}
               </div>
               <div className="flex items-center gap-3">
                   <button onClick={() => setIsWebEmbedOpen(true)} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Open Web Viewer">
