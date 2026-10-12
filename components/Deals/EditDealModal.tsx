@@ -1248,11 +1248,26 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 const logMessage = `[${new Date().toLocaleString()}] Sent LOI to ${currentAgent ? currentAgent.name : 'Agent'} (${targetEmail})`;
                 const newLogs = [...(deal.logs || []), logMessage];
 
+                const existingTracking = [...(deal.offerDecisionTracking || [])];
+                if (existingTracking.length === 0 && deal.offerDecision) {
+                    existingTracking.push({
+                        status: deal.offerDecision,
+                        date: deal.createdAt || now,
+                        user: 'Initial'
+                    });
+                }
+                existingTracking.push({
+                    status: 'Made Written Offer On Property',
+                    date: now,
+                    user: currentUser?.name || 'Unknown'
+                });
+
                 const updates: Partial<Deal> = { 
                     loiSent: true,
                     loiSentDate: now,
                     loiSentBy: currentUser?.name || '',
                     offerDecision: 'Made Written Offer On Property',
+                    offerDecisionTracking: existingTracking,
                     contactStatus: 'Sent LOI Email',
                     logs: newLogs,
                     dispo: {
@@ -1955,6 +1970,20 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     if (UNDER_CONTRACT_STATUSES.includes(newStatus) && !UNDER_CONTRACT_STATUSES.includes(deal.offerDecision)) updates.underContractDate = now;
     if (CLOSED_STATUSES.includes(newStatus) && !CLOSED_STATUSES.includes(deal.offerDecision)) updates.closedDate = now;
     if ((DECLINED_STATUSES.includes(newStatus) || CANCELED_STATUSES.includes(newStatus) || newStatus === 'Canceled') && !DECLINED_STATUSES.includes(deal.offerDecision) && !CANCELED_STATUSES.includes(deal.offerDecision) && deal.offerDecision !== 'Canceled') updates.declinedDate = now;
+    const existingTracking = [...(deal.offerDecisionTracking || [])];
+    if (existingTracking.length === 0 && deal.offerDecision) {
+        existingTracking.push({
+            status: deal.offerDecision,
+            date: deal.createdAt || now,
+            user: 'Initial'
+        });
+    }
+    existingTracking.push({
+        status: newStatus,
+        date: now,
+        user: currentUser?.name || 'Unknown'
+    });
+    updates.offerDecisionTracking = existingTracking;
     updateDealState(updates); 
     if(onUpdate) onUpdate(deal.id, updates);
     triggerSave(); 

@@ -29,7 +29,7 @@ export const Campaigns: React.FC<CampaignsProps> = ({
     buyers, agents, wholesalers, deals, campaigns = [], emailLists = [], 
     onUpdateContact, onCreateList, onDeleteList, onDeleteCampaign 
 }) => {
-    const { setAgents, setDeals } = useAppStore();
+    const { setAgents, setDeals, currentUser } = useAppStore();
     const [currentTab, setCurrentTab] = useState('Dashboard');
     const [currentSubTab, setCurrentSubTab] = useState('All campaigns');
     
@@ -257,7 +257,27 @@ export const Campaigns: React.FC<CampaignsProps> = ({
                         (d.agentName && agentNames.includes(d.agentName))
                     );
                     for (const d of dealsToUpdate) {
-                         const updatedDeal = { ...d, contactStatus: 'Sent LOI Email', offerDecision: 'Made Written Offer On Property', loiSent: true, loiSentDate: nowStr };
+                         const existingTracking = [...(d.offerDecisionTracking || [])];
+                         if (existingTracking.length === 0 && d.offerDecision) {
+                             existingTracking.push({
+                                 status: d.offerDecision,
+                                 date: d.createdAt || nowStr,
+                                 user: 'Initial'
+                             });
+                         }
+                         existingTracking.push({
+                             status: 'Made Written Offer On Property',
+                             date: nowStr,
+                             user: currentUser?.name || 'Campaign Blast'
+                         });
+                         const updatedDeal = { 
+                             ...d, 
+                             contactStatus: 'Sent LOI Email', 
+                             offerDecision: 'Made Written Offer On Property', 
+                             loiSent: true, 
+                             loiSentDate: nowStr,
+                             offerDecisionTracking: existingTracking
+                         };
                          await api.save(updatedDeal, 'Deals');
                          setDeals(prev => prev.map(pd => pd.id === updatedDeal.id ? updatedDeal : pd));
                     }

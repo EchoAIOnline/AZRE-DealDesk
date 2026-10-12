@@ -204,8 +204,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 activeTab={pipelineStage} 
                 onTabChange={setPipelineStage} 
                 sortOptions={[
-                    { value: 'Date Newest', label: 'Date Newest' }, 
-                    { value: 'Date Oldest', label: 'Date Oldest' }, 
+                    { value: 'Date Newest', label: 'Date Newest (Stage Order)' }, 
+                    { value: 'Date Oldest', label: 'Order Entered (Oldest First)' }, 
                     { value: 'Price High-Low', label: 'Price High-Low' }, 
                     { value: 'Price Low-High', label: 'Price Low-High' }
                 ]} 

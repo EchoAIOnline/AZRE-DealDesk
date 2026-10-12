@@ -246,7 +246,10 @@ export default function App() {
   const [agentSearch, setAgentSearch] = useState('');
   const [buyerSearch, setBuyerSearch] = useState('');
   const [wholesalerSearch, setWholesalerSearch] = useState('');
-  const [pipelineSort, setPipelineSort] = useState('Date Newest');
+  const [pipelineSort, setPipelineSort] = useState(() => {
+    return localStorage.getItem('azre-pipeline-sort') || 'Date Newest';
+  });
+  useEffect(() => localStorage.setItem('azre-pipeline-sort', pipelineSort), [pipelineSort]);
   const [agentSort, setAgentSort] = useState('A-Z');
   const [buyerSort, setBuyerSort] = useState('Date Added - Newest');
   const [wholesalerSort, setWholesalerSort] = useState('A-Z');
@@ -339,6 +342,13 @@ export default function App() {
                     ? Array.from(new Map(d.documents.filter(Boolean).map((doc: any, idx: number) => [String(doc.id || doc.url || `${doc.name || 'doc'}-${idx}`), doc])).values())
                     : [],
                 offerDecision: d.offerDecision === 'Canceled' ? 'Deal Canceled' : (d.offerDecision || 'No Offer Made Yet'),
+                offerDecisionTracking: Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0
+                    ? d.offerDecisionTracking
+                    : [{
+                        status: d.offerDecision === 'Canceled' ? 'Deal Canceled' : (d.offerDecision || 'No Offer Made Yet'),
+                        date: d.createdAt || '',
+                        user: 'Initial'
+                    }],
                 inspectionDate: d.inspectionDate ? String(d.inspectionDate).split('T')[0] : null,
                 emdDate: d.emdDate ? String(d.emdDate).split('T')[0] : null,
                 nextFollowUpDate: d.nextFollowUpDate ? String(d.nextFollowUpDate).split('T')[0] : null,
@@ -1197,12 +1207,21 @@ export default function App() {
     
     // Automatically track offerDecision changes
     if (updates.offerDecision && updates.offerDecision !== currentItem.offerDecision) {
-        const newTrackingEntry = {
+        const now = new Date().toISOString();
+        const existingTracking = [...(currentItem.offerDecisionTracking || [])];
+        if (existingTracking.length === 0 && currentItem.offerDecision) {
+            existingTracking.push({
+                status: currentItem.offerDecision,
+                date: currentItem.createdAt || now,
+                user: 'Initial'
+            });
+        }
+        existingTracking.push({
             status: updates.offerDecision,
-            date: new Date().toISOString(),
+            date: now,
             user: currentUser?.name || 'Unknown'
-        };
-        updates.offerDecisionTracking = [...(currentItem.offerDecisionTracking || []), newTrackingEntry];
+        });
+        updates.offerDecisionTracking = existingTracking;
     }
     
     // Ensure pipelineType is synced with queueStatus and listingType
@@ -1484,12 +1503,21 @@ export default function App() {
     
     // Automatically track offerDecision changes
     if (originalDeal && updatedDeal.offerDecision !== originalDeal.offerDecision) {
-        const newTrackingEntry = {
+        const now = new Date().toISOString();
+        const existingTracking = [...(originalDeal.offerDecisionTracking || [])];
+        if (existingTracking.length === 0 && originalDeal.offerDecision) {
+            existingTracking.push({
+                status: originalDeal.offerDecision,
+                date: originalDeal.createdAt || now,
+                user: 'Initial'
+            });
+        }
+        existingTracking.push({
             status: updatedDeal.offerDecision,
-            date: new Date().toISOString(),
+            date: now,
             user: currentUser?.name || 'Unknown'
-        };
-        updatedDeal.offerDecisionTracking = [...(originalDeal.offerDecisionTracking || []), newTrackingEntry];
+        });
+        updatedDeal.offerDecisionTracking = existingTracking;
     }
     
     // Ensure pipelineType is synced with queueStatus and listingType
@@ -1889,6 +1917,79 @@ export default function App() {
       return () => clearTimeout(timer);
   }, [globalSearchQuery, deals, location.pathname]);
 
+  const getDealCreationTime = (d: Deal) => {
+      if (d.createdAt) {
+          const t = new Date(d.createdAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+      }
+      if (d.logs && Array.isArray(d.logs) && d.logs.length > 0) {
+          for (let i = d.logs.length - 1; i >= 0; i--) {
+              const log = d.logs[i];
+              if (typeof log === 'string') {
+                  const sepIdx = log.indexOf(': ');
+                  const dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  const parsed = new Date(dateStr).getTime();
+                  if (!isNaN(parsed) && parsed > 0) return parsed;
+              }
+          }
+      }
+      return 0;
+  };
+
+  const getDealStageTime = (d: Deal, stageStatus?: string) => {
+      const targetStatus = stageStatus || d.offerDecision;
+
+      // 1. Check offerDecisionTracking for when it entered this specific status
+      if (d.offerDecisionTracking && Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0) {
+          const matches = d.offerDecisionTracking.filter(t => 
+              t && (t.status === targetStatus || 
+              (targetStatus === 'Deal Canceled' && t.status === 'Canceled') ||
+              (targetStatus === 'Canceled' && t.status === 'Deal Canceled'))
+          );
+          if (matches.length > 0) {
+              const latest = matches[matches.length - 1];
+              if (latest && latest.date) {
+                  const parsed = new Date(latest.date).getTime();
+                  if (!isNaN(parsed) && parsed > 0) return parsed;
+              }
+          }
+      }
+
+      // 2. Check stage-specific date fields
+      if (targetStatus === 'Made Written Offer On Property' && d.loiSentDate) {
+          const parsed = new Date(d.loiSentDate).getTime();
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      if (UNDER_CONTRACT_STATUSES.includes(targetStatus) && d.underContractDate) {
+          const parsed = new Date(d.underContractDate).getTime();
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      if (CLOSED_STATUSES.includes(targetStatus) && d.closedDate) {
+          const parsed = new Date(d.closedDate).getTime();
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      if ((DECLINED_STATUSES.includes(targetStatus) || CANCELED_STATUSES.includes(targetStatus) || targetStatus === 'Canceled') && d.declinedDate) {
+          const parsed = new Date(d.declinedDate).getTime();
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+
+      // 3. Check logs from newest to oldest for mentions of this stage
+      if (d.logs && Array.isArray(d.logs) && d.logs.length > 0) {
+          for (let i = 0; i < d.logs.length; i++) {
+              const log = d.logs[i];
+              if (typeof log === 'string' && targetStatus && (log.includes(targetStatus) || (targetStatus === 'Deal Canceled' && log.includes('Canceled')))) {
+                  const sepIdx = log.indexOf(': ');
+                  const dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  const parsed = new Date(dateStr).getTime();
+                  if (!isNaN(parsed) && parsed > 0) return parsed;
+              }
+          }
+      }
+
+      // 4. Fallback to deal creation time (when deal was originally added to app)
+      return getDealCreationTime(d);
+  };
+
   const getFilteredDeals = () => {
     let filtered = [...(deals || [])].filter(Boolean); 
 
@@ -1936,12 +2037,22 @@ export default function App() {
             }
         });
     }
+
     return filtered.sort((a, b) => {
         if (pipelineSort === 'Price High-Low') return (b.listPrice || 0) - (a.listPrice || 0);
         if (pipelineSort === 'Price Low-High') return (a.listPrice || 0) - (b.listPrice || 0);
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        
+        const timeA = getDealStageTime(a, a.offerDecision);
+        const timeB = getDealStageTime(b, b.offerDecision);
+        
+        if (pipelineSort === 'Date Oldest' || pipelineSort === 'Order Entered') {
+            if (timeA !== timeB && timeA > 0 && timeB > 0) return timeA - timeB;
+            return deals.indexOf(a) - deals.indexOf(b);
+        }
+        
+        // Default: Date Newest
+        if (timeA !== timeB && timeA > 0 && timeB > 0) return timeB - timeA;
+        return deals.indexOf(b) - deals.indexOf(a);
     });
   };
   const filteredDeals = getFilteredDeals();
@@ -1988,7 +2099,24 @@ export default function App() {
     const filtered = (dealsToGroup || []).filter(d => d && (statusesToShow.includes(d.offerDecision) || (statusesToShow.includes('Deal Canceled') && d.offerDecision === 'Canceled')));
     const groupedDeals: Deal[] = [];
     statusesToShow.forEach(status => {
-        groupedDeals.push(...filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled')));
+        const dealsInStage = filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled'));
+        dealsInStage.sort((a, b) => {
+            if (pipelineSort === 'Price High-Low') return (b.listPrice || 0) - (a.listPrice || 0);
+            if (pipelineSort === 'Price Low-High') return (a.listPrice || 0) - (b.listPrice || 0);
+
+            const timeA = getDealStageTime(a, status);
+            const timeB = getDealStageTime(b, status);
+
+            if (pipelineSort === 'Date Oldest' || pipelineSort === 'Order Entered') {
+                if (timeA !== timeB && timeA > 0 && timeB > 0) return timeA - timeB;
+                return deals.indexOf(a) - deals.indexOf(b);
+            }
+
+            // Default: Date Newest / Order added to this pipeline stage (newest first on the left):
+            if (timeA !== timeB && timeA > 0 && timeB > 0) return timeB - timeA;
+            return deals.indexOf(b) - deals.indexOf(a);
+        });
+        groupedDeals.push(...dealsInStage);
     });
     return Array.from(new Map(groupedDeals.map(d => [d.id, d])).values());
   };
