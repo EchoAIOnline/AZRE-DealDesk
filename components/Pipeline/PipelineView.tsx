@@ -166,6 +166,11 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
             if (pipelineStage !== 'All Deals' && pipelineStage !== 'MLS' && pipelineStage !== 'Off-Market') {
                 setPipelineStage('All Deals');
             }
+        } else if (pipelineType === 'mls' || pipelineType === 'off-market') {
+            const validStages = ['All Deals', 'Potential', 'Seller Accepted Offer', 'Under Contract', 'Closed', 'Declined', 'Canceled'];
+            if (!validStages.includes(pipelineStage)) {
+                setPipelineStage('Potential');
+            }
         }
     }, [pipelineType, pipelineStage, setPipelineStage]);
 
@@ -317,6 +322,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 case 'Closed': statusesToShow = CLOSED_STATUSES; break; 
                                 case 'Declined': statusesToShow = DECLINED_STATUSES; break; 
                                 case 'Canceled': statusesToShow = CANCELED_STATUSES; break; 
+                                default: statusesToShow = POTENTIAL_STATUSES; break;
                             } 
                         } 
                     }
