@@ -64,8 +64,11 @@ export default async function handler(req: any, res: any) {
         }
 
         // Extract photos
-        if (Array.isArray(item.photos)) {
-            item.mappedPhotos = item.photos.map((p: any) => {
+        const rawPhotos = item.photos || item.responsivePhotos || item.desktopWebHdpImageCarousel || [];
+        if (Array.isArray(rawPhotos)) {
+            item.mappedPhotos = rawPhotos.map((p: any) => {
+                if (typeof p === 'string' && p.startsWith('http')) return p;
+                if (p?.url && typeof p.url === 'string' && p.url.startsWith('http')) return p.url;
                 if (p.mixedSources && p.mixedSources.jpeg && p.mixedSources.jpeg.length > 0) {
                     return p.mixedSources.jpeg[p.mixedSources.jpeg.length - 1].url;
                 }

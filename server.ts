@@ -82,7 +82,7 @@ async function startServer() {
       }
 
       const apiKey = process.env.BRIGHTDATA_API_KEY || "008b1060-0915-4386-b2d1-b84270cbd5b9";
-      const collectorId = process.env.BRIGHTDATA_COLLECTOR_ID;
+      const collectorId = process.env.BRIGHTDATA_COLLECTOR_ID || "gd_lfqkr8wm13ixtbd8f5";
 
       if (!collectorId) {
         return res.status(400).json({ 
@@ -134,9 +134,12 @@ async function startServer() {
           }
 
           // Extract photos
-          if (Array.isArray(item.photos)) {
-              item.mappedPhotos = item.photos.map((p: any) => {
-                  if (p.mixedSources && p.mixedSources.jpeg && p.mixedSources.jpeg.length > 0) {
+          const rawPhotos = item.photos || item.responsivePhotos || item.desktopWebHdpImageCarousel || [];
+          if (Array.isArray(rawPhotos)) {
+              item.mappedPhotos = rawPhotos.map((p: any) => {
+                  if (typeof p === 'string' && p.startsWith('http')) return p;
+                  if (p?.url && typeof p.url === 'string' && p.url.startsWith('http')) return p.url;
+                  if (p?.mixedSources && p.mixedSources.jpeg && p.mixedSources.jpeg.length > 0) {
                       return p.mixedSources.jpeg[p.mixedSources.jpeg.length - 1].url;
                   }
                   return null;

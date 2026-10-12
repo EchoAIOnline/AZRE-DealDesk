@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MapPin, Image as ImageIcon, Loader2, X, Plus, Link as LinkIcon, ChevronLeft, ChevronRight, Settings, Copy, Check } from 'lucide-react';
+import { MapPin, Image as ImageIcon, Loader2, X, Plus, Link as LinkIcon, ChevronLeft, ChevronRight, Settings, Copy, Check, Download } from 'lucide-react';
 import { Deal } from '../../types';
 import { GOOGLE_MAPS_API_KEY, GOOGLE_SCRIPT_URL } from '../../constants';
 import { serverFunctions, processPhotoUrl } from '../../services/utils';
@@ -30,6 +30,13 @@ export const PropertyPhotoGallery: React.FC<PropertyPhotoGalleryProps> = ({
     const [fetchingUrl, setFetchingUrl] = useState(false);
     const [galleryUrl, setGalleryUrl] = useState("");
     const [copied, setCopied] = useState(false);
+
+    // Zillow Photo Import Modal State
+    const [showZillowModal, setShowZillowModal] = useState(false);
+    const [zillowImportUrl, setZillowImportUrl] = useState("");
+    const [zillowImportLoading, setZillowImportLoading] = useState(false);
+    const [zillowImportError, setZillowImportError] = useState("");
+    const [zillowImportSuccess, setZillowImportSuccess] = useState("");
 
     // --- SELF-HEALING DATA LOGIC ---
     // This ensures that even if the DB has a "String" instead of an "Array", the app won't crash.
@@ -254,6 +261,135 @@ export const PropertyPhotoGallery: React.FC<PropertyPhotoGalleryProps> = ({
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleOpenZillowModal = () => {
+        setZillowImportError("");
+        setZillowImportSuccess("");
+        if (!zillowImportUrl && deal.address) {
+            const formatted = deal.address.replace(/,/g, '').replace(/\s+/g, '-');
+            setZillowImportUrl(`https://www.zillow.com/homes/${encodeURIComponent(formatted)}_rb/`);
+        }
+        setShowZillowModal(true);
+    };
+
+    const handleImportZillowPhotos = async () => {
+        let url = zillowImportUrl.trim();
+        if (!url && deal.address) {
+            const formatted = deal.address.replace(/,/g, '').replace(/\s+/g, '-');
+            url = `https://www.zillow.com/homes/${encodeURIComponent(formatted)}_rb/`;
+        }
+        if (!url) {
+            setZillowImportError("Please enter a Zillow property URL or ensure the deal has an address.");
+            return;
+        }
+
+        setZillowImportLoading(true);
+        setZillowImportError("");
+        setZillowImportSuccess("");
+
+        try {
+            const response = await fetch('/api/zillow-data', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+
+            const textResponse = await response.text();
+            let result: any;
+            try {
+                result = JSON.parse(textResponse);
+            } catch (e) {
+                setZillowImportError(textResponse && !textResponse.trim().startsWith('<') ? textResponse : "The Zillow service timed out or returned an invalid response.");
+                setZillowImportLoading(false);
+                return;
+            }
+
+            if (!response.ok) {
+                setZillowImportError(result?.message || result?.error || "Failed to fetch pictures from Zillow API.");
+                setZillowImportLoading(false);
+                return;
+            }
+
+            const dataArray = Array.isArray(result?.data) ? result.data : (result?.data ? [result.data] : []);
+            if (dataArray.length === 0) {
+                setZillowImportError("No property record returned by Zillow API.");
+                setZillowImportLoading(false);
+                return;
+            }
+
+            const firstRecord = dataArray[0];
+            if (firstRecord.error) {
+                setZillowImportError(firstRecord.error);
+                setZillowImportLoading(false);
+                return;
+            }
+
+            // Extract all photos from result
+            const extractedPhotos: string[] = [];
+            dataArray.forEach((item: any) => {
+                if (Array.isArray(item.mappedPhotos)) {
+                    extractedPhotos.push(...item.mappedPhotos);
+                }
+                const rawPhotos = item.photos || item.responsivePhotos || item.desktopWebHdpImageCarousel;
+                if (Array.isArray(rawPhotos)) {
+                    rawPhotos.forEach((p: any) => {
+                        if (typeof p === 'string' && p.startsWith('http')) extractedPhotos.push(p);
+                        else if (p?.url && typeof p.url === 'string' && p.url.startsWith('http')) extractedPhotos.push(p.url);
+                        else if (p?.mixedSources?.jpeg && Array.isArray(p.mixedSources.jpeg)) {
+                            const jpegs = p.mixedSources.jpeg;
+                            if (jpegs.length > 0) extractedPhotos.push(jpegs[jpegs.length - 1].url);
+                        }
+                    });
+                }
+            });
+
+            const uniqueNewPhotos = Array.from(new Set(extractedPhotos.filter(u => typeof u === 'string' && u.startsWith('http'))));
+
+            if (uniqueNewPhotos.length === 0) {
+                setZillowImportError("No photos found on this Zillow listing. Try entering the direct property homedetails URL.");
+                setZillowImportLoading(false);
+                return;
+            }
+
+            // Existing clean photos
+            const currentPhotos = safePhotos.filter(p => p && !p.startsWith('blob:'));
+            const additions = uniqueNewPhotos.filter(p => !currentPhotos.includes(p));
+
+            if (additions.length === 0) {
+                setZillowImportSuccess(`All ${uniqueNewPhotos.length} photos from Zillow are already in this gallery.`);
+                setTimeout(() => {
+                    setShowZillowModal(false);
+                }, 2000);
+                setZillowImportLoading(false);
+                return;
+            }
+
+            const merged = [...currentPhotos, ...additions];
+
+            if (onUpdate) {
+                onUpdate(deal.id, { photos: merged });
+            } else {
+                setDeal(prev => ({ ...prev, photos: merged }));
+                api.save({ ...deal, photos: merged }, 'Deals');
+            }
+
+            setShowSavedNotification(true);
+            setTimeout(() => setShowSavedNotification(false), 2000);
+
+            setZillowImportSuccess(`Successfully imported ${additions.length} new pictures from Zillow!`);
+            setTimeout(() => {
+                setShowZillowModal(false);
+                setZillowImportSuccess("");
+            }, 1800);
+
+        } catch (err: any) {
+            console.error("Zillow photo import error:", err);
+            setZillowImportError(err?.message || "An unexpected error occurred while communicating with the Zillow API.");
+        } finally {
+            setZillowImportLoading(false);
+        }
+    };
+
     // --- RENDER HELPERS: USE safePhotos HERE TO PREVENT CRASH ---
     const mainImageUrl = (safePhotos && safePhotos.length > 0) ? processPhotoUrl(safePhotos[0]) : null;
     const streetViewUrl = GOOGLE_MAPS_API_KEY ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${encodeURIComponent(deal.address)}&fov=70&key=${GOOGLE_MAPS_API_KEY}` : null;
@@ -279,6 +415,13 @@ export const PropertyPhotoGallery: React.FC<PropertyPhotoGalleryProps> = ({
                             className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 font-bold"
                         >
                             <LinkIcon size={10} /> Display Photo Gallery URL
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={handleOpenZillowModal}
+                            className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 font-bold"
+                        >
+                            <Download size={10} /> Import Pictures From Zillow
                         </button>
                     </div>
                 </div>
@@ -459,6 +602,86 @@ export const PropertyPhotoGallery: React.FC<PropertyPhotoGalleryProps> = ({
                             >
                                 {copied ? <Check size={14} /> : <Copy size={14} />}
                                 {copied ? 'Copied!' : 'Copy URL'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showZillowModal && (
+                <div className="fixed inset-0 bg-black/70 z-[120] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => !zillowImportLoading && setShowZillowModal(false)}>
+                    <div className="bg-[#1a212e] rounded-xl w-full max-w-lg border border-gray-700 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-[#1a212e]">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <Download size={16} className="text-blue-500" /> Import Pictures From Zillow
+                            </h3>
+                            <button 
+                                disabled={zillowImportLoading} 
+                                onClick={() => setShowZillowModal(false)} 
+                                className="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                            >
+                                <X size={20}/>
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-xs text-gray-300 font-medium">
+                                Pull all high-resolution pictures for this property directly from Zillow into the deal photo gallery.
+                            </p>
+
+                            {deal.address && (
+                                <div className="text-xs bg-[#0f172a] border border-gray-800 rounded-lg p-3 text-gray-300 flex items-center gap-2">
+                                    <MapPin size={14} className="text-blue-400 shrink-0" />
+                                    <span className="font-semibold text-white truncate">{deal.address}</span>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                                    Zillow Property URL
+                                </label>
+                                <input 
+                                    type="url"
+                                    value={zillowImportUrl}
+                                    onChange={(e) => setZillowImportUrl(e.target.value)}
+                                    placeholder="https://www.zillow.com/homedetails/... or search URL"
+                                    disabled={zillowImportLoading}
+                                    className="w-full bg-[#0f172a] border border-gray-700 rounded-lg px-3 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono disabled:opacity-60"
+                                />
+                                <p className="text-[11px] text-gray-400 mt-1.5">
+                                    Use the pre-filled address search or paste a direct Zillow listing link.
+                                </p>
+                            </div>
+
+                            {zillowImportError && (
+                                <div className="p-3 bg-red-950/50 border border-red-800 text-red-300 text-xs rounded-lg">
+                                    {zillowImportError}
+                                </div>
+                            )}
+
+                            {zillowImportSuccess && (
+                                <div className="p-3 bg-emerald-950/50 border border-emerald-800 text-emerald-300 text-xs rounded-lg flex items-center gap-2">
+                                    <Check size={14} className="text-emerald-400 shrink-0" />
+                                    <span>{zillowImportSuccess}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-gray-700 bg-[#1a212e] flex justify-end gap-3">
+                            <button 
+                                type="button"
+                                disabled={zillowImportLoading} 
+                                onClick={() => setShowZillowModal(false)} 
+                                className="px-5 py-2 rounded-lg text-gray-400 hover:text-white text-xs font-bold transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleImportZillowPhotos}
+                                disabled={zillowImportLoading}
+                                className="px-6 py-2 rounded-lg font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 shadow-md transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                {zillowImportLoading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                {zillowImportLoading ? 'Importing Pictures...' : 'Import Pictures'}
                             </button>
                         </div>
                     </div>
