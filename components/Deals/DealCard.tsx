@@ -124,12 +124,14 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   };
 
   // --- DISPLAY LOGIC ---
-  // ✅ FIXED: Using processPhotoUrl for the user selected main photo
   const userPhotoRaw = deal.photos && deal.photos.length > 0 && deal.photos[0].length > 10 ? deal.photos[0] : null;
   const userPhoto = userPhotoRaw ? processPhotoUrl(userPhotoRaw) : null;
-  
-  // Priority: User Saved Photo Only. We do NOT fallback to live API to save quota.
-  const displayImageUrl = userPhoto;
+  const streetViewUrl = (GOOGLE_MAPS_API_KEY && deal.address && !deal.excludeStreetView)
+    ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${encodeURIComponent(deal.address)}&fov=70&key=${GOOGLE_MAPS_API_KEY}`
+    : null;
+
+  // Fallback to streetViewUrl whenever deal.photos is empty
+  const displayImageUrl = userPhoto || streetViewUrl;
 
   useEffect(() => {
     if (isAddingLog && newLogInputRef.current) newLogInputRef.current.focus();
@@ -178,9 +180,9 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
               referrerPolicy="no-referrer" /* CRITICAL FIX for Google Maps */
               onError={(e) => { 
                   const target = e.target as HTMLImageElement;
-                  target.onerror = null; 
-                  // If image fails, show placeholder
-                  if (target.src !== 'https://placehold.co/600x300/1f2937/9ca3af?text=No+Image') {
+                  if (streetViewUrl && target.src !== streetViewUrl) {
+                      target.src = streetViewUrl;
+                  } else if (target.src !== 'https://placehold.co/600x300/1f2937/9ca3af?text=No+Image') {
                       target.src = 'https://placehold.co/600x300/1f2937/9ca3af?text=No+Image';
                   }
               }}
@@ -189,6 +191,11 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-600 bg-gray-200 dark:bg-gray-900">
                 <ImageIcon size={24} className="mb-1 opacity-50"/>
                 <span className="text-[10px] uppercase tracking-wider">No Image Found</span>
+            </div>
+        )}
+        {!userPhoto && streetViewUrl && (
+            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-medium text-white/90 flex items-center gap-1 pointer-events-none z-10">
+                <MapPin size={10} /> Street View
             </div>
         )}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900/50 dark:from-[#172235]/95 to-transparent pointer-events-none"></div>

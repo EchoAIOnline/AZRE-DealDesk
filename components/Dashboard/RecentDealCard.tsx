@@ -1,9 +1,9 @@
 import React from 'react';
-import { User, ChevronDown, Clock } from 'lucide-react';
+import { User, ChevronDown, Clock, MapPin } from 'lucide-react';
 import { Deal } from '../../types';
 import { formatCurrency, processPhotoUrl, calculateDaysRemaining } from '../../services/utils';
 
-import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES } from '../../constants';
+import { GOOGLE_MAPS_API_KEY, POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES } from '../../constants';
 
 interface RecentDealCardProps {
     deal: Deal;
@@ -11,8 +11,13 @@ interface RecentDealCardProps {
 }
 
 export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick }) => {
-    // Process photo URL
-    const photoUrl = deal.photos && deal.photos.length > 0 ? processPhotoUrl(deal.photos[0]) : null;
+    // Process photo URL or fallback to Street View
+    const userPhotoRaw = deal.photos && deal.photos.length > 0 && deal.photos[0].length > 10 ? deal.photos[0] : null;
+    const userPhoto = userPhotoRaw ? processPhotoUrl(userPhotoRaw) : null;
+    const streetViewUrl = (GOOGLE_MAPS_API_KEY && deal.address && !deal.excludeStreetView)
+        ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${encodeURIComponent(deal.address)}&fov=70&key=${GOOGLE_MAPS_API_KEY}`
+        : null;
+    const photoUrl = userPhoto || streetViewUrl;
     
     // Calculate "Updated X ago" - using logs or createdAt as proxy
     const getLastUpdated = () => {
@@ -48,7 +53,12 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/1f2937/9ca3af?text=No+Image';
+                            const target = e.target as HTMLImageElement;
+                            if (streetViewUrl && target.src !== streetViewUrl) {
+                                target.src = streetViewUrl;
+                            } else if (target.src !== 'https://placehold.co/600x400/1f2937/9ca3af?text=No+Image') {
+                                target.src = 'https://placehold.co/600x400/1f2937/9ca3af?text=No+Image';
+                            }
                         }}
                     />
                 ) : (
@@ -56,8 +66,13 @@ export const RecentDealCard: React.FC<RecentDealCardProps> = ({ deal, onClick })
                         <span className="text-xs uppercase tracking-wider">No Image</span>
                     </div>
                 )}
+                {!userPhoto && streetViewUrl && (
+                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-[9px] font-medium text-white/90 flex items-center gap-1 pointer-events-none z-10">
+                        <MapPin size={9} /> Street View
+                    </div>
+                )}
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#172235] via-transparent to-transparent opacity-85"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-[#172235] via-transparent to-transparent opacity-85 pointer-events-none"></div>
                 
                 {/* Status Badge */}
                 <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold shadow-sm backdrop-blur-sm ${getStatusColor(deal.offerDecision)}`}>
