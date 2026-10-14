@@ -100,6 +100,12 @@ const processIncomingItem = (item: any, tableName: string) => {
         processed.documents = cleanArrayField(processed.documents, false).filter(Boolean);
         processed.dealType = Array.from(new Set(cleanArrayField(processed.dealType, true))).filter(Boolean);
         processed.logs = cleanArrayField(processed.logs, false).filter(Boolean);
+        if (typeof processed.offerDecisionTracking === 'string') {
+            try { processed.offerDecisionTracking = JSON.parse(processed.offerDecisionTracking); } catch {}
+        }
+        if (!Array.isArray(processed.offerDecisionTracking)) {
+            processed.offerDecisionTracking = cleanArrayField(processed.offerDecisionTracking, false);
+        }
         
         // Extract dynamically stored documents from logs
         if (processed.logs && processed.logs.length > 0) {

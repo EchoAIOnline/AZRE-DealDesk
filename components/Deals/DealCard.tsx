@@ -87,38 +87,114 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
   const getAddedIndicator = () => {
     let diffDays = 999;
     let targetDate: Date | null = null;
-    if (deal.logs && deal.logs.length > 0) {
-        const firstLog = deal.logs[0];
-        if (typeof firstLog === 'string') {
-            const separatorIdx = firstLog.indexOf(': ');
-            let dateStr = separatorIdx > 0 ? firstLog.substring(0, separatorIdx) : firstLog;
-            const now = new Date();
-            const hasYear = /\d{4}/.test(dateStr);
-            if (!hasYear) dateStr = `${dateStr} ${now.getFullYear()}`;
-            const parsed = new Date(dateStr);
-            if (!isNaN(parsed.getTime())) {
-                targetDate = parsed;
-                if (targetDate > now) targetDate.setFullYear(targetDate.getFullYear() - 1);
+    let targetTimeStr = '';
+
+    // 1. Check offerDecisionTracking first for exact creation/stage timestamp with time
+    if (deal.offerDecisionTracking && Array.isArray(deal.offerDecisionTracking) && deal.offerDecisionTracking.length > 0) {
+        for (const t of deal.offerDecisionTracking) {
+            if (t && t.date) {
+                const p = new Date(t.date);
+                if (!isNaN(p.getTime())) {
+                    targetDate = p;
+                    if (p.getHours() !== 0 || p.getMinutes() !== 0) {
+                        targetTimeStr = p.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    }
+                    break;
+                }
             }
         }
     }
-    if (!targetDate && deal.createdAt) targetDate = new Date(deal.createdAt);
-    if (targetDate && !isNaN(targetDate.getTime())) {
+
+    // 2. Check logs for timestamp with date and time
+    if (!targetDate && deal.logs && deal.logs.length > 0) {
+        for (let i = 0; i < deal.logs.length; i++) {
+            const logItem = deal.logs[i];
+            if (typeof logItem === 'string') {
+                const separatorIdx = logItem.indexOf(': ');
+                let dateStr = separatorIdx > 0 ? logItem.substring(0, separatorIdx).replace(/^\[/, '').replace(/\]$/, '') : logItem;
+                const now = new Date();
+                const hasYear = /\d{4}/.test(dateStr);
+                const parseStr = hasYear ? dateStr : `${dateStr} ${now.getFullYear()}`;
+                const parsed = new Date(parseStr);
+                if (!isNaN(parsed.getTime())) {
+                    targetDate = parsed;
+                    if (targetDate > now) targetDate.setFullYear(targetDate.getFullYear() - 1);
+                    // Extract time portion if present in log
+                    const timeMatch = dateStr.match(/\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?/);
+                    if (timeMatch) {
+                        targetTimeStr = timeMatch[0];
+                    } else if (targetDate.getHours() !== 0 || targetDate.getMinutes() !== 0) {
+                        targetTimeStr = targetDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // 3. Fallbacks
+    if (!targetDate && deal.createdAt) {
+        const p = new Date(deal.createdAt);
+        if (!isNaN(p.getTime())) targetDate = p;
+    }
+    if (!targetDate && (deal as any).created_at) {
+        const p = new Date((deal as any).created_at);
+        if (!isNaN(p.getTime())) targetDate = p;
+    }
+    if (!targetDate && deal.listingDescription) {
+        const m = deal.listingDescription.match(/(?:AZRE|scan|entered|added|created|import)[\s\w]*?([A-Za-z]{3}\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (m && m[1]) {
+            const p = new Date(m[1].replace(',', ''));
+            if (!isNaN(p.getTime())) targetDate = p;
+        }
+    }
+    if (!targetDate && deal.dateListed) {
+        const p = new Date(deal.dateListed);
+        if (!isNaN(p.getTime())) targetDate = p;
+    }
+
+    if (targetDate) {
         const now = new Date();
         const tDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
         const nDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const diffTime = nDate.getTime() - tDate.getTime();
         diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        if (!targetTimeStr && (targetDate.getHours() !== 0 || targetDate.getMinutes() !== 0)) {
+            targetTimeStr = targetDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
     }
+
     let textLines: string[] = [];
     let colorClass = '';
-    if (diffDays <= 0) { textLines = ['Today']; colorClass = 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'; }
-    else if (diffDays < 7) { textLines = ['This', 'Week']; colorClass = 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'; }
-    else if (diffDays < 14) { textLines = ['Last', 'Week']; colorClass = 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800'; }
-    else { textLines = ['2 Weeks+', 'Ago']; colorClass = 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'; }
+    if (diffDays <= 0) { 
+        textLines = ['Today']; 
+        colorClass = 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'; 
+    } else if (diffDays < 7) { 
+        textLines = ['This', 'Week']; 
+        colorClass = 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'; 
+    } else if (diffDays < 14) { 
+        textLines = ['Last', 'Week']; 
+        colorClass = 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800'; 
+    } else { 
+        textLines = ['2 Weeks+', 'Ago']; 
+        colorClass = 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'; 
+    }
+
+    const fullTimestampLabel = targetDate ? `${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${targetTimeStr ? ` at ${targetTimeStr}` : ''}` : '';
+
     return (
-        <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex flex-col items-center justify-center leading-none shadow-sm ${colorClass} shrink-0`}>
-            {textLines.map((line, i) => <span key={i}>{line}</span>)}
+        <div 
+            title={fullTimestampLabel ? `Added: ${fullTimestampLabel}` : undefined}
+            className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex flex-col items-center justify-center leading-tight shadow-sm ${colorClass} shrink-0`}
+        >
+            <div className="flex flex-col items-center leading-none">
+                {textLines.map((line, i) => <span key={i}>{line}</span>)}
+            </div>
+            {targetTimeStr && (
+                <span className="text-[8px] font-medium opacity-90 tracking-tight mt-0.5 whitespace-nowrap">
+                    {targetTimeStr}
+                </span>
+            )}
         </div>
     );
   };

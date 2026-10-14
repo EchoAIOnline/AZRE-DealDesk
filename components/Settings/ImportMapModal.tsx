@@ -143,10 +143,16 @@ export const ImportMapModal: React.FC<ImportMapModalProps> = ({ file, onClose, o
         setImporting(true);
         try {
             const newDeals: Deal[] = rawData.map(row => {
+                const now = new Date().toISOString();
                 const deal: any = {
                     id: generateId(),
-                    createdAt: new Date().toISOString(),
+                    createdAt: now,
                     offerDecision: 'No Offer Made Yet',
+                    offerDecisionTracking: [{
+                        status: 'No Offer Made Yet',
+                        date: now,
+                        user: 'Import'
+                    }],
                     dealType: [], // UPDATED to empty array
                     logs: [`${getLogTimestamp()}: Imported from ${file.name}`],
                     dispo: { photos: false, blast: false },

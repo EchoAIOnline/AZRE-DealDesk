@@ -342,11 +342,42 @@ export default function App() {
                     ? Array.from(new Map(d.documents.filter(Boolean).map((doc: any, idx: number) => [String(doc.id || doc.url || `${doc.name || 'doc'}-${idx}`), doc])).values())
                     : [],
                 offerDecision: d.offerDecision === 'Canceled' ? 'Deal Canceled' : (d.offerDecision || 'No Offer Made Yet'),
-                offerDecisionTracking: Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0
+                offerDecisionTracking: Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0 && d.offerDecisionTracking.some((t: any) => t && t.date)
                     ? d.offerDecisionTracking
                     : [{
                         status: d.offerDecision === 'Canceled' ? 'Deal Canceled' : (d.offerDecision || 'No Offer Made Yet'),
-                        date: d.createdAt || '',
+                        date: (() => {
+                            if (d.logs && Array.isArray(d.logs) && d.logs.length > 0) {
+                                for (let i = 0; i < d.logs.length; i++) {
+                                    const log = d.logs[i];
+                                    if (typeof log === 'string') {
+                                        const sepIdx = log.indexOf(': ');
+                                        let dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                                        if (!/\d{4}/.test(dateStr)) {
+                                            dateStr = `${dateStr} ${new Date().getFullYear()}`;
+                                        }
+                                        const parsed = new Date(dateStr);
+                                        if (!isNaN(parsed.getTime()) && parsed.getTime() > 0) return parsed.toISOString();
+                                    }
+                                }
+                            }
+                            if (d.createdAt) {
+                                const p = new Date(d.createdAt);
+                                if (!isNaN(p.getTime())) return p.toISOString();
+                            }
+                            if ((d as any).created_at) {
+                                const p = new Date((d as any).created_at);
+                                if (!isNaN(p.getTime())) return p.toISOString();
+                            }
+                            if (d.listingDescription) {
+                                const m = d.listingDescription.match(/(?:AZRE|scan|entered|added|created|import)[\s\w]*?([A-Za-z]{3}\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i);
+                                if (m && m[1]) {
+                                    const parsed = new Date(m[1].replace(',', ''));
+                                    if (!isNaN(parsed.getTime())) return parsed.toISOString();
+                                }
+                            }
+                            return d.dateListed ? new Date(d.dateListed).toISOString() : new Date().toISOString();
+                        })(),
                         user: 'Initial'
                     }],
                 inspectionDate: d.inspectionDate ? String(d.inspectionDate).split('T')[0] : null,
@@ -1222,6 +1253,9 @@ export default function App() {
             user: currentUser?.name || 'Unknown'
         });
         updates.offerDecisionTracking = existingTracking;
+        const statusLog = `${getLogTimestamp()}: Stage changed to ${updates.offerDecision}`;
+        const currentLogs = Array.isArray(updates.logs) ? updates.logs : (Array.isArray(currentItem.logs) ? currentItem.logs : []);
+        updates.logs = [statusLog, ...currentLogs];
     }
     
     // Ensure pipelineType is synced with queueStatus and listingType
@@ -1518,6 +1552,9 @@ export default function App() {
             user: currentUser?.name || 'Unknown'
         });
         updatedDeal.offerDecisionTracking = existingTracking;
+        const statusLog = `${getLogTimestamp()}: Stage changed to ${updatedDeal.offerDecision}`;
+        const currentLogs = Array.isArray(updatedDeal.logs) ? updatedDeal.logs : [];
+        updatedDeal.logs = [statusLog, ...currentLogs];
     }
     
     // Ensure pipelineType is synced with queueStatus and listingType
@@ -1918,20 +1955,51 @@ export default function App() {
   }, [globalSearchQuery, deals, location.pathname]);
 
   const getDealCreationTime = (d: Deal) => {
-      if (d.createdAt) {
-          const t = new Date(d.createdAt).getTime();
-          if (!isNaN(t) && t > 0) return t;
+      // 1. Check offerDecisionTracking for exact creation/status timestamp with time
+      if (d.offerDecisionTracking && Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0) {
+          for (const t of d.offerDecisionTracking) {
+              if (t && t.date) {
+                  const p = new Date(t.date).getTime();
+                  if (!isNaN(p) && p > 0) return p;
+              }
+          }
       }
+      // 2. Check logs for timestamp with date and time
       if (d.logs && Array.isArray(d.logs) && d.logs.length > 0) {
-          for (let i = d.logs.length - 1; i >= 0; i--) {
+          for (let i = 0; i < d.logs.length; i++) {
               const log = d.logs[i];
               if (typeof log === 'string') {
                   const sepIdx = log.indexOf(': ');
-                  const dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  let dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  if (!/\d{4}/.test(dateStr)) {
+                      dateStr = `${dateStr} ${new Date().getFullYear()}`;
+                  }
                   const parsed = new Date(dateStr).getTime();
                   if (!isNaN(parsed) && parsed > 0) return parsed;
               }
           }
+      }
+      // 3. Check createdAt
+      if (d.createdAt) {
+          const t = new Date(d.createdAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+      }
+      if ((d as any).created_at) {
+          const t = new Date((d as any).created_at).getTime();
+          if (!isNaN(t) && t > 0) return t;
+      }
+      // 4. Listing description
+      if (d.listingDescription) {
+          const m = d.listingDescription.match(/(?:AZRE|scan|entered|added|created|import)[\s\w]*?([A-Za-z]{3}\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i);
+          if (m && m[1]) {
+              const p = new Date(m[1].replace(',', '')).getTime();
+              if (!isNaN(p) && p > 0) return p;
+          }
+      }
+      // 5. Date listed
+      if (d.dateListed) {
+          const t = new Date(d.dateListed).getTime();
+          if (!isNaN(t) && t > 0) return t;
       }
       return 0;
   };
@@ -1939,20 +2007,21 @@ export default function App() {
   const getDealStageTime = (d: Deal, stageStatus?: string) => {
       const targetStatus = stageStatus || d.offerDecision;
 
-      // 1. Check offerDecisionTracking for when it entered this specific status
+      // 1. Check offerDecisionTracking for when it entered this specific status (take latest timestamp)
       if (d.offerDecisionTracking && Array.isArray(d.offerDecisionTracking) && d.offerDecisionTracking.length > 0) {
           const matches = d.offerDecisionTracking.filter(t => 
               t && (t.status === targetStatus || 
               (targetStatus === 'Deal Canceled' && t.status === 'Canceled') ||
               (targetStatus === 'Canceled' && t.status === 'Deal Canceled'))
           );
-          if (matches.length > 0) {
-              const latest = matches[matches.length - 1];
-              if (latest && latest.date) {
-                  const parsed = new Date(latest.date).getTime();
-                  if (!isNaN(parsed) && parsed > 0) return parsed;
+          let maxTime = 0;
+          for (const t of matches) {
+              if (t && t.date) {
+                  const parsed = new Date(t.date).getTime();
+                  if (!isNaN(parsed) && parsed > maxTime) maxTime = parsed;
               }
           }
+          if (maxTime > 0) return maxTime;
       }
 
       // 2. Check stage-specific date fields
@@ -1979,7 +2048,10 @@ export default function App() {
               const log = d.logs[i];
               if (typeof log === 'string' && targetStatus && (log.includes(targetStatus) || (targetStatus === 'Deal Canceled' && log.includes('Canceled')))) {
                   const sepIdx = log.indexOf(': ');
-                  const dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  let dateStr = sepIdx > 0 ? log.substring(0, sepIdx).replace(/^\[/, '').replace(/\]$/, '') : log;
+                  if (!/\d{4}/.test(dateStr)) {
+                      dateStr = `${dateStr} ${new Date().getFullYear()}`;
+                  }
                   const parsed = new Date(dateStr).getTime();
                   if (!isNaN(parsed) && parsed > 0) return parsed;
               }
@@ -1988,6 +2060,45 @@ export default function App() {
 
       // 4. Fallback to deal creation time (when deal was originally added to app)
       return getDealCreationTime(d);
+  };
+
+  const dealIndexMap = new Map<string, number>();
+  deals.forEach((d, idx) => dealIndexMap.set(d.id, idx));
+
+  const comparePipelineDeals = (a: Deal, b: Deal, stageStatus?: string) => {
+      if (pipelineSort === 'Price High-Low') return (b.listPrice || 0) - (a.listPrice || 0);
+      if (pipelineSort === 'Price Low-High') return (a.listPrice || 0) - (b.listPrice || 0);
+
+      const timeA = getDealStageTime(a, stageStatus || a.offerDecision);
+      const timeB = getDealStageTime(b, stageStatus || b.offerDecision);
+
+      if (pipelineSort === 'Date Oldest' || pipelineSort === 'Order Entered') {
+          if (timeA > 0 && timeB > 0) {
+              if (timeA !== timeB) return timeA - timeB;
+          } else if (timeA > 0 && timeB === 0) {
+              return 1;
+          } else if (timeA === 0 && timeB > 0) {
+              return -1;
+          }
+          const idxA = dealIndexMap.get(a.id) ?? 999999;
+          const idxB = dealIndexMap.get(b.id) ?? 999999;
+          return idxB - idxA;
+      }
+
+      // Default: Date Newest / Order added to this pipeline stage (newest first on the left):
+      if (timeA > 0 && timeB > 0) {
+          if (timeA !== timeB) return timeB - timeA;
+      } else if (timeA > 0 && timeB === 0) {
+          return -1; // a is newer than b, so a appears before b (on the left)
+      } else if (timeA === 0 && timeB > 0) {
+          return 1;  // b is newer than a, so b appears before a
+      }
+
+      // Fallback when both have no timestamp or identical timestamps:
+      // In deals state, newly added deals are prepended (smaller index).
+      const idxA = dealIndexMap.get(a.id) ?? 999999;
+      const idxB = dealIndexMap.get(b.id) ?? 999999;
+      return idxA - idxB;
   };
 
   const getFilteredDeals = () => {
@@ -2038,22 +2149,7 @@ export default function App() {
         });
     }
 
-    return filtered.sort((a, b) => {
-        if (pipelineSort === 'Price High-Low') return (b.listPrice || 0) - (a.listPrice || 0);
-        if (pipelineSort === 'Price Low-High') return (a.listPrice || 0) - (b.listPrice || 0);
-        
-        const timeA = getDealStageTime(a, a.offerDecision);
-        const timeB = getDealStageTime(b, b.offerDecision);
-        
-        if (pipelineSort === 'Date Oldest' || pipelineSort === 'Order Entered') {
-            if (timeA !== timeB && timeA > 0 && timeB > 0) return timeA - timeB;
-            return deals.indexOf(a) - deals.indexOf(b);
-        }
-        
-        // Default: Date Newest
-        if (timeA !== timeB && timeA > 0 && timeB > 0) return timeB - timeA;
-        return deals.indexOf(b) - deals.indexOf(a);
-    });
+    return filtered.sort((a, b) => comparePipelineDeals(a, b));
   };
   const filteredDeals = getFilteredDeals();
   const getOrderedDeals = () => {
@@ -2100,22 +2196,7 @@ export default function App() {
     const groupedDeals: Deal[] = [];
     statusesToShow.forEach(status => {
         const dealsInStage = filtered.filter(d => d.offerDecision === status || (status === 'Deal Canceled' && d.offerDecision === 'Canceled'));
-        dealsInStage.sort((a, b) => {
-            if (pipelineSort === 'Price High-Low') return (b.listPrice || 0) - (a.listPrice || 0);
-            if (pipelineSort === 'Price Low-High') return (a.listPrice || 0) - (b.listPrice || 0);
-
-            const timeA = getDealStageTime(a, status);
-            const timeB = getDealStageTime(b, status);
-
-            if (pipelineSort === 'Date Oldest' || pipelineSort === 'Order Entered') {
-                if (timeA !== timeB && timeA > 0 && timeB > 0) return timeA - timeB;
-                return deals.indexOf(a) - deals.indexOf(b);
-            }
-
-            // Default: Date Newest / Order added to this pipeline stage (newest first on the left):
-            if (timeA !== timeB && timeA > 0 && timeB > 0) return timeB - timeA;
-            return deals.indexOf(b) - deals.indexOf(a);
-        });
+        dealsInStage.sort((a, b) => comparePipelineDeals(a, b, status));
         groupedDeals.push(...dealsInStage);
     });
     return Array.from(new Map(groupedDeals.map(d => [d.id, d])).values());
@@ -2636,7 +2717,7 @@ export default function App() {
         </main>
       </div>
 
-      {importFile && (<ImportMapModal file={importFile} onClose={() => setImportFile(null)} onImport={async (d) => { try { const saved = d; if(saved) { setDeals(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'DEAL', 'batch', `Imported ${saved.length} properties`, {}, 'Batch Import'); } setImportFile(null); } catch (error) { console.error("Error importing deals:", error); alert("Error importing deals. Please try again."); setImportFile(null); } }} />)}
+      {importFile && (<ImportMapModal file={importFile} onClose={() => setImportFile(null)} onImport={async (d) => { try { const saved = d; if(saved) { setDeals(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...saved, ...old]; }); activityLogService.logActivity(currentUser, 'CREATE', 'DEAL', 'batch', `Imported ${saved.length} properties`, {}, 'Batch Import'); } setImportFile(null); } catch (error) { console.error("Error importing deals:", error); alert("Error importing deals. Please try again."); setImportFile(null); } }} />)}
       {importBuyerFile && (<ImportBuyerMapModal file={importBuyerFile} onClose={() => setImportBuyerFile(null)} onImport={async (importedBuyers, overwrite) => { try { const saved = importedBuyers; if(saved) { setBuyers(prevBuyers => { const newIds = new Set(saved.map((s:any) => s.id)); const oldBuyers = prevBuyers.filter(b => !newIds.has(b.id)); return [...oldBuyers, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'BUYER', 'batch', `Imported ${saved.length} buyers`, {}, 'Batch Import'); } setImportBuyerFile(null); } catch (error) { console.error("Error importing buyers:", error); alert("Error importing buyers. Please try again."); setImportBuyerFile(null); } }} />)}
       {importAgentFile && (<ImportAgentMapModal file={importAgentFile} existingAgents={agents} onClose={() => setImportAgentFile(null)} onImport={async (a, skipped, updated) => { try { const saved = a; if (saved || updated) { setAgents((prev: any[]) => { const updatedMap = new Map((updated || []).map(u => [u.id, u])); const newIds = new Set((saved || []).map((s:any)=>s.id)); const old = prev.map(p => updatedMap.has(p.id) ? updatedMap.get(p.id)! : p).filter(p=>!newIds.has(p.id)); return [...old, ...(saved || [])]; }); activityLogService.logActivity(currentUser, 'CREATE', 'AGENT', 'batch', `Imported ${(saved || []).length} agents`, {}, 'Batch Import'); let msg = `Imported ${(saved || []).length} agents.`; if (skipped > 0) msg += ` Skipped ${skipped} duplicates.`; if (updated && updated.length > 0) msg += ` Updated ${updated.length} existing agents.`; alert(msg); } setImportAgentFile(null); } catch (error) { console.error("Error importing agents:", error); alert("Error importing agents. Please try again."); setImportAgentFile(null); } }} />)}
       {importWholesalerFile && (<ImportWholesalerMapModal file={importWholesalerFile} onClose={() => setImportWholesalerFile(null)} onImport={async (w) => { try { const saved = w; if(saved) { setWholesalers(prev=>{ const newIds = new Set(saved.map((s:any)=>s.id)); const old = prev.filter(p=>!newIds.has(p.id)); return [...old, ...saved]; }); activityLogService.logActivity(currentUser, 'CREATE', 'WHOLESALER', 'batch', `Imported ${saved.length} wholesalers`, {}, 'Batch Import'); } setImportWholesalerFile(null); } catch (error) { console.error("Error importing wholesalers:", error); alert("Error importing wholesalers. Please try again."); setImportWholesalerFile(null); } }} />)}
