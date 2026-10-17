@@ -53,7 +53,7 @@ BEGIN
  IF jsonb_typeof(notes)='string' THEN notes:=(notes#>>'{}')::jsonb; END IF;
  IF jsonb_typeof(notes)<>'array' THEN RAISE EXCEPTION 'Existing logs are not an array'; END IF;
  note:=to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')||' | ChatGPT / DealDesk Hosted | '||CASE WHEN p_category IS NULL THEN '' ELSE '['||p_category||'] ' END||p_note;
- patch:=jsonb_build_object('logs',notes||jsonb_build_array(note)); END IF;
+ patch:=jsonb_build_object('logs',jsonb_build_array(note)||notes); END IF;
  IF p_tool IN ('create_deal','create_task') THEN
  patch:=patch||jsonb_build_object('id',p_id,'organization_id',org);
  SELECT string_agg(format('%I',key),','),string_agg(format('r.%I',key),',') INTO cols,expr FROM jsonb_object_keys(patch) key;

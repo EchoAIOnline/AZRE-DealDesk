@@ -90,7 +90,7 @@ export async function executeOperation(db, input, config) {
     let previous = row[field] || [];
     if (typeof previous === 'string') { try { previous=JSON.parse(previous); } catch { fail('INVALID_RECORD','Existing notes need repair before appending.'); } }
     if (!Array.isArray(previous)) fail('INVALID_RECORD','Existing notes are not an array.');
-    patch = {[field]:[...previous,`${new Date().toISOString()} | DealDesk plugin | ${req.note}`]};
+    patch = {[field]:[`${new Date().toISOString()} | DealDesk plugin | ${req.note}`,...previous]};
   } else if (req.action === 'archive') {
     if (!req.reason) fail('INVALID_REQUEST','An archive reason is required.');
     patch = {pluginArchivedAt:new Date().toISOString(),pluginArchiveReason:req.reason};

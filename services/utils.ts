@@ -82,6 +82,79 @@ export const getLogTimestamp = () => {
   return `${date} ${time}`;
 };
 
+export const parseLogTimestamp = (log: any): number => {
+  if (typeof log !== 'string') return 0;
+  const now = new Date();
+  // 1. ISO format: 2026-10-11T18:55:37.900Z
+  const isoMatch = log.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/);
+  if (isoMatch) {
+    const t = new Date(isoMatch[1]).getTime();
+    if (!isNaN(t)) return t;
+  }
+  // 2. Bracketed format: [10/9/2026, 2:21:42 PM] or [Oct 14 15:31]
+  const bracketMatch = log.match(/^\[([^\]]+)\]/);
+  if (bracketMatch) {
+    let str = bracketMatch[1];
+    const hasYear = /\d{4}/.test(str);
+    if (!hasYear) str = `${str} ${now.getFullYear()}`;
+    let d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      if (!hasYear && d > now) d.setFullYear(d.getFullYear() - 1);
+      return d.getTime();
+    }
+  }
+  // 3. "Oct 16 21:57 - ...", "Dec 3, 1:46 PM: ...", "Jan 9, 6:20 PM - ...", "Feb 18 5:37 PM - ..."
+  const m = log.match(/^([A-Za-z]{3}\s+\d{1,2})(?:,?\s*(\d{4}))?,?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)/);
+  if (m) {
+    const monthDay = m[1];
+    const hasYear = !!m[2];
+    const year = m[2] || now.getFullYear();
+    const time = m[3];
+    let d = new Date(`${monthDay} ${year} ${time}`);
+    if (!isNaN(d.getTime())) {
+      if (!hasYear && d > now) d.setFullYear(d.getFullYear() - 1);
+      return d.getTime();
+    }
+  }
+  // 4. "Dec 28", "Jan 2", "Jul 30 15:58: Deal created", etc.
+  const m2 = log.match(/^([A-Za-z]{3}\s+\d{1,2})(?:,?\s*(\d{4}))?/);
+  if (m2) {
+    const monthDay = m2[1];
+    const hasYear = !!m2[2];
+    const year = m2[2] || now.getFullYear();
+    let d = new Date(`${monthDay} ${year}`);
+    if (!isNaN(d.getTime())) {
+      if (!hasYear && d > now) d.setFullYear(d.getFullYear() - 1);
+      return d.getTime();
+    }
+  }
+  return 0;
+};
+
+export const sortLogsNewestFirst = (logs: any[]): any[] => {
+  if (!Array.isArray(logs) || logs.length <= 1) return Array.isArray(logs) ? logs : [];
+  const parsed = [];
+  let lastTime = 0;
+  for (let i = 0; i < logs.length; i++) {
+    const logItem = logs[i];
+    const t = parseLogTimestamp(logItem);
+    if (t > 0) {
+      lastTime = t;
+      parsed.push({ log: logItem, time: t, idx: i });
+    } else {
+      // Continuation line or un-dated line keeps proximity to the log preceding it
+      parsed.push({ log: logItem, time: lastTime > 0 ? (lastTime - 1) : 0, idx: i });
+    }
+  }
+  const hasTimestamps = parsed.some(p => p.time > 0);
+  if (!hasTimestamps) return logs;
+  parsed.sort((a, b) => {
+    if (b.time !== a.time) return b.time - a.time;
+    return a.idx - b.idx;
+  });
+  return parsed.map(p => p.log);
+};
+
 export const loadGoogleMapsScript = (apiKey: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (!apiKey) {

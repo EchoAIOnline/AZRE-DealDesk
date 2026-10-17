@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Home, Wrench, PhoneOutgoing, DollarSign, User, Clock, ArrowRight, Save, X, Activity, Briefcase, Calendar, MapPin, FileText, TrendingUp, AlertTriangle, CheckCircle, Search, Phone, Mail, Send, Copy, Plus, ChevronLeft, ChevronRight, TrendingDown, Loader2, LayoutGrid, Image as ImageIcon, Link as LinkIcon, Users, Pencil, Trash2, ArrowRightLeft, Check, Upload, File as FileIcon, Download, ExternalLink } from 'lucide-react';
 import { api, sendBulkEmailGAS } from '../../services/api';
 import { Deal, Agent, Brokerage, Comparable, User as UserType, Buyer } from '../../types';
-import { formatNumberWithCommas, parseNumberFromCurrency, formatPhoneNumber, getLogTimestamp, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
+import { formatNumberWithCommas, parseNumberFromCurrency, formatPhoneNumber, getLogTimestamp, parseLogTimestamp, formatCurrency, calculateDaysRemaining, serverFunctions, processPhotoUrl, loadGoogleMapsScript } from '../../services/utils';
 import { SenderEmail } from '../../types';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -1246,7 +1246,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                 }
 
                 const logMessage = `[${new Date().toLocaleString()}] Sent LOI to ${currentAgent ? currentAgent.name : 'Agent'} (${targetEmail})`;
-                const newLogs = [...(deal.logs || []), logMessage];
+                const newLogs = [logMessage, ...(deal.logs || [])];
 
                 const existingTracking = [...(deal.offerDecisionTracking || [])];
                 if (existingTracking.length === 0 && deal.offerDecision) {
@@ -1542,6 +1542,27 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
             triggerSave();
         }
     };
+
+    const sortedLogs = useMemo(() => {
+        if (!deal.logs || deal.logs.length === 0) return [];
+        let lastTime = 0;
+        return deal.logs.map((log, originalIdx) => {
+            let t = parseLogTimestamp(log);
+            if (t > 0) {
+                lastTime = t;
+            } else if (lastTime > 0) {
+                t = lastTime - 1;
+            }
+            return {
+                logText: typeof log === 'string' ? log : JSON.stringify(log),
+                originalIdx,
+                time: t
+            };
+        }).sort((a, b) => {
+            if (b.time !== a.time) return b.time - a.time;
+            return a.originalIdx - b.originalIdx;
+        });
+    }, [deal.logs]);
 
     const handleSaveLogEdit = (index: number) => {
         if (!editLogValue.trim()) return;
@@ -2505,11 +2526,11 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                    <div className="space-y-4">
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800"><FileText size={14}/> Activity Log</h3>
                         <div className="bg-gray-50 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 p-4 h-48 overflow-y-auto space-y-2">
-                            {deal.logs && deal.logs.length > 0 ? (deal.logs.map((log, idx) => { 
-                                const logText = typeof log === 'string' ? log : JSON.stringify(log); 
+                            {sortedLogs.length > 0 ? (sortedLogs.map((item) => { 
+                                const { logText, originalIdx } = item;
                                 return (
-                                    <div key={idx} className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-800/50 pb-2 last:border-0 last:pb-0 group relative">
-                                        {editingLogIndex === idx ? (
+                                    <div key={originalIdx} className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-800/50 pb-2 last:border-0 last:pb-0 group relative">
+                                        {editingLogIndex === originalIdx ? (
                                             <div className="flex flex-col gap-2 w-full">
                                                 <textarea
                                                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none resize-none"
@@ -2528,7 +2549,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                     </button>
                                                     <button 
                                                         type="button"
-                                                        onClick={() => handleSaveLogEdit(idx)}
+                                                        onClick={() => handleSaveLogEdit(originalIdx)}
                                                         className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors"
                                                     >
                                                         Save
@@ -2544,7 +2565,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            setEditingLogIndex(idx);
+                                                            setEditingLogIndex(originalIdx);
                                                             setEditLogValue(logText);
                                                         }} 
                                                         className="text-gray-400 hover:text-blue-500 p-1"
@@ -2556,7 +2577,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            handleDeleteLog(idx);
+                                                            handleDeleteLog(originalIdx);
                                                         }} 
                                                         className="text-gray-400 hover:text-red-500 p-1"
                                                     >

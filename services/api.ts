@@ -1,6 +1,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { GOOGLE_SCRIPT_URL } from '../constants';
+import { sortLogsNewestFirst } from './utils';
 
 const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseUrl = rawSupabaseUrl.startsWith('http') ? rawSupabaseUrl : (rawSupabaseUrl ? `https://${rawSupabaseUrl}` : '');
@@ -99,7 +100,7 @@ const processIncomingItem = (item: any, tableName: string) => {
         delete processed.motivation_signals;
         processed.documents = cleanArrayField(processed.documents, false).filter(Boolean);
         processed.dealType = Array.from(new Set(cleanArrayField(processed.dealType, true))).filter(Boolean);
-        processed.logs = cleanArrayField(processed.logs, false).filter(Boolean);
+        processed.logs = sortLogsNewestFirst(cleanArrayField(processed.logs, false).filter(Boolean));
         if (typeof processed.offerDecisionTracking === 'string') {
             try { processed.offerDecisionTracking = JSON.parse(processed.offerDecisionTracking); } catch {}
         }

@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Phone, Mail, Briefcase, User, RefreshCw, XCircle, ArrowRight, ChevronUp, ChevronDown, ImageIcon, Pencil, MapPin, DollarSign, Clock } from 'lucide-react';
 import { Deal, Agent } from '../../types';
 import { GOOGLE_MAPS_API_KEY, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES } from '../../constants';
-// ✅ FIXED IMPORT: Added processPhotoUrl
-import { calculateDaysRemaining, formatCurrency, getLogTimestamp, serverFunctions, processPhotoUrl } from '../../services/utils';
+// ✅ FIXED IMPORT: Added processPhotoUrl, parseLogTimestamp
+import { calculateDaysRemaining, formatCurrency, getLogTimestamp, parseLogTimestamp, serverFunctions, processPhotoUrl } from '../../services/utils';
 
 interface DealCardProps {
     deal: Deal;
@@ -213,10 +213,31 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
     if (isAddingLog && newLogInputRef.current) newLogInputRef.current.focus();
   }, [isAddingLog]);
 
-  const handleSaveLogEdit = (idx: number) => {
+  const sortedLogs = useMemo(() => {
+      if (!deal.logs || deal.logs.length === 0) return [];
+      let lastTime = 0;
+      return deal.logs.map((log, originalIdx) => {
+          let t = parseLogTimestamp(log);
+          if (t > 0) {
+              lastTime = t;
+          } else if (lastTime > 0) {
+              t = lastTime - 1;
+          }
+          return {
+              logText: typeof log === 'string' ? log : JSON.stringify(log),
+              originalIdx,
+              time: t
+          };
+      }).sort((a, b) => {
+          if (b.time !== a.time) return b.time - a.time;
+          return a.originalIdx - b.originalIdx;
+      });
+  }, [deal.logs]);
+
+  const handleSaveLogEdit = (originalIdx: number) => {
       if (tempLogValue.trim() === "") return;
       const newLogs = [...deal.logs];
-      newLogs[idx] = tempLogValue;
+      newLogs[originalIdx] = tempLogValue;
       onUpdate(deal.id, { logs: newLogs });
       setEditingLogIdx(-1);
   };
@@ -366,15 +387,14 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, agents, onMove, onUpda
                             <span className="text-[10px] text-gray-600 font-normal mr-1">Click to edit</span>
                         </div>
                         <div className="p-2 pt-1 space-y-1">
-                            {deal.logs && deal.logs.length > 0 ? (
-                                deal.logs.map((log, idx) => {
-                                    const logText = typeof log === 'string' ? log : JSON.stringify(log);
+                            {sortedLogs.length > 0 ? (
+                                sortedLogs.map(({ logText, originalIdx }) => {
                                     return (
-                                        <div key={idx} className="text-gray-700 dark:text-gray-300 break-words hover:bg-gray-200 dark:hover:bg-gray-800 rounded px-1 -mx-1 transition-colors">
-                                            {editingLogIdx === idx ? (
-                                                <input autoFocus className="w-full bg-white dark:bg-black text-gray-900 dark:text-white px-1 rounded outline-none border border-blue-500" value={tempLogValue} onChange={(e) => setTempLogValue(e.target.value)} onBlur={() => handleSaveLogEdit(idx)} onKeyDown={(e) => { if (e.key === 'Enter') handleSaveLogEdit(idx); if (e.key === 'Escape') setEditingLogIdx(-1); }} onClick={(e) => e.stopPropagation()} />
+                                        <div key={originalIdx} className="text-gray-700 dark:text-gray-300 break-words hover:bg-gray-200 dark:hover:bg-gray-800 rounded px-1 -mx-1 transition-colors">
+                                            {editingLogIdx === originalIdx ? (
+                                                <input autoFocus className="w-full bg-white dark:bg-black text-gray-900 dark:text-white px-1 rounded outline-none border border-blue-500" value={tempLogValue} onChange={(e) => setTempLogValue(e.target.value)} onBlur={() => handleSaveLogEdit(originalIdx)} onKeyDown={(e) => { if (e.key === 'Enter') handleSaveLogEdit(originalIdx); if (e.key === 'Escape') setEditingLogIdx(-1); }} onClick={(e) => e.stopPropagation()} />
                                             ) : (
-                                                <div onClick={(e) => { e.stopPropagation(); setEditingLogIdx(idx); setTempLogValue(logText); }}>• {logText}</div>
+                                                <div onClick={(e) => { e.stopPropagation(); setEditingLogIdx(originalIdx); setTempLogValue(logText); }}>• {logText}</div>
                                             )}
                                         </div>
                                     );
