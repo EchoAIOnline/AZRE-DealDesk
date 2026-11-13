@@ -77,7 +77,7 @@ export const formatPhoneNumber = (value: string | number | null | undefined) => 
 
 export const getLogTimestamp = () => {
   const now = new Date();
-  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
   const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false, timeZone: 'America/New_York' });
   return `${date} ${time}`;
 };
@@ -85,13 +85,25 @@ export const getLogTimestamp = () => {
 export const parseLogTimestamp = (log: any): number => {
   if (typeof log !== 'string') return 0;
   const now = new Date();
-  // 1. ISO format: 2026-10-11T18:55:37.900Z
-  const isoMatch = log.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/);
+  // 1. ISO format: 2026-10-11T18:55:37.900Z (anywhere at start, or preceded by bracket, pipe, or word boundary)
+  const isoMatch = log.match(/(?:^|\[|\b)(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/);
   if (isoMatch) {
-    const t = new Date(isoMatch[1]).getTime();
+    const t = new Date(isoMatch[1].replace(' ', 'T')).getTime();
     if (!isNaN(t)) return t;
   }
-  // 2. Bracketed format: [10/9/2026, 2:21:42 PM] or [Oct 14 15:31]
+  // 2. US date format with or without brackets: [8/10/2026, 4:47:14 PM] or 2/19/2026, 12:24:58 AM
+  const usDateMatch = log.match(/(?:^|\[|\b)(\d{1,2}\/\d{1,2}\/(\d{2,4}))(?:,?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?))?/);
+  if (usDateMatch) {
+    let datePart = usDateMatch[1];
+    const yearPart = usDateMatch[2];
+    if (yearPart.length === 2) {
+      datePart = datePart.replace(`/${yearPart}`, `/20${yearPart}`);
+    }
+    const timePart = usDateMatch[3] || '00:00:00';
+    const d = new Date(`${datePart} ${timePart}`);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  // 3. Bracketed format: [10/9/2026, 2:21:42 PM] or [Oct 14 15:31]
   const bracketMatch = log.match(/^\[([^\]]+)\]/);
   if (bracketMatch) {
     let str = bracketMatch[1];
@@ -103,8 +115,8 @@ export const parseLogTimestamp = (log: any): number => {
       return d.getTime();
     }
   }
-  // 3. "Oct 16 21:57 - ...", "Dec 3, 1:46 PM: ...", "Jan 9, 6:20 PM - ...", "Feb 18 5:37 PM - ..."
-  const m = log.match(/^([A-Za-z]{3}\s+\d{1,2})(?:,?\s*(\d{4}))?,?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)/);
+  // 4. "Oct 16 21:57 - ...", "Oct 16, 2026 21:57", "Dec 3, 1:46 PM: ...", "Jan 9, 6:20 PM - ...", "Feb 18 5:37 PM - ..."
+  const m = log.match(/^([A-Za-z]{3,9}\s+\d{1,2})(?:,?\s*(\d{4}))?,?\s+(?:at\s+)?(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)/);
   if (m) {
     const monthDay = m[1];
     const hasYear = !!m[2];
@@ -116,8 +128,8 @@ export const parseLogTimestamp = (log: any): number => {
       return d.getTime();
     }
   }
-  // 4. "Dec 28", "Jan 2", "Jul 30 15:58: Deal created", etc.
-  const m2 = log.match(/^([A-Za-z]{3}\s+\d{1,2})(?:,?\s*(\d{4}))?/);
+  // 5. "Dec 28", "Jan 2", "Jul 30 15:58: Deal created", etc.
+  const m2 = log.match(/^([A-Za-z]{3,9}\s+\d{1,2})(?:,?\s*(\d{4}))?/);
   if (m2) {
     const monthDay = m2[1];
     const hasYear = !!m2[2];
@@ -128,24 +140,38 @@ export const parseLogTimestamp = (log: any): number => {
       return d.getTime();
     }
   }
+  // 6. Embedded date: e.g. "today 12-26-2025" or "on 12-1-2025"
+  const embeddedDate = log.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (embeddedDate) {
+    const timeMatch = log.match(/^(\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?)/);
+    const timeStr = timeMatch ? timeMatch[1] : '00:00:00';
+    const d = new Date(`${embeddedDate[1]}/${embeddedDate[2]}/${embeddedDate[3]} ${timeStr}`);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
   return 0;
 };
 
 export const sortLogsNewestFirst = (logs: any[]): any[] => {
   if (!Array.isArray(logs) || logs.length <= 1) return Array.isArray(logs) ? logs : [];
   const parsed = [];
-  let lastTime = 0;
   for (let i = 0; i < logs.length; i++) {
     const logItem = logs[i];
     const t = parseLogTimestamp(logItem);
-    if (t > 0) {
-      lastTime = t;
-      parsed.push({ log: logItem, time: t, idx: i });
-    } else {
-      // Continuation line or un-dated line keeps proximity to the log preceding it
-      parsed.push({ log: logItem, time: lastTime > 0 ? (lastTime - 1) : 0, idx: i });
-    }
+    parsed.push({ log: logItem, time: t, idx: i });
   }
+
+  // Two-pass resolution for unparsed continuation or split-date lines
+  let prevTime = 0;
+  for (let i = 0; i < parsed.length; i++) {
+    if (parsed[i].time > 0) prevTime = parsed[i].time;
+    else if (prevTime > 0) parsed[i].time = prevTime - 1;
+  }
+  let nextTime = 0;
+  for (let i = parsed.length - 1; i >= 0; i--) {
+    if (parsed[i].time > 0) nextTime = parsed[i].time;
+    else if (nextTime > 0) parsed[i].time = nextTime + 1;
+  }
+
   const hasTimestamps = parsed.some(p => p.time > 0);
   if (!hasTimestamps) return logs;
   parsed.sort((a, b) => {

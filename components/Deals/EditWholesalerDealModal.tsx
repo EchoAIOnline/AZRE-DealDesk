@@ -794,20 +794,22 @@ export const EditWholesalerDealModal: React.FC<EditWholesalerDealModalProps> = (
 
     const sortedLogs = useMemo(() => {
         if (!deal.logs || deal.logs.length === 0) return [];
-        let lastTime = 0;
-        return deal.logs.map((log, originalIdx) => {
-            let t = parseLogTimestamp(log);
-            if (t > 0) {
-                lastTime = t;
-            } else if (lastTime > 0) {
-                t = lastTime - 1;
-            }
-            return {
-                logText: typeof log === 'string' ? log : JSON.stringify(log),
-                originalIdx,
-                time: t
-            };
-        }).sort((a, b) => {
+        const parsed = deal.logs.map((log, originalIdx) => ({
+            logText: typeof log === 'string' ? log : JSON.stringify(log),
+            originalIdx,
+            time: parseLogTimestamp(log)
+        }));
+        let prevTime = 0;
+        for (let i = 0; i < parsed.length; i++) {
+            if (parsed[i].time > 0) prevTime = parsed[i].time;
+            else if (prevTime > 0) parsed[i].time = prevTime - 1;
+        }
+        let nextTime = 0;
+        for (let i = parsed.length - 1; i >= 0; i--) {
+            if (parsed[i].time > 0) nextTime = parsed[i].time;
+            else if (nextTime > 0) parsed[i].time = nextTime + 1;
+        }
+        return parsed.sort((a, b) => {
             if (b.time !== a.time) return b.time - a.time;
             return a.originalIdx - b.originalIdx;
         });

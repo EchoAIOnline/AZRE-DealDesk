@@ -791,6 +791,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
     // Buyer Analytics State
     const [interestedSearchQuery, setInterestedSearchQuery] = useState("");
     const [activeBottomTab, setActiveBottomTab] = useState<'buyerAnalytics' | 'renovationWorkflow'>('buyerAnalytics');
+    const [tempOwnerPhone, setTempOwnerPhone] = useState("");
     
     // Services Ref
     const autocompleteService = useRef<any>(null);
@@ -1076,6 +1077,7 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
         setAddressMatches([]);
         setGoogleSuggestions([]);
         setShowGoogleSuggestions(false);
+        setTempOwnerPhone("");
     }, [deal.id]);
 
     useEffect(() => {
@@ -1545,20 +1547,22 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
 
     const sortedLogs = useMemo(() => {
         if (!deal.logs || deal.logs.length === 0) return [];
-        let lastTime = 0;
-        return deal.logs.map((log, originalIdx) => {
-            let t = parseLogTimestamp(log);
-            if (t > 0) {
-                lastTime = t;
-            } else if (lastTime > 0) {
-                t = lastTime - 1;
-            }
-            return {
-                logText: typeof log === 'string' ? log : JSON.stringify(log),
-                originalIdx,
-                time: t
-            };
-        }).sort((a, b) => {
+        const parsed = deal.logs.map((log, originalIdx) => ({
+            logText: typeof log === 'string' ? log : JSON.stringify(log),
+            originalIdx,
+            time: parseLogTimestamp(log)
+        }));
+        let prevTime = 0;
+        for (let i = 0; i < parsed.length; i++) {
+            if (parsed[i].time > 0) prevTime = parsed[i].time;
+            else if (prevTime > 0) parsed[i].time = prevTime - 1;
+        }
+        let nextTime = 0;
+        for (let i = parsed.length - 1; i >= 0; i--) {
+            if (parsed[i].time > 0) nextTime = parsed[i].time;
+            else if (nextTime > 0) parsed[i].time = nextTime + 1;
+        }
+        return parsed.sort((a, b) => {
             if (b.time !== a.time) return b.time - a.time;
             return a.originalIdx - b.originalIdx;
         });
@@ -1920,46 +1924,68 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                         />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="text-xs text-gray-500 block mb-2">Owner Phone Numbers</label>
-                                        <div className="space-y-2">
-                                            {(deal.ownerPhones || []).map((phone, idx) => (
-                                                <div key={idx} className="flex gap-2">
-                                                    <input 
-                                                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm" 
-                                                        value={phone} 
-                                                        onChange={(e) => {
-                                                            const newPhones = [...(deal.ownerPhones || [])];
-                                                            newPhones[idx] = e.target.value;
-                                                            updateDealState({ ownerPhones: newPhones });
-                                                        }}
-                                                        onBlur={handleAutoSave}
-                                                        placeholder="(555) 555-5555" 
-                                                    />
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newPhones = [...(deal.ownerPhones || [])];
-                                                            newPhones.splice(idx, 1);
-                                                            updateDealState({ ownerPhones: newPhones });
-                                                            setTimeout(handleAutoSave, 0);
-                                                        }}
-                                                        className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    const newPhones = [...(deal.ownerPhones || []), ''];
+                                        <label className="text-xs text-gray-500 block mb-1 uppercase font-bold">Owner Phone Numbers</label>
+                                        {(() => {
+                                            const cleanOwnerPhones = (Array.isArray(deal.ownerPhones) ? deal.ownerPhones : [])
+                                                .map(p => String(p || '').trim())
+                                                .filter(Boolean);
+                                            const handleAddOwnerPhone = () => {
+                                                const trimmed = tempOwnerPhone.trim();
+                                                if (!trimmed) return;
+                                                if (!cleanOwnerPhones.includes(trimmed)) {
+                                                    const newPhones = [...cleanOwnerPhones, trimmed];
                                                     updateDealState({ ownerPhones: newPhones });
-                                                }}
-                                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                                            >
-                                                <Plus size={14} /> Add Phone Number
-                                            </button>
-                                        </div>
+                                                    if (onUpdate) onUpdate(deal.id, { ownerPhones: newPhones });
+                                                    triggerSave();
+                                                }
+                                                setTempOwnerPhone('');
+                                            };
+                                            return (
+                                                <div className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm focus-within:border-blue-500 transition-colors min-h-[120px] flex flex-col gap-2 relative">
+                                                    <div className="flex flex-wrap gap-2 content-start flex-1">
+                                                        {cleanOwnerPhones.length > 0 ? cleanOwnerPhones.map((phone, idx) => (
+                                                            <span key={idx} className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded text-xs font-bold border border-blue-200 dark:border-blue-800 flex items-center gap-1 h-fit">
+                                                                {phone}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newPhones = cleanOwnerPhones.filter((_, i) => i !== idx);
+                                                                        updateDealState({ ownerPhones: newPhones });
+                                                                        if (onUpdate) onUpdate(deal.id, { ownerPhones: newPhones });
+                                                                        triggerSave();
+                                                                    }}
+                                                                    className="hover:text-red-500 ml-1 flex items-center justify-center"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </span>
+                                                        )) : <span className="text-gray-400 italic text-xs p-1">No phone numbers added.</span>}
+                                                    </div>
+                                                    <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/50">
+                                                        <input
+                                                            className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 text-xs"
+                                                            placeholder="Enter phone..."
+                                                            value={tempOwnerPhone}
+                                                            onChange={e => setTempOwnerPhone(formatPhoneNumber(e.target.value))}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    handleAddOwnerPhone();
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleAddOwnerPhone}
+                                                            disabled={!tempOwnerPhone}
+                                                            className="text-blue-600 hover:text-blue-500 disabled:text-gray-400 text-xs font-bold"
+                                                        >
+                                                            Add
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
