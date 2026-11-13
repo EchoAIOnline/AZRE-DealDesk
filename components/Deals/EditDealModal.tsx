@@ -2171,6 +2171,22 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
+                                            <label className="text-xs text-gray-500 block mb-1">Seller Counter Offer</label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-2 text-gray-400">$</span>
+                                                <input type="text" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 pl-6 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" value={formatNumberWithCommas(deal.sellerCounterOffer) || ''} onChange={e => updateDealState({sellerCounterOffer: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-green-600 dark:text-green-500 block mb-1 font-bold">Accepted Asking Price</label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-2 text-green-600 dark:text-green-500">$</span>
+                                                <input type="text" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 pl-6 text-green-600 dark:text-green-400 text-sm font-bold focus:border-blue-500 outline-none" value={formatNumberWithCommas(deal.negotiatedAskingPrice) || ''} onChange={e => updateDealState({negotiatedAskingPrice: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
                                             <label className="text-xs text-gray-500 block mb-1">Original Asking Price</label>
                                             <div className="relative">
                                                 <span className="absolute left-2 top-2 text-gray-400">$</span>
@@ -2184,22 +2200,6 @@ export const EditDealModal: React.FC<EditDealModalProps> = ({
                                         <div>
                                             <label className="text-xs text-gray-500 block mb-1">Price Alert</label>
                                             <select className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" value={deal.priceReductionAlert || ''} onChange={e => { updateDealState({priceReductionAlert: e.target.value}); if(onUpdate) onUpdate(deal.id, {priceReductionAlert: e.target.value}); triggerSave(); }}><option value="">None</option><option value="Asking Price Has Been Reduced">Asking Price Has Been Reduced</option><option value="Price Reduced Multiple Times">Price Reduced Multiple Times</option></select>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-gray-500 block mb-1">Seller Counter Offer</label>
-                                            <div className="relative">
-                                                <span className="absolute left-2 top-2 text-gray-400">$</span>
-                                                <input type="text" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 pl-6 text-gray-900 dark:text-white text-sm focus:border-blue-500 outline-none" value={formatNumberWithCommas(deal.sellerCounterOffer) || ''} onChange={e => updateDealState({sellerCounterOffer: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-green-600 dark:text-green-500 block mb-1 font-bold">Accepted Asking Price</label>
-                                            <div className="relative">
-                                                <span className="absolute left-2 top-2 text-green-600 dark:text-green-500">$</span>
-                                                <input type="text" className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 pl-6 text-green-600 dark:text-green-400 text-sm font-bold focus:border-blue-500 outline-none" value={formatNumberWithCommas(deal.negotiatedAskingPrice) || ''} onChange={e => updateDealState({negotiatedAskingPrice: parseNumberFromCurrency(e.target.value)})} onBlur={handleAutoSave} />
-                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-8 mt-2">
