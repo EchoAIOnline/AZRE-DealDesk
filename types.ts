@@ -107,6 +107,7 @@ export interface Deal {
   mls: string;
   listPrice: number;
   offerPrice: number;
+  maximumOffer?: number;
   // Primary Agent (Legacy fields used for Slot 1)
   agentName: string;
   agentPhone: string;
