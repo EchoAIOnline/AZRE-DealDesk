@@ -139,6 +139,8 @@ export interface Deal {
   originalAskingPrice: number;
   reducedAskingPrice: number;
   negotiatedAskingPrice: number;
+  sellerCounterOffer?: number;
+  dispositionPrice?: number;
   desiredWholesaleProfit?: number;
   priceReductionAlert: string;
   forSaleBy: string;
