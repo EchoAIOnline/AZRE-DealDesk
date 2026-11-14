@@ -41,7 +41,7 @@ import { UploadQueue } from './components/UploadQueue';
 import { WebEmbedModal } from './components/Shared/WebEmbedModal';
 import { GeminiChat } from './components/GeminiChat/GeminiChat';
 import { mockAcquisitionsMessages, mockDispositionsMessages } from './services/mockData';
-import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64, calculateDaysRemaining } from './services/utils';
+import { generateId, getLogTimestamp, loadGoogleMapsScript, formatCurrency, formatPhoneNumber, parseNumberFromCurrency, fetchAgentPhotoFromGAMLS, fetchAgentDetailsFromGAMLS, captureStreetViewAsBase64, calculateDaysRemaining, extractDealZip } from './services/utils';
 import { User as UserType, Deal, Agent, Brokerage, FilterConfig, CalcData, Buyer, BuyBox, Wholesaler, Contact, EmailList } from './types';
 import { POTENTIAL_STATUSES, SELLER_ACCEPTED_OFFER_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, CLOSED_STATUSES, GOOGLE_MAPS_API_KEY, GOOGLE_SCRIPT_URL, COUNTER_STATUSES, SUB_MARKETS, COUNTIES, BUYER_STATUS_TABS, AGENT_STATUS_TABS, WHOLESALER_STATUS_TABS, OFFER_DECISIONS, DFD_PIPELINE_STATUSES } from './constants';
 
@@ -2139,6 +2139,13 @@ export default function App() {
                 case 'Acquisition Manager': return d.acquisitionManager === filterConfig.value; 
                 case 'Show Counter Offers Only': return d.offerDecision === 'Seller Counter-Offered'; 
                 case 'Sub-Market': return d.subMarket === filterConfig.value;
+                case 'Zip Code': {
+                    const targetZip = (filterConfig.value || '').trim();
+                    if (!targetZip) return true;
+                    const dealZip = extractDealZip(d);
+                    if (/^\d{5}$/.test(targetZip)) return dealZip === targetZip;
+                    return dealZip.startsWith(targetZip);
+                }
                 case 'Deal Type': return Array.isArray(d.dealType) && d.dealType.includes(filterConfig.value);
                 case 'Listing Type': return d.listingType === filterConfig.value;
                 case 'Contact Status': return d.contactStatus === filterConfig.value;

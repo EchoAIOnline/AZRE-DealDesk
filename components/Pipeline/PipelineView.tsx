@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Layout, X, Mail, Loader2, CheckCircle } from 'lucide-react';
 import { Deal, Agent, FilterConfig, Campaign } from '../../types';
 import { PageNavBar } from '../Shared/PageNavBar';
@@ -6,7 +6,7 @@ import { DealCard } from '../Deals/DealCard';
 import { POTENTIAL_STATUSES, SELLER_ACCEPTED_OFFER_STATUSES, UNDER_CONTRACT_STATUSES, CLOSED_STATUSES, DECLINED_STATUSES, CANCELED_STATUSES, COUNTER_STATUSES, OFFER_DECISIONS, SUB_MARKETS, DFD_PIPELINE_STATUSES } from '../../constants';
 import { useAppStore } from '../../store/useAppStore';
 import { api, sendBulkEmailGAS } from '../../services/api';
-import { generateId, formatCurrency } from '../../services/utils';
+import { generateId, formatCurrency, extractDealZip } from '../../services/utils';
 import { mockOfferTemplates } from '../../services/mockData';
 
 interface PipelineViewProps {
@@ -47,6 +47,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     setEditingDeal, filteredDeals, orderedDeals, handleDeleteDeal
 }) => {
     const [selectedDealIds, setSelectedDealIds] = useState<string[]>([]);
+    const [showZipFilterSuggestions, setShowZipFilterSuggestions] = useState(false);
     
     const [isBlastModalOpen, setIsBlastModalOpen] = useState(false);
     const [blastProgress, setBlastProgress] = useState(0);
@@ -54,6 +55,39 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     const [isBlastComplete, setIsBlastComplete] = useState(false);
 
     const { campaigns, setCampaigns, setAgents, currentUser } = useAppStore();
+
+    const availableZipCodes = useMemo(() => {
+        const zips = new Set<string>();
+        (deals || []).forEach(d => {
+            if (!d) return;
+            if (pipelineType === 'dfd') {
+                if (!(d.pipelineType === 'dfd' || d._isJV)) return;
+            } else if (pipelineType === 'off-market') {
+                if (d.pipelineType === 'dfd' || d._isJV) return;
+                if (d.queueStatus === 'In Queue') return;
+                if (d.queueStatus === 'In Pipeline') {
+                    if (d.listingType !== 'Off-Market') return;
+                } else if (!((d.pipelineType === 'off-market' || d.listingType === 'Off-Market') && d.pipelineType !== 'azre-queue')) {
+                    return;
+                }
+            } else if (pipelineType === 'azre-queue') {
+                if (d.pipelineType === 'dfd' || d._isJV) return;
+                if (d.queueStatus === 'In Pipeline') return;
+                if (!(d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue')) return;
+            } else {
+                if (d.pipelineType === 'dfd' || d._isJV) return;
+                if (d.queueStatus === 'In Queue') return;
+                if (d.queueStatus === 'In Pipeline') {
+                    if (d.listingType === 'Off-Market') return;
+                } else if (!((d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue')) {
+                    return;
+                }
+            }
+            const zip = extractDealZip(d);
+            if (zip) zips.add(zip);
+        });
+        return Array.from(zips).sort();
+    }, [deals, pipelineType]);
 
     const handleSelectDeal = (id: string, selected: boolean) => {
         if (selected) {
@@ -272,6 +306,58 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                                 <option value="">All Markets</option>
                                 {SUB_MARKETS.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
+                        </div>
+                        <div className="space-y-1 relative z-20">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Zip Code</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    className="w-full text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 pr-7 focus:border-blue-500 outline-none"
+                                    placeholder="All Zip Codes"
+                                    value={filterConfig.type === 'Zip Code' ? filterConfig.value : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^\d]/g, '').slice(0, 5);
+                                        if (val) setFilterConfig({ type: 'Zip Code', value: val });
+                                        else setFilterConfig({ type: 'All', value: '' });
+                                        setAgentFilterSearch('');
+                                        setShowZipFilterSuggestions(true);
+                                    }}
+                                    onFocus={() => setShowZipFilterSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowZipFilterSuggestions(false), 200)}
+                                />
+                                {showZipFilterSuggestions && (
+                                    <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-b-lg shadow-xl z-50 max-h-48 overflow-y-auto mt-1">
+                                        {availableZipCodes
+                                            .filter(z => !(filterConfig.type === 'Zip Code' && filterConfig.value) || z.includes(filterConfig.value))
+                                            .map(z => (
+                                                <div
+                                                    key={z}
+                                                    className={`p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm border-b border-gray-100 dark:border-gray-700 last:border-0 ${filterConfig.type === 'Zip Code' && filterConfig.value === z ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300'}`}
+                                                    onMouseDown={() => {
+                                                        setFilterConfig({ type: 'Zip Code', value: z });
+                                                        setAgentFilterSearch('');
+                                                        setShowZipFilterSuggestions(false);
+                                                    }}
+                                                >
+                                                    {z}
+                                                </div>
+                                            ))}
+                                        {availableZipCodes.filter(z => !(filterConfig.type === 'Zip Code' && filterConfig.value) || z.includes(filterConfig.value)).length === 0 && (
+                                            <div className="p-2 text-xs text-gray-500 italic">No matching zip codes</div>
+                                        )}
+                                    </div>
+                                )}
+                                {filterConfig.type === 'Zip Code' && filterConfig.value && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterConfig({ type: 'All', value: '' })}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className="space-y-1 relative z-20">
                             <label className="text-xs font-bold text-gray-500 uppercase">{pipelineType === 'dfd' ? 'Wholesaler Name' : 'Agent Name'}</label>

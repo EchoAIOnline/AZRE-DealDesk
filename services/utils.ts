@@ -476,3 +476,30 @@ export const serverFunctions = {
 export const captureStreetViewAsBase64 = async (address: string, apiKey?: string): Promise<string | null> => {
     return null;
 };
+
+export const extractDealZip = (deal?: { address?: string | null; zip?: string | null } | null): string => {
+    if (!deal) return '';
+    const explicitZip = String(deal.zip || '').trim().match(/\b(\d{5})\b/)?.[1];
+    if (explicitZip) return explicitZip;
+
+    const addr = String(deal.address || '').trim();
+    if (!addr) return '';
+
+    const stateOrTrailing = addr.match(/(?:,\s*|\b[A-Za-z]{2,}\s+)(\d{5})(?:-\d{4})?(?:\s*,?\s*(?:USA|United States|US))?$/i);
+    if (stateOrTrailing?.[1]) return stateOrTrailing[1];
+
+    const afterState = addr.match(/\b(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|Georgia)\s+(\d{5})(?:-\d{4})?\b/i);
+    if (afterState?.[1]) return afterState[1];
+
+    if (/^\d{5}(?:-\d{4})?$/.test(addr)) return addr.slice(0, 5);
+
+    const matches = Array.from(addr.matchAll(/\b(\d{5})\b/g));
+    if (matches.length > 0) {
+        const last = matches[matches.length - 1];
+        if (last.index !== undefined && last.index > 0) {
+            return last[1];
+        }
+    }
+
+    return '';
+};
