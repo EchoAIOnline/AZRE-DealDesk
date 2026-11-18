@@ -34,6 +34,7 @@ import {
     ListChecks,
     ListPlus,
     Phone,
+    RotateCcw,
 } from 'lucide-react';
 
 interface DFDScouterMapProps {
@@ -50,12 +51,13 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     const [isLoadingProperties, setIsLoadingProperties] = useState(true);
     const [propertiesError, setPropertiesError] = useState<string | null>(null);
     const [isListOpen, setIsListOpen] = useState(true);
-    const [propertyTab, setPropertyTab] = useState<'All Properties' | 'Interested'>('All Properties');
+    const [propertyTab, setPropertyTab] = useState<'All Properties' | 'Interested' | 'Trash'>('All Properties');
     const [listSearch, setListSearch] = useState('');
     const [selectedProperty, setSelectedProperty] = useState<OffMarketProperty | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [restoringId, setRestoringId] = useState<number | null>(null);
     const [togglingInterestedId, setTogglingInterestedId] = useState<number | null>(null);
     const [isListsModalOpen, setIsListsModalOpen] = useState(false);
     const [listTargetProperty, setListTargetProperty] = useState<OffMarketProperty | null>(null);
@@ -99,6 +101,10 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         return p['Interested'] === true;
     }, []);
 
+    const isTrashedProperty = useCallback((p: OffMarketProperty) => {
+        return p['Trash'] === true;
+    }, []);
+
     const searchFilteredProperties = useMemo(() => {
         const q = listSearch.trim().toLowerCase();
         if (!q) return offMarketProperties;
@@ -124,17 +130,36 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         });
     }, [offMarketProperties, listSearch]);
 
+    const activeSearchFilteredProperties = useMemo(
+        () => searchFilteredProperties.filter((p) => !isTrashedProperty(p)),
+        [searchFilteredProperties, isTrashedProperty]
+    );
+
     const interestedPropertiesCount = useMemo(
-        () => searchFilteredProperties.filter(isInterestedProperty).length,
-        [searchFilteredProperties, isInterestedProperty]
+        () => activeSearchFilteredProperties.filter(isInterestedProperty).length,
+        [activeSearchFilteredProperties, isInterestedProperty]
+    );
+
+    const trashedPropertiesCount = useMemo(
+        () => searchFilteredProperties.filter(isTrashedProperty).length,
+        [searchFilteredProperties, isTrashedProperty]
     );
 
     const filteredProperties = useMemo(() => {
-        if (propertyTab === 'Interested') {
-            return searchFilteredProperties.filter(isInterestedProperty);
+        if (propertyTab === 'Trash') {
+            return searchFilteredProperties.filter(isTrashedProperty);
         }
-        return searchFilteredProperties;
-    }, [searchFilteredProperties, propertyTab, isInterestedProperty]);
+        if (propertyTab === 'Interested') {
+            return activeSearchFilteredProperties.filter(isInterestedProperty);
+        }
+        return activeSearchFilteredProperties;
+    }, [
+        searchFilteredProperties,
+        activeSearchFilteredProperties,
+        propertyTab,
+        isInterestedProperty,
+        isTrashedProperty,
+    ]);
 
     const selectedIndex = useMemo(() => {
         if (!selectedProperty) return -1;
@@ -163,9 +188,33 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         if (id === undefined || id === null) {
             throw new Error('Cannot delete property: missing record ID.');
         }
+        const target = offMarketProperties.find((p) => p.id === id);
+        const isAlreadyTrashed = target ? isTrashedProperty(target) : false;
+
         setDeletingId(id);
         setPropertiesError(null);
         try {
+            if (!isAlreadyTrashed) {
+                const { data, error } = await supabase
+                    .from('OffMarketProperties')
+                    .update({ Trash: true })
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) {
+                    throw new Error(error.message || 'Failed to move property to Trash in Supabase.');
+                }
+
+                const saved = (data as OffMarketProperty) || (target ? { ...target, Trash: true } : null);
+                if (saved) {
+                    setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+                }
+                setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
+                setConfirmDeleteId((prev) => (prev === id ? null : prev));
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('OffMarketProperties')
                 .delete()
@@ -187,6 +236,34 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
             setConfirmDeleteId((prev) => (prev === id ? null : prev));
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const handleRestoreProperty = async (id: number) => {
+        if (id === undefined || id === null) return;
+        const target = offMarketProperties.find((p) => p.id === id);
+        setRestoringId(id);
+        setPropertiesError(null);
+        try {
+            const { data, error } = await supabase
+                .from('OffMarketProperties')
+                .update({ Trash: false })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(error.message || 'Failed to restore property from Trash in Supabase.');
+            }
+
+            const saved = (data as OffMarketProperty) || (target ? { ...target, Trash: false } : null);
+            if (saved) {
+                setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+            }
+            setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
+            setConfirmDeleteId((prev) => (prev === id ? null : prev));
+        } finally {
+            setRestoringId(null);
         }
     };
 
@@ -323,7 +400,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                             <List size={15} className="text-blue-500" />
                             <span>Properties</span>
                             <span className="px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-mono text-[11px]">
-                                {offMarketProperties.length}
+                                {offMarketProperties.filter((p) => p['Trash'] !== true).length}
                             </span>
                         </button>
                     )}
@@ -384,8 +461,9 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                         <div className="flex overflow-x-auto gap-4 no-scrollbar border-b border-gray-200 dark:border-gray-700/70">
                             {(
                                 [
-                                    { id: 'All Properties', label: 'All Properties', count: searchFilteredProperties.length },
+                                    { id: 'All Properties', label: 'All Properties', count: activeSearchFilteredProperties.length },
                                     { id: 'Interested', label: 'Interested', count: interestedPropertiesCount },
+                                    { id: 'Trash', label: 'Trash', count: trashedPropertiesCount },
                                 ] as const
                             ).map((tab) => (
                                 <button
@@ -461,9 +539,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                 <p className="text-xs font-medium">
                                     {listSearch
                                         ? 'No properties match your filter.'
-                                        : propertyTab === 'Interested'
-                                            ? 'No interested properties found yet.'
-                                            : 'No off-market properties found yet.'}
+                                        : propertyTab === 'Trash'
+                                            ? 'Trash is empty.'
+                                            : propertyTab === 'Interested'
+                                                ? 'No interested properties found yet.'
+                                                : 'No off-market properties found yet.'}
                                 </p>
                             </div>
                         ) : (
@@ -539,6 +619,28 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         <MapPin size={14} />
                                                     </button>
                                                 )}
+                                                {isTrashedProperty(prop) && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={restoringId === prop.id || deletingId === prop.id}
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            try {
+                                                                await handleRestoreProperty(prop.id);
+                                                            } catch (err: any) {
+                                                                setPropertiesError(err?.message || 'Failed to restore property.');
+                                                            }
+                                                        }}
+                                                        className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors disabled:opacity-50"
+                                                        title="Restore from Trash"
+                                                    >
+                                                        {restoringId === prop.id ? (
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <RotateCcw size={14} />
+                                                        )}
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -546,7 +648,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         setConfirmDeleteId(confirmDeleteId === prop.id ? null : prop.id);
                                                     }}
                                                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                                    title="Delete Property"
+                                                    title={isTrashedProperty(prop) ? 'Delete Permanently' : 'Move to Trash'}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -559,7 +661,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                 className="flex items-center justify-between gap-2 bg-red-50 dark:bg-red-900/25 border border-red-200 dark:border-red-800/70 rounded-lg px-2.5 py-1.5"
                                             >
                                                 <span className="text-[11px] font-semibold text-red-700 dark:text-red-300">
-                                                    Delete property?
+                                                    {isTrashedProperty(prop) ? 'Delete permanently?' : 'Move to Trash?'}
                                                 </span>
                                                 <div className="flex items-center gap-1.5">
                                                     <button
@@ -575,7 +677,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         className="px-2 py-0.5 text-[11px] font-bold rounded bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 disabled:opacity-60 transition-colors"
                                                     >
                                                         {deletingId === prop.id && <Loader2 size={11} className="animate-spin" />}
-                                                        <span>Delete</span>
+                                                        <span>{isTrashedProperty(prop) ? 'Delete' : 'Move to Trash'}</span>
                                                     </button>
                                                     <button
                                                         type="button"
@@ -716,6 +818,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     onClose={() => setSelectedProperty(null)}
                     onSave={handleSaveProperty}
                     onDelete={handleDeleteProperty}
+                    onRestore={handleRestoreProperty}
                     onToggleInterested={handleToggleInterested}
                     onAddToList={handleOpenAddToList}
                     onLocateOnMap={handleLocateProperty}

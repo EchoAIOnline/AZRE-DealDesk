@@ -510,5 +510,6 @@ export interface OffMarketProperty {
   'Auction City State'?: string | null;
   'Interested'?: boolean | null;
   'Off Market List'?: string[] | null;
+  'Trash'?: boolean | null;
 }
 

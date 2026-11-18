@@ -23,6 +23,7 @@ import {
   Check,
   Star,
   ListPlus,
+  RotateCcw,
 } from 'lucide-react';
 import { OffMarketProperty } from '../../types';
 import { normalizeOffMarketLists } from './OffMarketPropertiesListModal';
@@ -32,6 +33,7 @@ interface OffMarketPropertyModalProps {
   onClose: () => void;
   onSave: (updated: OffMarketProperty) => Promise<void>;
   onDelete?: (id: number) => Promise<void>;
+  onRestore?: (id: number) => Promise<void>;
   onToggleInterested?: (property: OffMarketProperty) => Promise<void>;
   onAddToList?: (property: OffMarketProperty) => void;
   onLocateOnMap?: (address: string) => void;
@@ -343,6 +345,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   onClose,
   onSave,
   onDelete,
+  onRestore,
   onToggleInterested,
   onAddToList,
   onLocateOnMap,
@@ -354,6 +357,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   const [fieldSearch, setFieldSearch] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [isTogglingInterested, setIsTogglingInterested] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -518,6 +522,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     }
   };
 
+  const isTrashed = property['Trash'] === true;
+
   const handleConfirmDelete = async () => {
     if (!onDelete) return;
     setIsDeleting(true);
@@ -529,6 +535,19 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
       setSaveError(err?.message || 'Failed to delete property.');
       setIsDeleting(false);
       setConfirmDelete(false);
+    }
+  };
+
+  const handleRestoreClick = async () => {
+    if (!onRestore) return;
+    setIsRestoring(true);
+    setSaveError(null);
+    try {
+      await onRestore(property.id);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to restore property.');
+      setIsRestoring(false);
     }
   };
 
@@ -941,11 +960,22 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
         {/* Footer */}
         <div className="px-5 py-3 bg-gray-50 dark:bg-[#172235] border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
+            {isTrashed && onRestore && (
+              <button
+                type="button"
+                disabled={isSaving || isDeleting || isRestoring}
+                onClick={handleRestoreClick}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/70 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+              >
+                {isRestoring ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                <span>Restore</span>
+              </button>
+            )}
             {onDelete && (
               confirmDelete ? (
                 <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-2.5 py-1">
                   <span className="text-xs font-semibold text-red-700 dark:text-red-300">
-                    Delete property?
+                    {isTrashed ? 'Delete permanently?' : 'Move to Trash?'}
                   </span>
                   <button
                     type="button"
@@ -954,7 +984,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                     className="px-2.5 py-1 text-xs font-bold rounded bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 disabled:opacity-60 transition-colors"
                   >
                     {isDeleting && <Loader2 size={12} className="animate-spin" />}
-                    <span>Yes, Delete</span>
+                    <span>{isTrashed ? 'Yes, Delete' : 'Move to Trash'}</span>
                   </button>
                   <button
                     type="button"
@@ -968,7 +998,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
               ) : (
                 <button
                   type="button"
-                  disabled={isSaving || isDeleting}
+                  disabled={isSaving || isDeleting || isRestoring}
                   onClick={() => setConfirmDelete(true)}
                   className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/70 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
                 >
