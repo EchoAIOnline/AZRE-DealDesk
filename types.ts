@@ -512,5 +512,7 @@ export interface OffMarketProperty {
   'Not Interested'?: boolean | null;
   'Off Market List'?: string[] | null;
   'Trash'?: boolean | null;
+  'My Estimated Offer'?: number | string | null;
+  'Notes'?: string | string[] | null;
 }
 

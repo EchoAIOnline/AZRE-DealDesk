@@ -37,6 +37,7 @@ import { Inbox } from './components/Inbox/Inbox';
 import { LoiDesigner } from './components/LoiDesigner/LoiDesigner';
 import { MarketOracle } from './components/MarketOracle/MarketOracle';
 import { MessageCenter } from './components/MessageCenter/MessageCenter';
+import { AzreToolsView } from './components/AzreTools/AzreToolsView';
 import { UploadQueue } from './components/UploadQueue';
 import { WebEmbedModal } from './components/Shared/WebEmbedModal';
 import { GeminiChat } from './components/GeminiChat/GeminiChat';
@@ -2579,15 +2580,40 @@ export default function App() {
                      <Inbox title="Dispositions Inbox" initialMessages={mockDispositionsMessages} />
                  </div>
                } />
+               <Route path="/azre-tools" element={
+                 <AzreToolsView
+                    agents={agents}
+                    buyers={buyers}
+                    onUpdateAgent={handleUpdateAgent}
+                    onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)}
+                    onViewAgent={(agent) => setViewingAgent(agent)}
+                    onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }}
+                    onAddDealFromAnalyzer={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })}
+                 />
+               } />
                <Route path="/offer-builder" element={
-                 <div className="w-full h-full">
-                     <LoiDesigner />
-                 </div>
+                 <AzreToolsView
+                    initialTool="loi-designer"
+                    agents={agents}
+                    buyers={buyers}
+                    onUpdateAgent={handleUpdateAgent}
+                    onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)}
+                    onViewAgent={(agent) => setViewingAgent(agent)}
+                    onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }}
+                    onAddDealFromAnalyzer={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })}
+                 />
                } />
                <Route path="/market-analyzer" element={
-                 <div className="w-full h-full">
-                     <MarketOracle />
-                 </div>
+                 <AzreToolsView
+                    initialTool="market-oracle"
+                    agents={agents}
+                    buyers={buyers}
+                    onUpdateAgent={handleUpdateAgent}
+                    onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)}
+                    onViewAgent={(agent) => setViewingAgent(agent)}
+                    onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }}
+                    onAddDealFromAnalyzer={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })}
+                 />
                } />
                <Route path="/agents" element={
                  <AgentsView 
@@ -2660,8 +2686,30 @@ export default function App() {
                     handleUpdateBuyer={handleUpdateBuyer}
                  />
                } />
-               <Route path="/calculator" element={<DealAnalyzer onAddDeal={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })} />} />
-               <Route path="/calendar" element={<div className="w-full h-full"><CalendarView agents={agents} buyers={buyers} onUpdateAgent={handleUpdateAgent} onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)} onViewAgent={(agent) => setViewingAgent(agent)} onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }} /></div>} />
+               <Route path="/calculator" element={
+                 <AzreToolsView
+                    initialTool="deal-analyzer"
+                    agents={agents}
+                    buyers={buyers}
+                    onUpdateAgent={handleUpdateAgent}
+                    onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)}
+                    onViewAgent={(agent) => setViewingAgent(agent)}
+                    onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }}
+                    onAddDealFromAnalyzer={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })}
+                 />
+               } />
+               <Route path="/calendar" element={
+                 <AzreToolsView
+                    initialTool="calendar"
+                    agents={agents}
+                    buyers={buyers}
+                    onUpdateAgent={handleUpdateAgent}
+                    onUpdateBuyer={(id, updates) => handleUpdateBuyer(String(id), updates)}
+                    onViewAgent={(agent) => setViewingAgent(agent)}
+                    onViewBuyer={(buyer) => { setEditingBuyer(buyer); setShowAddBuyerModal(true); }}
+                    onAddDealFromAnalyzer={(address, offerPrice) => handleAddDeal({ address, offerPrice, pipelineType: "mls" })}
+                 />
+               } />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>
         </main>

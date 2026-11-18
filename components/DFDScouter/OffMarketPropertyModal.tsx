@@ -26,6 +26,7 @@ import {
   RotateCcw,
   ThumbsDown,
   ChevronDown,
+  StickyNote,
 } from 'lucide-react';
 import { OffMarketProperty } from '../../types';
 import { normalizeOffMarketLists } from './OffMarketPropertiesListModal';
@@ -188,6 +189,7 @@ export const NUMERIC_OFF_MARKET_COLUMNS = new Set<keyof OffMarketProperty>([
   'Market Improvement Value',
   'Default Amount',
   'Opening bid',
+  'My Estimated Offer',
 ]);
 
 const SECTIONS: SectionDef[] = [
@@ -205,20 +207,6 @@ const SECTIONS: SectionDef[] = [
       { key: 'Subdivision', label: 'Subdivision', type: 'text' },
       { key: 'APN', label: 'APN', type: 'numeric' },
       { key: 'Legal Description', label: 'Legal Description', type: 'textarea', colSpan: 3 },
-    ],
-  },
-  {
-    id: 'valuation',
-    title: 'Valuation & Equity',
-    icon: <DollarSign size={14} />,
-    fields: [
-      { key: 'Estimated Value', label: 'Estimated Value', type: 'currency' },
-      { key: 'Estimated Equity Percent', label: 'Estimated Equity Percent', type: 'numeric' },
-      { key: 'Estimated Equity', label: 'Estimated Equity', type: 'currency' },
-      { key: 'Market Value', label: 'Market Value', type: 'currency' },
-      { key: 'Market Land Value', label: 'Market Land Value', type: 'currency' },
-      { key: 'Market Improvement Value', label: 'Market Improvement Value', type: 'currency' },
-      { key: 'Market Improvement Percentage', label: 'Market Improvement Percentage', type: 'text' },
     ],
   },
   {
@@ -289,6 +277,21 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
+    id: 'valuation',
+    title: 'Valuation & Equity',
+    icon: <DollarSign size={14} />,
+    fields: [
+      { key: 'Estimated Value', label: 'Estimated Value', type: 'currency' },
+      { key: 'Estimated Equity Percent', label: 'Estimated Equity Percent', type: 'numeric' },
+      { key: 'Estimated Equity', label: 'Estimated Equity', type: 'currency' },
+      { key: 'Market Value', label: 'Market Value', type: 'currency' },
+      { key: 'Market Land Value', label: 'Market Land Value', type: 'currency' },
+      { key: 'Market Improvement Value', label: 'Market Improvement Value', type: 'currency' },
+      { key: 'Market Improvement Percentage', label: 'Market Improvement Percentage', type: 'text' },
+      { key: 'My Estimated Offer', label: 'My Estimated Offer', type: 'currency' },
+    ],
+  },
+  {
     id: 'mortgage',
     title: 'Sale & Mortgage Details',
     icon: <Landmark size={14} />,
@@ -330,6 +333,14 @@ const SECTIONS: SectionDef[] = [
       { key: 'Auction Courthouse', label: 'Auction Courthouse', type: 'text' },
       { key: 'Auction Address', label: 'Auction Address', type: 'text', colSpan: 2 },
       { key: 'Auction City State', label: 'Auction City State', type: 'text' },
+    ],
+  },
+  {
+    id: 'notes',
+    title: 'Notes',
+    icon: <StickyNote size={14} />,
+    fields: [
+      { key: 'Notes', label: 'Notes', type: 'textarea', colSpan: 3 },
     ],
   },
   {
@@ -380,6 +391,14 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
           initial[f.key] = formatDollarInput(val);
         } else if (f.type === 'date') {
           initial[f.key] = normalizeToIsoDate(val) ?? '';
+        } else if (f.key === 'Notes') {
+          if (typeof val === 'string') {
+            initial[f.key] = val;
+          } else if (Array.isArray(val)) {
+            initial[f.key] = val.join('\n');
+          } else {
+            initial[f.key] = JSON.stringify(val);
+          }
         } else {
           initial[f.key] = String(val);
         }
@@ -930,27 +949,48 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                             ? 'sm:col-span-2'
                             : '';
 
+                      const isEstimatedOffer = field.key === 'My Estimated Offer';
+
                       return (
                         <div key={field.key} className={spanClass}>
-                          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium block mb-1">
+                          <label
+                            className={`text-xs block mb-1 ${
+                              isEstimatedOffer
+                                ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                : 'text-gray-600 dark:text-gray-400 font-medium'
+                            }`}
+                          >
                             {field.label}
                           </label>
                           {field.type === 'textarea' ? (
                             <textarea
-                              rows={2}
+                              rows={field.key === 'Notes' ? 5 : 2}
+                              placeholder={field.key === 'Notes' ? 'Add notes about this property...' : undefined}
                               value={formState[field.key] ?? ''}
                               onChange={(e) => handleFieldChange(field.key, e.target.value)}
                               className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none resize-y"
                             />
                           ) : field.type === 'currency' ? (
                             <div className="relative">
-                              <span className="absolute left-2.5 top-2 text-gray-400 text-sm">$</span>
+                              <span
+                                className={`absolute left-2.5 top-2 text-sm ${
+                                  isEstimatedOffer
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                    : 'text-gray-400'
+                                }`}
+                              >
+                                $
+                              </span>
                               <input
                                 type="text"
                                 inputMode="decimal"
                                 value={formState[field.key] ?? ''}
                                 onChange={(e) => handleFieldChange(field.key, formatDollarInput(e.target.value))}
-                                className="w-full rounded-lg p-2 pl-6 text-sm border outline-none transition-colors bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:border-blue-500"
+                                className={`w-full rounded-lg p-2 pl-6 text-sm border outline-none transition-colors bg-white dark:bg-gray-800 ${
+                                  isEstimatedOffer
+                                    ? 'border-emerald-500 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400 focus:border-emerald-400 font-semibold'
+                                    : 'border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:border-blue-500'
+                                }`}
                               />
                             </div>
                           ) : field.type === 'date' ? (

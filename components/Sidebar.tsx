@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Calendar, Users, Calculator, Mail, Menu, User as UserIcon, Settings, Briefcase, BookUser, Search, MessageSquare, FileText, TrendingUp, Megaphone } from 'lucide-react';
+import { Layout, Users, Mail, Menu, User as UserIcon, Settings, Briefcase, BookUser, Search, MessageSquare, Megaphone, Wrench } from 'lucide-react';
 import { User as UserType } from '../types';
 
 interface SidebarProps {
@@ -30,8 +30,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     
     // Utility to get consistent button styling
     const getBtnStyle = (path: string) => {
-        // Handle root path mapping to dashboard
-        const isActive = location.pathname === path || (path === '/dashboard' && location.pathname === '/');
+        // Handle root path mapping to dashboard and legacy tool routes mapping to /azre-tools
+        const isActive =
+            location.pathname === path ||
+            (path === '/dashboard' && location.pathname === '/') ||
+            (path === '/azre-tools' &&
+                ['/market-analyzer', '/offer-builder', '/calendar', '/calculator'].includes(location.pathname));
         return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
             isActive 
             ? 'bg-blue-600/15 text-blue-400 font-bold border border-blue-500/40 shadow-sm shadow-blue-500/10' 
@@ -200,35 +204,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className={getSectionHeaderStyle()}>Tools</div>
 
                 <button 
-                    onClick={() => handleNavigate('/market-analyzer')} 
-                    className={getBtnStyle('/market-analyzer')}
+                    onClick={() => handleNavigate('/azre-tools')} 
+                    className={getBtnStyle('/azre-tools')}
                 >
-                    <TrendingUp size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Market Oracle</span>}
-                </button>
-
-                <button 
-                    onClick={() => handleNavigate('/offer-builder')} 
-                    className={getBtnStyle('/offer-builder')}
-                >
-                    <FileText size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">LOI Designer</span>}
-                </button>
-
-                <button 
-                    onClick={() => handleNavigate('/calendar')} 
-                    className={getBtnStyle('/calendar')}
-                >
-                    <Calendar size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Calendar</span>}
-                </button>
-
-                <button 
-                    onClick={() => handleNavigate('/calculator')} 
-                    className={getBtnStyle('/calculator')}
-                >
-                    <Calculator size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Deal Analyzer</span>}
+                    <Wrench size={18} />
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">AZRE Tools</span>}
                 </button>
             </nav>
 
