@@ -599,7 +599,7 @@ Find 3 closed, on-market retail MLS sales, After Repaired Comparable sales withi
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
+      server: { middlewareMode: true, hmr: false, ws: false },
       appType: "spa",
     });
     app.use(vite.middlewares);

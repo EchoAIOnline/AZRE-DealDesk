@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={getBtnStyle('/dfd-scouter')}
                 >
                     <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">DFD Scouter</span>}
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Off-Market Scouter</span>}
                 </button>
 
                 <div className={getSectionHeaderStyle()}>Acquisitions</div>
