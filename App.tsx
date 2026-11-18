@@ -214,10 +214,19 @@ export default function App() {
 
   const [pipelineStage, setPipelineStage] = useState<string>(() => {
       const saved = localStorage.getItem('azre-pipeline-stage');
-      const validStages = ['All Deals', 'Potential', 'Seller Accepted Offer', 'Under Contract', 'Closed', 'Declined', 'Canceled'];
-      return (saved && validStages.includes(saved)) ? saved : 'Potential';
+      const validStages = ['All Deals', 'Queue', 'Active MLS Pipeline', 'Active Off-Market Pipeline'];
+      return (saved && validStages.includes(saved)) ? saved : 'All Deals';
   });
   useEffect(() => localStorage.setItem('azre-pipeline-stage', pipelineStage), [pipelineStage]);
+
+  const [pipelineSubStage, setPipelineSubStage] = useState<string | null>(() => {
+      const saved = localStorage.getItem('azre-pipeline-substage');
+      return saved || null;
+  });
+  useEffect(() => {
+      if (pipelineSubStage) localStorage.setItem('azre-pipeline-substage', pipelineSubStage);
+      else localStorage.removeItem('azre-pipeline-substage');
+  }, [pipelineSubStage]);
 
   const [azreQueueStage, setAzreQueueStage] = useState<string>(() => {
       const saved = localStorage.getItem('azre-queue-stage');
@@ -1701,8 +1710,8 @@ export default function App() {
           overrides = undefined;
       } console.log('handleAddDeal called');
       let isDfd = location.pathname === '/dfd-scouter';
-      let isOffMarket = location.pathname === '/off-market-pipeline';
-      let isAzreQueue = location.pathname === '/azre-queue';
+      let isOffMarket = location.pathname === '/off-market-pipeline' || (location.pathname === '/pipeline' && pipelineStage === 'Active Off-Market Pipeline');
+      let isAzreQueue = location.pathname === '/azre-queue' || (location.pathname === '/pipeline' && pipelineStage === 'Queue');
       if (overrides && overrides.pipelineType) {
           isDfd = overrides.pipelineType === 'dfd';
           isOffMarket = overrides.pipelineType === 'off-market';
@@ -1769,7 +1778,7 @@ export default function App() {
               user: currentUser?.name || 'Unknown'
           }],
           queueStatus: isAzreQueue ? 'In Queue' : 'In Pipeline',
-          listingType: isAzreQueue ? (azreQueueStage === 'Off-Market' ? 'Off-Market' : 'Listed On MLS') : (isOffMarket ? 'Off-Market' : 'Listed On MLS'),
+          listingType: isAzreQueue ? ((pipelineSubStage === 'Off-Market' || azreQueueStage === 'Off-Market') ? 'Off-Market' : 'Listed On MLS') : (isOffMarket ? 'Off-Market' : 'Listed On MLS'),
           ...overrides
       };
       try {
@@ -1894,15 +1903,6 @@ export default function App() {
 
   const getDealPipelinePath = (d: Deal): string => {
       if (d.pipelineType === 'dfd' || d._isJV) return '/dfd-scouter';
-      if (d.queueStatus === 'In Queue' || (!d.queueStatus && d.pipelineType === 'azre-queue')) {
-          return '/azre-queue';
-      }
-      if (d.queueStatus === 'In Pipeline') {
-          return d.listingType === 'Off-Market' ? '/off-market-pipeline' : '/pipeline';
-      }
-      if (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') {
-          return '/off-market-pipeline';
-      }
       return '/pipeline';
   };
 
@@ -1916,10 +1916,9 @@ export default function App() {
           const targetDeal = currentPipelineMatch || matchingDeals[0];
           const targetPath = getDealPipelinePath(targetDeal);
 
-          if (targetPath === '/pipeline' || targetPath === '/off-market-pipeline') {
+          if (targetPath === '/pipeline') {
               setPipelineStage('All Deals');
-          } else if (targetPath === '/azre-queue') {
-              setAzreQueueStage('All Deals');
+              setPipelineSubStage(null);
           }
 
           if (location.pathname !== targetPath) {
@@ -1939,10 +1938,9 @@ export default function App() {
               if (!currentPipelineMatch) {
                   const targetDeal = matchingDeals[0];
                   const targetPath = getDealPipelinePath(targetDeal);
-                  if (targetPath === '/pipeline' || targetPath === '/off-market-pipeline') {
+                  if (targetPath === '/pipeline') {
                       setPipelineStage('All Deals');
-                  } else if (targetPath === '/azre-queue') {
-                      setAzreQueueStage('All Deals');
+                      setPipelineSubStage(null);
                   }
                   if (location.pathname !== targetPath) {
                       navigate(targetPath);
@@ -2106,26 +2104,8 @@ export default function App() {
 
     if (location.pathname === '/dfd-scouter') {
         filtered = filtered.filter(d => d.pipelineType === 'dfd' || d._isJV);
-    } else if (location.pathname === '/off-market-pipeline') {
-        filtered = filtered.filter(d => {
-            if (d.pipelineType === 'dfd' || d._isJV) return false;
-            if (d.queueStatus === 'In Queue') return false;
-            if (d.queueStatus === 'In Pipeline') return d.listingType === 'Off-Market';
-            return (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') && d.pipelineType !== 'azre-queue';
-        });
-    } else if (location.pathname === '/azre-queue') {
-        filtered = filtered.filter(d => {
-            if (d.pipelineType === 'dfd' || d._isJV) return false;
-            if (d.queueStatus === 'In Pipeline') return false;
-            return d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue';
-        });
-    } else if (location.pathname === '/pipeline') {
-        filtered = filtered.filter(d => {
-            if (d.pipelineType === 'dfd' || d._isJV) return false;
-            if (d.queueStatus === 'In Queue') return false;
-            if (d.queueStatus === 'In Pipeline') return d.listingType !== 'Off-Market';
-            return (d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue';
-        });
+    } else if (location.pathname === '/pipeline' || location.pathname === '/off-market-pipeline' || location.pathname === '/azre-queue') {
+        filtered = filtered.filter(d => !(d.pipelineType === 'dfd' || d._isJV));
     }
 
     const activeSearch = globalSearchQuery.trim() || pipelineSearch.trim();
@@ -2162,6 +2142,8 @@ export default function App() {
   const getOrderedDeals = () => {
     if (location.pathname !== '/pipeline' && location.pathname !== '/jv-pipeline' && location.pathname !== '/off-market-pipeline' && location.pathname !== '/azre-queue') return filteredDeals;
     let statusesToShow: string[] = [];
+    let dealsToGroup = filteredDeals;
+
     if (location.pathname === '/jv-pipeline') {
         if (pipelineStage === 'All Deals') {
             const uniqueStatuses = Array.from(new Set(filteredDeals.map(d => d.offerDecision))).filter(Boolean) as string[];
@@ -2169,36 +2151,51 @@ export default function App() {
         }
         else if (pipelineStage === 'Available') statusesToShow = ['Available'];
         else if (pipelineStage === 'No Longer Available') statusesToShow = ['No Longer Available'];
-    } else if (location.pathname === '/azre-queue') {
-        const uniqueStatuses = Array.from(new Set(filteredDeals.map(d => d.offerDecision))).filter(Boolean) as string[];
-        statusesToShow = Array.from(new Set([...OFFER_DECISIONS, ...uniqueStatuses]));
     } else {
-        if (filterConfig.type === 'Show Counter Offers Only') statusesToShow = COUNTER_STATUSES;
-        else if (pipelineStage === 'All Deals') {
-            const uniqueStatuses = Array.from(new Set(filteredDeals.map(d => d.offerDecision))).filter(Boolean) as string[];
-            statusesToShow = Array.from(new Set([...OFFER_DECISIONS, ...uniqueStatuses]));
+        const isOffMarketDeal = (d: Deal) => d.listingType === 'Off-Market' || d.pipelineType === 'off-market';
+        const isQueueDeal = (d: Deal) => d.queueStatus !== 'In Pipeline' && (d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue');
+        const isActiveOffMarketDeal = (d: Deal) => {
+            if (d.queueStatus === 'In Queue') return false;
+            if (d.queueStatus === 'In Pipeline') return d.listingType === 'Off-Market';
+            return isOffMarketDeal(d) && d.pipelineType !== 'azre-queue';
+        };
+        const isActiveMlsDeal = (d: Deal) => {
+            if (d.queueStatus === 'In Queue') return false;
+            if (d.queueStatus === 'In Pipeline') return d.listingType !== 'Off-Market';
+            return (d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue';
+        };
+
+        if (pipelineStage === 'Queue') {
+            dealsToGroup = filteredDeals.filter(isQueueDeal);
+            if (pipelineSubStage === 'MLS') {
+                dealsToGroup = dealsToGroup.filter(d => !isOffMarketDeal(d));
+            } else if (pipelineSubStage === 'Off-Market') {
+                dealsToGroup = dealsToGroup.filter(isOffMarketDeal);
+            }
+        } else if (pipelineStage === 'Active MLS Pipeline') {
+            dealsToGroup = filteredDeals.filter(isActiveMlsDeal);
+        } else if (pipelineStage === 'Active Off-Market Pipeline') {
+            dealsToGroup = filteredDeals.filter(isActiveOffMarketDeal);
         }
-        else {
-            switch(pipelineStage) {
+
+        if (filterConfig.type === 'Show Counter Offers Only') {
+            statusesToShow = COUNTER_STATUSES;
+        } else if ((pipelineStage === 'Active MLS Pipeline' || pipelineStage === 'Active Off-Market Pipeline') && pipelineSubStage) {
+            switch (pipelineSubStage) {
                 case 'Potential': statusesToShow = POTENTIAL_STATUSES; break;
                 case 'Seller Accepted Offer': statusesToShow = SELLER_ACCEPTED_OFFER_STATUSES; break;
                 case 'Under Contract': statusesToShow = UNDER_CONTRACT_STATUSES.filter(s => !SELLER_ACCEPTED_OFFER_STATUSES.includes(s)); break;
                 case 'Closed': statusesToShow = CLOSED_STATUSES; break;
                 case 'Declined': statusesToShow = DECLINED_STATUSES; break;
                 case 'Canceled': statusesToShow = CANCELED_STATUSES; break;
-                default: statusesToShow = POTENTIAL_STATUSES; break;
+                default: statusesToShow = OFFER_DECISIONS; break;
             }
+        } else {
+            const uniqueStatuses = Array.from(new Set(dealsToGroup.map(d => d.offerDecision))).filter(Boolean) as string[];
+            statusesToShow = Array.from(new Set([...OFFER_DECISIONS, ...uniqueStatuses]));
         }
     }
-    let dealsToGroup = filteredDeals;
-    if (location.pathname === '/azre-queue') {
-        const isOffMarket = (d: Deal) => d.listingType === 'Off-Market' || d.pipelineType === 'off-market';
-        if (azreQueueStage === 'MLS') {
-            dealsToGroup = filteredDeals.filter(d => !isOffMarket(d));
-        } else if (azreQueueStage === 'Off-Market') {
-            dealsToGroup = filteredDeals.filter(d => isOffMarket(d));
-        }
-    }
+
     const filtered = (dealsToGroup || []).filter(d => d && (statusesToShow.includes(d.offerDecision) || (statusesToShow.includes('Deal Canceled') && d.offerDecision === 'Canceled')));
     const groupedDeals: Deal[] = [];
     statusesToShow.forEach(status => {
@@ -2496,14 +2493,16 @@ export default function App() {
                } />
                <Route path="/pipeline" element={
                  <PipelineView
-                    title="MLS Pipeline"
-                    pipelineType="mls"
+                    title="Pipeline"
+                    pipelineType="unified"
                     deals={deals}
                     agents={agents}
                     pipelineSearch={pipelineSearch}
                     setPipelineSearch={setPipelineSearch}
                     pipelineStage={pipelineStage}
                     setPipelineStage={setPipelineStage}
+                    pipelineSubStage={pipelineSubStage}
+                    setPipelineSubStage={setPipelineSubStage}
                     pipelineSort={pipelineSort}
                     setPipelineSort={setPipelineSort}
                     showFilterMenu={showFilterMenu}
@@ -2523,64 +2522,8 @@ export default function App() {
                     handleDeleteDeal={handleDeleteDeal}
                  />
                } />
-               <Route path="/off-market-pipeline" element={
-                 <PipelineView
-                    title="Off-Market Pipeline"
-                    pipelineType="off-market"
-                    deals={deals}
-                    agents={agents}
-                    pipelineSearch={pipelineSearch}
-                    setPipelineSearch={setPipelineSearch}
-                    pipelineStage={pipelineStage}
-                    setPipelineStage={setPipelineStage}
-                    pipelineSort={pipelineSort}
-                    setPipelineSort={setPipelineSort}
-                    showFilterMenu={showFilterMenu}
-                    setShowFilterMenu={setShowFilterMenu}
-                    filterConfig={filterConfig}
-                    setFilterConfig={setFilterConfig}
-                    agentFilterSearch={agentFilterSearch}
-                    setAgentFilterSearch={setAgentFilterSearch}
-                    showAgentFilterSuggestions={showAgentFilterSuggestions}
-                    setShowAgentFilterSuggestions={setShowAgentFilterSuggestions}
-                    handleAddDeal={handleAddDeal}
-                    updateDeal={updateDeal}
-                    setDealModalZIndex={setDealModalZIndex}
-                    setEditingDeal={setEditingDeal}
-                    filteredDeals={getFilteredDeals()}
-                    orderedDeals={getOrderedDeals()}
-                    handleDeleteDeal={handleDeleteDeal}
-                 />
-               } />
-               <Route path="/azre-queue" element={
-                 <PipelineView
-                    title="AZRE Queue"
-                    pipelineType="azre-queue"
-                    deals={deals}
-                    agents={agents}
-                    pipelineSearch={pipelineSearch}
-                    setPipelineSearch={setPipelineSearch}
-                    pipelineStage={azreQueueStage}
-                    setPipelineStage={setAzreQueueStage}
-                    pipelineSort={pipelineSort}
-                    setPipelineSort={setPipelineSort}
-                    showFilterMenu={showFilterMenu}
-                    setShowFilterMenu={setShowFilterMenu}
-                    filterConfig={filterConfig}
-                    setFilterConfig={setFilterConfig}
-                    agentFilterSearch={agentFilterSearch}
-                    setAgentFilterSearch={setAgentFilterSearch}
-                    showAgentFilterSuggestions={showAgentFilterSuggestions}
-                    setShowAgentFilterSuggestions={setShowAgentFilterSuggestions}
-                    handleAddDeal={handleAddDeal}
-                    updateDeal={updateDeal}
-                    setDealModalZIndex={setDealModalZIndex}
-                    setEditingDeal={setEditingDeal}
-                    filteredDeals={getFilteredDeals()}
-                    orderedDeals={getOrderedDeals()}
-                    handleDeleteDeal={handleDeleteDeal}
-                 />
-               } />
+               <Route path="/off-market-pipeline" element={<Navigate to="/pipeline" replace />} />
+               <Route path="/azre-queue" element={<Navigate to="/pipeline" replace />} />
                <Route path="/dfd-scouter" element={
                  <DFDScouterMap handleAddDeal={(overrides) => handleAddDeal(overrides)} globalSearchQuery={globalSearchQuery} />
                } />

@@ -11,13 +11,15 @@ import { mockOfferTemplates } from '../../services/mockData';
 
 interface PipelineViewProps {
     title?: string;
-    pipelineType?: 'mls' | 'off-market' | 'dfd' | 'azre-queue';
+    pipelineType?: 'mls' | 'off-market' | 'dfd' | 'azre-queue' | 'unified';
     deals: Deal[];
     agents: Agent[];
     pipelineSearch: string;
     setPipelineSearch: (val: string) => void;
     pipelineStage: string;
     setPipelineStage: (val: string) => void;
+    pipelineSubStage?: string | null;
+    setPipelineSubStage?: (val: string | null) => void;
     pipelineSort: string;
     setPipelineSort: (val: string) => void;
     showFilterMenu: boolean;
@@ -41,6 +43,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     title = "Pipeline",
     pipelineType = "mls",
     deals, agents, pipelineSearch, setPipelineSearch, pipelineStage, setPipelineStage,
+    pipelineSubStage = null, setPipelineSubStage,
     pipelineSort, setPipelineSort, showFilterMenu, setShowFilterMenu, filterConfig,
     setFilterConfig, agentFilterSearch, setAgentFilterSearch, showAgentFilterSuggestions,
     setShowAgentFilterSuggestions, handleAddDeal, updateDeal, setDealModalZIndex,
@@ -48,6 +51,12 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
 }) => {
     const [selectedDealIds, setSelectedDealIds] = useState<string[]>([]);
     const [showZipFilterSuggestions, setShowZipFilterSuggestions] = useState(false);
+    const [expandedSection, setExpandedSection] = useState<'Queue' | 'Active MLS Pipeline' | 'Active Off-Market Pipeline' | null>(() => {
+        if (pipelineSubStage && (pipelineStage === 'Queue' || pipelineStage === 'Active MLS Pipeline' || pipelineStage === 'Active Off-Market Pipeline')) {
+            return pipelineStage;
+        }
+        return null;
+    });
     
     const [isBlastModalOpen, setIsBlastModalOpen] = useState(false);
     const [blastProgress, setBlastProgress] = useState(0);
@@ -60,7 +69,9 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         const zips = new Set<string>();
         (deals || []).forEach(d => {
             if (!d) return;
-            if (pipelineType === 'dfd') {
+            if (pipelineType === 'unified') {
+                if (d.pipelineType === 'dfd' || d._isJV) return;
+            } else if (pipelineType === 'dfd') {
                 if (!(d.pipelineType === 'dfd' || d._isJV)) return;
             } else if (pipelineType === 'off-market') {
                 if (d.pipelineType === 'dfd' || d._isJV) return;
@@ -194,9 +205,32 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
 
     const isOffMarket = (d: Deal) => d.listingType === 'Off-Market' || d.pipelineType === 'off-market';
     const isMls = (d: Deal) => !isOffMarket(d);
+    const isQueueDeal = (d: Deal) => {
+        if (d.pipelineType === 'dfd' || d._isJV) return false;
+        if (d.queueStatus === 'In Pipeline') return false;
+        return d.queueStatus === 'In Queue' || d.pipelineType === 'azre-queue';
+    };
+    const isActiveOffMarketDeal = (d: Deal) => {
+        if (d.pipelineType === 'dfd' || d._isJV) return false;
+        if (d.queueStatus === 'In Queue') return false;
+        if (d.queueStatus === 'In Pipeline') return d.listingType === 'Off-Market';
+        return (d.pipelineType === 'off-market' || d.listingType === 'Off-Market') && d.pipelineType !== 'azre-queue';
+    };
+    const isActiveMlsDeal = (d: Deal) => {
+        if (d.pipelineType === 'dfd' || d._isJV) return false;
+        if (d.queueStatus === 'In Queue') return false;
+        if (d.queueStatus === 'In Pipeline') return d.listingType !== 'Off-Market';
+        return (d.pipelineType === 'mls' || !d.pipelineType) && d.listingType !== 'Off-Market' && d.pipelineType !== 'azre-queue';
+    };
 
     React.useEffect(() => {
-        if (pipelineType === 'azre-queue') {
+        if (pipelineType === 'unified') {
+            const validSections = ['All Deals', 'Queue', 'Active MLS Pipeline', 'Active Off-Market Pipeline'];
+            if (!validSections.includes(pipelineStage)) {
+                setPipelineStage('All Deals');
+                setPipelineSubStage?.(null);
+            }
+        } else if (pipelineType === 'azre-queue') {
             if (pipelineStage !== 'All Deals' && pipelineStage !== 'MLS' && pipelineStage !== 'Off-Market') {
                 setPipelineStage('All Deals');
             }
@@ -206,9 +240,60 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 setPipelineStage('Potential');
             }
         }
-    }, [pipelineType, pipelineStage, setPipelineStage]);
+    }, [pipelineType, pipelineStage, setPipelineStage, setPipelineSubStage]);
 
-    const tabs = pipelineType === 'dfd' ? [
+    const queueDeals = useMemo(() => (filteredDeals || []).filter(d => d && isQueueDeal(d)), [filteredDeals]);
+    const activeMlsDeals = useMemo(() => (filteredDeals || []).filter(d => d && isActiveMlsDeal(d)), [filteredDeals]);
+    const activeOffMarketDeals = useMemo(() => (filteredDeals || []).filter(d => d && isActiveOffMarketDeal(d)), [filteredDeals]);
+
+    const toggleSectionDropdown = (section: 'Queue' | 'Active MLS Pipeline' | 'Active Off-Market Pipeline') => {
+        setExpandedSection(prev => (prev === section ? null : section));
+    };
+
+    const buildStageSubTabs = (sectionDeals: Deal[]) => [
+        { id: 'Potential', label: 'Potential', count: sectionDeals.filter(d => d && POTENTIAL_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
+        { id: 'Seller Accepted Offer', label: 'Seller Accepted Offer', count: sectionDeals.filter(d => d && SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400' },
+        { id: 'Under Contract', label: 'Under Contract', count: sectionDeals.filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision) && !SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
+        { id: 'Closed', label: 'Closed', count: sectionDeals.filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' },
+        { id: 'Declined', label: 'Declined', count: sectionDeals.filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' },
+        { id: 'Canceled', label: 'Canceled', count: sectionDeals.filter(d => d && (CANCELED_STATUSES.includes(d.offerDecision) || d.offerDecision === 'Canceled')).length, activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' },
+    ];
+
+    const tabs = pipelineType === 'unified' ? [
+        {
+            id: 'All Deals',
+            label: 'All Deals',
+            count: (filteredDeals || []).length,
+            activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400',
+        },
+        {
+            id: 'Queue',
+            label: 'Queue',
+            count: queueDeals.length,
+            activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400',
+            hasDropdown: true,
+            isExpanded: expandedSection === 'Queue',
+            onToggleDropdown: () => toggleSectionDropdown('Queue'),
+        },
+        {
+            id: 'Active MLS Pipeline',
+            label: 'Active MLS Pipeline',
+            count: activeMlsDeals.length,
+            activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400',
+            hasDropdown: true,
+            isExpanded: expandedSection === 'Active MLS Pipeline',
+            onToggleDropdown: () => toggleSectionDropdown('Active MLS Pipeline'),
+        },
+        {
+            id: 'Active Off-Market Pipeline',
+            label: 'Active Off-Market Pipeline',
+            count: activeOffMarketDeals.length,
+            activeColorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400',
+            hasDropdown: true,
+            isExpanded: expandedSection === 'Active Off-Market Pipeline',
+            onToggleDropdown: () => toggleSectionDropdown('Active Off-Market Pipeline'),
+        },
+    ] : pipelineType === 'dfd' ? [
         { id: 'All Deals', label: 'All Deals', count: (filteredDeals || []).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
         { id: 'Available', label: 'Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'Available').length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' },
         { id: 'No Longer Available', label: 'No Longer Available', count: (filteredDeals || []).filter(d => d && d.offerDecision === 'No Longer Available').length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }
@@ -222,9 +307,36 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         { id: 'Seller Accepted Offer', label: 'Seller Accepted Offer', count: (filteredDeals || []).filter(d => d && SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400' }, 
         { id: 'Under Contract', label: 'Under Contract', count: (filteredDeals || []).filter(d => d && UNDER_CONTRACT_STATUSES.includes(d.offerDecision) && !SELLER_ACCEPTED_OFFER_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400' }, 
         { id: 'Closed', label: 'Closed', count: (filteredDeals || []).filter(d => d && CLOSED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400' }, 
-        { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' },
+        { id: 'Declined', label: 'Declined', count: (filteredDeals || []).filter(d => d && DECLINED_STATUSES.includes(d.offerDecision)).length, activeColorClass: 'text-red-600 dark:text-red-400 border-red-600 dark:border-red-400' }, 
         { id: 'Canceled', label: 'Canceled', count: (filteredDeals || []).filter(d => d && (CANCELED_STATUSES.includes(d.offerDecision) || d.offerDecision === 'Canceled')).length, activeColorClass: 'text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-400' }
     ];
+
+    const subTabs = pipelineType === 'unified' && expandedSection
+        ? expandedSection === 'Queue'
+            ? [
+                { id: 'MLS', label: 'MLS', count: queueDeals.filter(d => d && isMls(d)).length, activeColorClass: 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400' },
+                { id: 'Off-Market', label: 'Off-Market', count: queueDeals.filter(d => d && isOffMarket(d)).length, activeColorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400' },
+            ]
+            : expandedSection === 'Active MLS Pipeline'
+                ? buildStageSubTabs(activeMlsDeals)
+                : buildStageSubTabs(activeOffMarketDeals)
+        : undefined;
+
+    const handleMainTabChange = (tabId: string) => {
+        setPipelineStage(tabId);
+        if (pipelineType === 'unified') {
+            setPipelineSubStage?.(null);
+            if (tabId === 'All Deals') {
+                setExpandedSection(null);
+            }
+        }
+    };
+
+    const handleSubTabChange = (subTabId: string) => {
+        if (!expandedSection) return;
+        setPipelineStage(expandedSection);
+        setPipelineSubStage?.(subTabId);
+    };
 
     return (
         <div className="w-full">
@@ -236,7 +348,10 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 searchPlaceholder="Search active deals..." 
                 tabs={tabs} 
                 activeTab={pipelineStage} 
-                onTabChange={setPipelineStage} 
+                onTabChange={handleMainTabChange}
+                subTabs={subTabs}
+                activeSubTab={expandedSection === pipelineStage ? pipelineSubStage : null}
+                onSubTabChange={handleSubTabChange} 
                 sortOptions={[
                     { value: 'Date Newest', label: 'Date Newest (Stage Order)' }, 
                     { value: 'Date Oldest', label: 'Order Entered (Oldest First)' }, 
@@ -391,7 +506,24 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
             <div className="px-4 md:px-8 pb-8 pt-4">
                 {(() => { 
                     let statusesToShow: string[] = []; 
-                    if (pipelineType === 'dfd') {
+                    if (pipelineType === 'unified') {
+                        if (filterConfig.type === 'Show Counter Offers Only') {
+                            statusesToShow = COUNTER_STATUSES;
+                        } else if ((pipelineStage === 'Active MLS Pipeline' || pipelineStage === 'Active Off-Market Pipeline') && pipelineSubStage) {
+                            switch (pipelineSubStage) {
+                                case 'Potential': statusesToShow = POTENTIAL_STATUSES; break;
+                                case 'Seller Accepted Offer': statusesToShow = SELLER_ACCEPTED_OFFER_STATUSES; break;
+                                case 'Under Contract': statusesToShow = UNDER_CONTRACT_STATUSES.filter(s => !SELLER_ACCEPTED_OFFER_STATUSES.includes(s)); break;
+                                case 'Closed': statusesToShow = CLOSED_STATUSES; break;
+                                case 'Declined': statusesToShow = DECLINED_STATUSES; break;
+                                case 'Canceled': statusesToShow = CANCELED_STATUSES; break;
+                                default: statusesToShow = OFFER_DECISIONS; break;
+                            }
+                        } else {
+                            const uniqueStatuses = Array.from(new Set((orderedDeals || []).map(d => d?.offerDecision))).filter(Boolean) as string[];
+                            statusesToShow = Array.from(new Set([...OFFER_DECISIONS, ...uniqueStatuses]));
+                        }
+                    } else if (pipelineType === 'dfd') {
                         if (pipelineStage === 'All Deals') statusesToShow = DFD_PIPELINE_STATUSES;
                         else if (pipelineStage === 'Available') statusesToShow = ['Available'];
                         else if (pipelineStage === 'No Longer Available') statusesToShow = ['No Longer Available'];

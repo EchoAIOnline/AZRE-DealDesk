@@ -7,6 +7,9 @@ interface Tab {
   count?: number;
   colorClass?: string;
   activeColorClass?: string;
+  hasDropdown?: boolean;
+  isExpanded?: boolean;
+  onToggleDropdown?: () => void;
 }
 
 interface SortOption {
@@ -33,6 +36,11 @@ interface PageNavBarProps {
   tabs?: Tab[];
   activeTab?: string;
   onTabChange?: (id: string) => void;
+
+  // Sub-Navigation Tabs (Optional)
+  subTabs?: Tab[];
+  activeSubTab?: string | null;
+  onSubTabChange?: (id: string) => void;
 
   // Sort
   sortOptions?: SortOption[];
@@ -61,6 +69,9 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
   tabs,
   activeTab,
   onTabChange,
+  subTabs,
+  activeSubTab,
+  onSubTabChange,
   sortOptions,
   sortValue,
   onSortChange,
@@ -187,29 +198,84 @@ export const PageNavBar: React.FC<PageNavBarProps> = ({
 
         {/* Tabs (Navigation options) - Rendered here for desktop, scrollable */}
         {tabs && tabs.length > 0 && (
-           <div className="flex overflow-x-auto pb-1 gap-1 md:gap-4 no-scrollbar">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => onTabChange && onTabChange(tab.id)}
-                  className={`whitespace-nowrap pb-2 text-sm font-bold transition-all border-b-2 px-1 ${
-                    activeTab === tab.id 
-                      ? (tab.activeColorClass || 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400') 
-                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  {tab.label}
-                  {tab.count !== undefined && (
-                    <span className={`ml-2 text-xs py-0.5 px-1.5 rounded-full ${
+           <div className="flex flex-col gap-2">
+             <div className="flex overflow-x-auto pb-1 gap-2 md:gap-5 no-scrollbar">
+                {tabs.map(tab => (
+                  <div
+                    key={tab.id}
+                    className={`flex items-center whitespace-nowrap pb-2 text-sm font-bold transition-all border-b-2 px-1 ${
                       activeTab === tab.id 
-                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
+                        ? (tab.activeColorClass || 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400') 
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    {tab.hasDropdown && tab.onToggleDropdown && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          tab.onToggleDropdown?.();
+                        }}
+                        className={`mr-1 p-0.5 rounded hover:bg-gray-200/70 dark:hover:bg-gray-700/80 transition-colors ${
+                          tab.isExpanded ? 'text-blue-600 dark:text-blue-400' : 'text-current'
+                        }`}
+                        title={tab.isExpanded ? `Hide ${tab.label} options` : `Show ${tab.label} options`}
+                        aria-expanded={tab.isExpanded}
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-150 ${tab.isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onTabChange && onTabChange(tab.id)}
+                      className="flex items-center whitespace-nowrap"
+                    >
+                      <span>{tab.label}</span>
+                      {tab.count !== undefined && (
+                        <span className={`ml-2 text-xs py-0.5 px-1.5 rounded-full ${
+                          activeTab === tab.id 
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                        }`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                ))}
+             </div>
+
+             {/* Horizontal Sub-Navigation Bar */}
+             {subTabs && subTabs.length > 0 && (
+               <div className="flex overflow-x-auto pt-2 pb-1 gap-2 md:gap-5 no-scrollbar border-t border-gray-200/80 dark:border-gray-700/60">
+                 {subTabs.map(subTab => (
+                   <button
+                     key={subTab.id}
+                     type="button"
+                     onClick={() => onSubTabChange && onSubTabChange(subTab.id)}
+                     className={`whitespace-nowrap pb-2 text-sm font-bold transition-all border-b-2 px-1 ${
+                       activeSubTab === subTab.id
+                         ? (subTab.activeColorClass || 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400')
+                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                     }`}
+                   >
+                     {subTab.label}
+                     {subTab.count !== undefined && (
+                       <span className={`ml-2 text-xs py-0.5 px-1.5 rounded-full ${
+                         activeSubTab === subTab.id
+                           ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                           : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                       }`}>
+                         {subTab.count}
+                       </span>
+                     )}
+                   </button>
+                 ))}
+               </div>
+             )}
            </div>
         )}
       </div>

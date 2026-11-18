@@ -95,27 +95,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
 
                 <button 
-                    onClick={() => handleNavigate('/azre-queue')} 
-                    className={getBtnStyle('/azre-queue')}
-                >
-                    <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">AZRE Queue</span>}
-                </button>
-
-                <button 
                     onClick={() => handleNavigate('/pipeline')} 
                     className={getBtnStyle('/pipeline')}
                 >
                     <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">MLS Pipeline</span>}
-                </button>
-
-                <button 
-                    onClick={() => handleNavigate('/off-market-pipeline')} 
-                    className={getBtnStyle('/off-market-pipeline')}
-                >
-                    <Layout size={18} />
-                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Off-Market Pipeline</span>}
+                    {!isSidebarCollapsed && <span className="text-sm whitespace-nowrap">Pipeline</span>}
                 </button>
                 <button 
                     onClick={() => handleNavigate('/dfd-scouter')} 
