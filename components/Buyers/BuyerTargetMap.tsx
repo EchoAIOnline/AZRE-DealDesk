@@ -56,6 +56,7 @@ export const BuyerTargetMap: React.FC<BuyerTargetMapProps> = ({ locations }) => 
                 center: { lat: 33.7490, lng: -84.3880 }, // Default to Atlanta
                 zoom: 9,
                 mapId: MAP_ID,
+                gestureHandling: 'greedy',
                 disableDefaultUI: true,
                 zoomControl: true,
                 streetViewControl: false,

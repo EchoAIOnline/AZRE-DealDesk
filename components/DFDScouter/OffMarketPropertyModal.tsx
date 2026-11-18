@@ -24,6 +24,8 @@ import {
   Star,
   ListPlus,
   RotateCcw,
+  ThumbsDown,
+  ChevronDown,
 } from 'lucide-react';
 import { OffMarketProperty } from '../../types';
 import { normalizeOffMarketLists } from './OffMarketPropertiesListModal';
@@ -33,6 +35,7 @@ interface OffMarketPropertyModalProps {
   onClose: () => void;
   onSave: (updated: OffMarketProperty) => Promise<void>;
   onDelete?: (id: number) => Promise<void>;
+  onMoveToNotInterested?: (id: number) => Promise<void>;
   onRestore?: (id: number) => Promise<void>;
   onToggleInterested?: (property: OffMarketProperty) => Promise<void>;
   onAddToList?: (property: OffMarketProperty) => void;
@@ -345,6 +348,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   onClose,
   onSave,
   onDelete,
+  onMoveToNotInterested,
   onRestore,
   onToggleInterested,
   onAddToList,
@@ -360,6 +364,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   const [isRestoring, setIsRestoring] = useState(false);
   const [isTogglingInterested, setIsTogglingInterested] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedField, setCopiedField] = useState<'property' | 'mailing' | null>(null);
@@ -384,7 +389,15 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     setSaveError(null);
     setSaveSuccess(false);
     setConfirmDelete(false);
+    setIsMoveMenuOpen(false);
   }, [property]);
+
+  useEffect(() => {
+    if (!isMoveMenuOpen) return;
+    const handleWindowClick = () => setIsMoveMenuOpen(false);
+    window.addEventListener('click', handleWindowClick);
+    return () => window.removeEventListener('click', handleWindowClick);
+  }, [isMoveMenuOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -523,6 +536,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   };
 
   const isTrashed = property['Trash'] === true;
+  const isNotInterested = property['Not Interested'] === true && !isTrashed;
 
   const handleConfirmDelete = async () => {
     if (!onDelete) return;
@@ -532,9 +546,22 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
       await onDelete(property.id);
       onClose();
     } catch (err: any) {
-      setSaveError(err?.message || 'Failed to delete property.');
+      setSaveError(err?.message || 'Failed to move property to Trash.');
       setIsDeleting(false);
       setConfirmDelete(false);
+    }
+  };
+
+  const handleMoveToNotInterestedClick = async () => {
+    if (!onMoveToNotInterested) return;
+    setIsDeleting(true);
+    setSaveError(null);
+    try {
+      await onMoveToNotInterested(property.id);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to move property to Not Interested.');
+      setIsDeleting(false);
     }
   };
 
@@ -960,7 +987,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
         {/* Footer */}
         <div className="px-5 py-3 bg-gray-50 dark:bg-[#172235] border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
-            {isTrashed && onRestore && (
+            {(isTrashed || isNotInterested) && onRestore && (
               <button
                 type="button"
                 disabled={isSaving || isDeleting || isRestoring}
@@ -971,11 +998,11 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                 <span>Restore</span>
               </button>
             )}
-            {onDelete && (
+            {(onDelete || onMoveToNotInterested) && (
               confirmDelete ? (
                 <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-2.5 py-1">
                   <span className="text-xs font-semibold text-red-700 dark:text-red-300">
-                    {isTrashed ? 'Delete permanently?' : 'Move to Trash?'}
+                    Delete permanently?
                   </span>
                   <button
                     type="button"
@@ -984,7 +1011,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                     className="px-2.5 py-1 text-xs font-bold rounded bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 disabled:opacity-60 transition-colors"
                   >
                     {isDeleting && <Loader2 size={12} className="animate-spin" />}
-                    <span>{isTrashed ? 'Yes, Delete' : 'Move to Trash'}</span>
+                    <span>Yes, Delete</span>
                   </button>
                   <button
                     type="button"
@@ -996,15 +1023,60 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  disabled={isSaving || isDeleting || isRestoring}
-                  onClick={() => setConfirmDelete(true)}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/70 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
-                >
-                  <Trash2 size={14} />
-                  <span>Delete</span>
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={isSaving || isDeleting || isRestoring}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsMoveMenuOpen((prev) => !prev);
+                    }}
+                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/70 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center gap-1.5 disabled:opacity-50 transition-colors"
+                  >
+                    {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    <span>Delete</span>
+                    <ChevronDown size={13} />
+                  </button>
+                  {isMoveMenuOpen && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 bottom-full mb-1.5 w-44 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-xl py-1 z-30"
+                    >
+                      {onDelete && (
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={async () => {
+                            setIsMoveMenuOpen(false);
+                            if (isTrashed) {
+                              setConfirmDelete(true);
+                              return;
+                            }
+                            await handleConfirmDelete();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 size={13} />
+                          <span>Trash</span>
+                        </button>
+                      )}
+                      {onMoveToNotInterested && (
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={async () => {
+                            setIsMoveMenuOpen(false);
+                            await handleMoveToNotInterestedClick();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <ThumbsDown size={13} />
+                          <span>Not Interested</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               )
             )}
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">

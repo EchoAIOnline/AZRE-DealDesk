@@ -35,6 +35,8 @@ import {
     ListPlus,
     Phone,
     RotateCcw,
+    ThumbsDown,
+    Calendar,
 } from 'lucide-react';
 
 interface DFDScouterMapProps {
@@ -51,10 +53,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     const [isLoadingProperties, setIsLoadingProperties] = useState(true);
     const [propertiesError, setPropertiesError] = useState<string | null>(null);
     const [isListOpen, setIsListOpen] = useState(true);
-    const [propertyTab, setPropertyTab] = useState<'Property Pool' | 'Interested' | 'Trash'>('Property Pool');
+    const [propertyTab, setPropertyTab] = useState<'Property Pool' | 'Interested' | 'Not Interested' | 'Trash'>('Property Pool');
     const [listSearch, setListSearch] = useState('');
     const [selectedProperty, setSelectedProperty] = useState<OffMarketProperty | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [openMoveMenuId, setOpenMoveMenuId] = useState<number | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -97,12 +100,23 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         fetchOffMarketProperties();
     }, [fetchOffMarketProperties]);
 
-    const isInterestedProperty = useCallback((p: OffMarketProperty) => {
-        return p['Interested'] === true;
-    }, []);
+    useEffect(() => {
+        if (openMoveMenuId === null) return;
+        const handleWindowClick = () => setOpenMoveMenuId(null);
+        window.addEventListener('click', handleWindowClick);
+        return () => window.removeEventListener('click', handleWindowClick);
+    }, [openMoveMenuId]);
 
     const isTrashedProperty = useCallback((p: OffMarketProperty) => {
         return p['Trash'] === true;
+    }, []);
+
+    const isNotInterestedProperty = useCallback((p: OffMarketProperty) => {
+        return p['Not Interested'] === true && p['Trash'] !== true;
+    }, []);
+
+    const isInterestedProperty = useCallback((p: OffMarketProperty) => {
+        return p['Interested'] === true && p['Trash'] !== true && p['Not Interested'] !== true;
     }, []);
 
     const searchFilteredProperties = useMemo(() => {
@@ -135,9 +149,22 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         [searchFilteredProperties, isTrashedProperty]
     );
 
+    const propertyPoolProperties = useMemo(
+        () =>
+            activeSearchFilteredProperties.filter(
+                (p) => !isInterestedProperty(p) && !isNotInterestedProperty(p)
+            ),
+        [activeSearchFilteredProperties, isInterestedProperty, isNotInterestedProperty]
+    );
+
     const interestedPropertiesCount = useMemo(
         () => activeSearchFilteredProperties.filter(isInterestedProperty).length,
         [activeSearchFilteredProperties, isInterestedProperty]
+    );
+
+    const notInterestedPropertiesCount = useMemo(
+        () => activeSearchFilteredProperties.filter(isNotInterestedProperty).length,
+        [activeSearchFilteredProperties, isNotInterestedProperty]
     );
 
     const trashedPropertiesCount = useMemo(
@@ -149,15 +176,20 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         if (propertyTab === 'Trash') {
             return searchFilteredProperties.filter(isTrashedProperty);
         }
+        if (propertyTab === 'Not Interested') {
+            return activeSearchFilteredProperties.filter(isNotInterestedProperty);
+        }
         if (propertyTab === 'Interested') {
             return activeSearchFilteredProperties.filter(isInterestedProperty);
         }
-        return activeSearchFilteredProperties;
+        return propertyPoolProperties;
     }, [
         searchFilteredProperties,
         activeSearchFilteredProperties,
+        propertyPoolProperties,
         propertyTab,
         isInterestedProperty,
+        isNotInterestedProperty,
         isTrashedProperty,
     ]);
 
@@ -197,7 +229,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
             if (!isAlreadyTrashed) {
                 const { data, error } = await supabase
                     .from('OffMarketProperties')
-                    .update({ Trash: true })
+                    .update({ Trash: true, 'Not Interested': false })
                     .eq('id', id)
                     .select()
                     .single();
@@ -206,12 +238,15 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     throw new Error(error.message || 'Failed to move property to Trash in Supabase.');
                 }
 
-                const saved = (data as OffMarketProperty) || (target ? { ...target, Trash: true } : null);
+                const saved =
+                    (data as OffMarketProperty) ||
+                    (target ? { ...target, Trash: true, 'Not Interested': false } : null);
                 if (saved) {
                     setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
                 }
                 setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
                 setConfirmDeleteId((prev) => (prev === id ? null : prev));
+                setOpenMoveMenuId((prev) => (prev === id ? null : prev));
                 return;
             }
 
@@ -234,6 +269,40 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
             setOffMarketProperties((prev) => prev.filter((p) => p.id !== id));
             setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
             setConfirmDeleteId((prev) => (prev === id ? null : prev));
+            setOpenMoveMenuId((prev) => (prev === id ? null : prev));
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleMoveToNotInterested = async (id: number) => {
+        if (id === undefined || id === null) {
+            throw new Error('Cannot move property: missing record ID.');
+        }
+        const target = offMarketProperties.find((p) => p.id === id);
+        setDeletingId(id);
+        setPropertiesError(null);
+        try {
+            const { data, error } = await supabase
+                .from('OffMarketProperties')
+                .update({ 'Not Interested': true, Interested: false, Trash: false })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(error.message || 'Failed to move property to Not Interested in Supabase.');
+            }
+
+            const saved =
+                (data as OffMarketProperty) ||
+                (target ? { ...target, 'Not Interested': true, Interested: false, Trash: false } : null);
+            if (saved) {
+                setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+            }
+            setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
+            setConfirmDeleteId((prev) => (prev === id ? null : prev));
+            setOpenMoveMenuId((prev) => (prev === id ? null : prev));
         } finally {
             setDeletingId(null);
         }
@@ -247,21 +316,24 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         try {
             const { data, error } = await supabase
                 .from('OffMarketProperties')
-                .update({ Trash: false })
+                .update({ Trash: false, 'Not Interested': false })
                 .eq('id', id)
                 .select()
                 .single();
 
             if (error) {
-                throw new Error(error.message || 'Failed to restore property from Trash in Supabase.');
+                throw new Error(error.message || 'Failed to restore property in Supabase.');
             }
 
-            const saved = (data as OffMarketProperty) || (target ? { ...target, Trash: false } : null);
+            const saved =
+                (data as OffMarketProperty) ||
+                (target ? { ...target, Trash: false, 'Not Interested': false } : null);
             if (saved) {
                 setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
             }
             setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
             setConfirmDeleteId((prev) => (prev === id ? null : prev));
+            setOpenMoveMenuId((prev) => (prev === id ? null : prev));
         } finally {
             setRestoringId(null);
         }
@@ -272,9 +344,13 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         setTogglingInterestedId(prop.id);
         setPropertiesError(null);
         try {
+            const updates = nextValue
+                ? { Interested: true, 'Not Interested': false, Trash: false }
+                : { Interested: false };
+
             const { data, error } = await supabase
                 .from('OffMarketProperties')
-                .update({ Interested: nextValue })
+                .update(updates)
                 .eq('id', prop.id)
                 .select()
                 .single();
@@ -283,7 +359,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                 throw new Error(error.message || 'Failed to update Interested status in Supabase.');
             }
 
-            const saved = (data as OffMarketProperty) || { ...prop, Interested: nextValue };
+            const saved = (data as OffMarketProperty) || { ...prop, ...updates };
             setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
             setSelectedProperty((prev) => (prev && prev.id === saved.id ? saved : prev));
         } finally {
@@ -461,8 +537,9 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                         <div className="flex overflow-x-auto gap-4 no-scrollbar border-b border-gray-200 dark:border-gray-700/70">
                             {(
                                 [
-                                    { id: 'Property Pool', label: 'Property Pool', count: activeSearchFilteredProperties.length },
+                                    { id: 'Property Pool', label: 'Property Pool', count: propertyPoolProperties.length },
                                     { id: 'Interested', label: 'Interested', count: interestedPropertiesCount },
+                                    { id: 'Not Interested', label: 'Not Interested', count: notInterestedPropertiesCount },
                                     { id: 'Trash', label: 'Trash', count: trashedPropertiesCount },
                                 ] as const
                             ).map((tab) => (
@@ -541,9 +618,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                         ? 'No properties match your filter.'
                                         : propertyTab === 'Trash'
                                             ? 'Trash is empty.'
-                                            : propertyTab === 'Interested'
-                                                ? 'No interested properties found yet.'
-                                                : 'No off-market properties found yet.'}
+                                            : propertyTab === 'Not Interested'
+                                                ? 'No not interested properties found yet.'
+                                                : propertyTab === 'Interested'
+                                                    ? 'No interested properties found yet.'
+                                                    : 'No off-market properties found yet.'}
                                 </p>
                             </div>
                         ) : (
@@ -619,7 +698,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         <MapPin size={14} />
                                                     </button>
                                                 )}
-                                                {isTrashedProperty(prop) && (
+                                                {(isTrashedProperty(prop) || isNotInterestedProperty(prop)) && (
                                                     <button
                                                         type="button"
                                                         disabled={restoringId === prop.id || deletingId === prop.id}
@@ -632,7 +711,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                             }
                                                         }}
                                                         className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors disabled:opacity-50"
-                                                        title="Restore from Trash"
+                                                        title="Restore to Property Pool"
                                                     >
                                                         {restoringId === prop.id ? (
                                                             <Loader2 size={14} className="animate-spin" />
@@ -641,17 +720,72 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         )}
                                                     </button>
                                                 )}
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setConfirmDeleteId(confirmDeleteId === prop.id ? null : prop.id);
-                                                    }}
-                                                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                                    title={isTrashedProperty(prop) ? 'Delete Permanently' : 'Move to Trash'}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                <div className="relative">
+                                                    <button
+                                                        type="button"
+                                                        disabled={deletingId === prop.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setConfirmDeleteId(null);
+                                                            setOpenMoveMenuId(openMoveMenuId === prop.id ? null : prop.id);
+                                                        }}
+                                                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                                                            openMoveMenuId === prop.id
+                                                                ? 'text-red-500 bg-red-50 dark:bg-red-900/30'
+                                                                : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
+                                                        }`}
+                                                        title="Move Property"
+                                                    >
+                                                        {deletingId === prop.id ? (
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <Trash2 size={14} />
+                                                        )}
+                                                    </button>
+                                                    {openMoveMenuId === prop.id && (
+                                                        <div
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="absolute right-0 top-full mt-1 w-40 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-lg py-1 z-30"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                disabled={deletingId === prop.id}
+                                                                onClick={async () => {
+                                                                    setOpenMoveMenuId(null);
+                                                                    if (isTrashedProperty(prop)) {
+                                                                        setConfirmDeleteId(prop.id);
+                                                                        return;
+                                                                    }
+                                                                    try {
+                                                                        await handleDeleteProperty(prop.id);
+                                                                    } catch (err: any) {
+                                                                        setPropertiesError(err?.message || 'Failed to move property to Trash.');
+                                                                    }
+                                                                }}
+                                                                className="w-full px-3 py-1.5 text-left text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                                <span>Trash</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={deletingId === prop.id}
+                                                                onClick={async () => {
+                                                                    setOpenMoveMenuId(null);
+                                                                    try {
+                                                                        await handleMoveToNotInterested(prop.id);
+                                                                    } catch (err: any) {
+                                                                        setPropertiesError(err?.message || 'Failed to move property to Not Interested.');
+                                                                    }
+                                                                }}
+                                                                className="w-full px-3 py-1.5 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <ThumbsDown size={13} />
+                                                                <span>Not Interested</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -708,8 +842,9 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
 
                                         {(prop['Bedrooms'] !== null && prop['Bedrooms'] !== undefined && prop['Bedrooms'] !== '' ||
                                             prop['Bathrooms'] !== null && prop['Bathrooms'] !== undefined && prop['Bathrooms'] !== '' ||
-                                            prop['Living Square Feet'] !== null && prop['Living Square Feet'] !== undefined && prop['Living Square Feet'] !== '') && (
-                                            <div className="flex items-center gap-3 text-[11px] text-gray-600 dark:text-gray-300">
+                                            prop['Living Square Feet'] !== null && prop['Living Square Feet'] !== undefined && prop['Living Square Feet'] !== '' ||
+                                            prop['Year Built'] !== null && prop['Year Built'] !== undefined && prop['Year Built'] !== '') && (
+                                            <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-600 dark:text-gray-300">
                                                 {prop['Bedrooms'] !== null && prop['Bedrooms'] !== undefined && prop['Bedrooms'] !== '' && (
                                                     <span className="flex items-center gap-1">
                                                         <BedDouble size={12} className="text-gray-400" />
@@ -726,6 +861,12 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                     <span className="flex items-center gap-1">
                                                         <Ruler size={12} className="text-gray-400" />
                                                         {Number(prop['Living Square Feet']).toLocaleString()} sqft
+                                                    </span>
+                                                )}
+                                                {prop['Year Built'] !== null && prop['Year Built'] !== undefined && prop['Year Built'] !== '' && (
+                                                    <span className="flex items-center gap-1" title="Year Built">
+                                                        <Calendar size={12} className="text-gray-400" />
+                                                        {prop['Year Built']}
                                                     </span>
                                                 )}
                                             </div>
@@ -818,6 +959,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     onClose={() => setSelectedProperty(null)}
                     onSave={handleSaveProperty}
                     onDelete={handleDeleteProperty}
+                    onMoveToNotInterested={handleMoveToNotInterested}
                     onRestore={handleRestoreProperty}
                     onToggleInterested={handleToggleInterested}
                     onAddToList={handleOpenAddToList}
@@ -1098,8 +1240,9 @@ const DFDMapContent = ({
                 defaultCenter={userLocation}
                 defaultZoom={12}
                 mapId="DFD_SCOUTER_MAP"
+                gestureHandling="greedy"
                 onClick={handleMapClick}
-                options={{ mapTypeControl: true, streetViewControl: true }}
+                options={{ mapTypeControl: true, streetViewControl: true, gestureHandling: 'greedy' }}
                 style={{ width: '100%', height: '100%' }}
                 internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
             >
