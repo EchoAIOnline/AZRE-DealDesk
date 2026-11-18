@@ -51,7 +51,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     const [isLoadingProperties, setIsLoadingProperties] = useState(true);
     const [propertiesError, setPropertiesError] = useState<string | null>(null);
     const [isListOpen, setIsListOpen] = useState(true);
-    const [propertyTab, setPropertyTab] = useState<'All Properties' | 'Interested' | 'Trash'>('All Properties');
+    const [propertyTab, setPropertyTab] = useState<'Property Pool' | 'Interested' | 'Trash'>('Property Pool');
     const [listSearch, setListSearch] = useState('');
     const [selectedProperty, setSelectedProperty] = useState<OffMarketProperty | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -461,7 +461,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                         <div className="flex overflow-x-auto gap-4 no-scrollbar border-b border-gray-200 dark:border-gray-700/70">
                             {(
                                 [
-                                    { id: 'All Properties', label: 'All Properties', count: activeSearchFilteredProperties.length },
+                                    { id: 'Property Pool', label: 'Property Pool', count: activeSearchFilteredProperties.length },
                                     { id: 'Interested', label: 'Interested', count: interestedPropertiesCount },
                                     { id: 'Trash', label: 'Trash', count: trashedPropertiesCount },
                                 ] as const
