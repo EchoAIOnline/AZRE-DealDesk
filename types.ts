@@ -514,5 +514,8 @@ export interface OffMarketProperty {
   'Trash'?: boolean | null;
   'My Estimated Offer'?: number | string | null;
   'Notes'?: string | string[] | null;
+  'Text Message Generator'?: string | { message?: string; selectedOwner?: number; selectedTemplate?: number } | null;
+  'Text Message Sent'?: boolean | null;
+  'Text Message Templates'?: Record<string, any> | string[] | null;
 }
 

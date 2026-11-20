@@ -12,6 +12,13 @@ import {
     normalizeOffMarketLists,
 } from './OffMarketPropertiesListModal';
 import {
+    DEFAULT_TEXT_MESSAGE_TEMPLATES,
+    TextMessageTemplatesConfig,
+    parseTemplatesFromGeneratorRow,
+    loadLocalTextTemplates,
+    saveLocalTextTemplates,
+} from './TextMessageTemplateModal';
+import {
     Layout,
     Locate,
     Loader2,
@@ -37,6 +44,7 @@ import {
     RotateCcw,
     ThumbsDown,
     Calendar,
+    MessageSquare,
 } from 'lucide-react';
 
 interface DFDScouterMapProps {
@@ -75,6 +83,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         }
     });
 
+    const [textTemplatesRowId, setTextTemplatesRowId] = useState<number | null>(null);
+    const [textTemplates, setTextTemplates] = useState<TextMessageTemplatesConfig>(
+        () => loadLocalTextTemplates() || DEFAULT_TEXT_MESSAGE_TEMPLATES
+    );
+
     const fetchOffMarketProperties = useCallback(async () => {
         setIsLoadingProperties(true);
         setPropertiesError(null);
@@ -96,9 +109,39 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         }
     }, []);
 
+    const fetchTextMessageTemplates = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('OffMarketOfferTextMessageGenerator')
+                .select('*')
+                .order('id', { ascending: true })
+                .limit(1);
+
+            if (error) {
+                console.warn('Failed to fetch OffMarketOfferTextMessageGenerator:', error);
+                return;
+            }
+
+            if (data && data.length > 0) {
+                const row = data[0] as Record<string, any>;
+                if (typeof row.id === 'number') {
+                    setTextTemplatesRowId(row.id);
+                }
+                const parsed = parseTemplatesFromGeneratorRow(row);
+                if (parsed) {
+                    setTextTemplates(parsed);
+                    saveLocalTextTemplates(parsed);
+                }
+            }
+        } catch (err) {
+            console.warn('Error loading OffMarketOfferTextMessageGenerator:', err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchOffMarketProperties();
-    }, [fetchOffMarketProperties]);
+        fetchTextMessageTemplates();
+    }, [fetchOffMarketProperties, fetchTextMessageTemplates]);
 
     useEffect(() => {
         if (openMoveMenuId === null) return;
@@ -197,6 +240,76 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         if (!selectedProperty) return -1;
         return filteredProperties.findIndex((p) => p.id === selectedProperty.id);
     }, [filteredProperties, selectedProperty]);
+
+    const handleSaveTextMessageTemplates = useCallback(
+        async (updatedTemplates: TextMessageTemplatesConfig) => {
+            const dbPayload = {
+                'Text Message Template 1': updatedTemplates['Text Template 1'],
+                'Text Message Template 2': updatedTemplates['Text Template 2'],
+                'Text Message Template 3': updatedTemplates['Text Template 3'],
+                'Text Message Template 4': updatedTemplates['Text Template 4'],
+            };
+
+            let targetId = textTemplatesRowId;
+            if (targetId === null) {
+                const { data: existingRows, error: lookupError } = await supabase
+                    .from('OffMarketOfferTextMessageGenerator')
+                    .select('id')
+                    .order('id', { ascending: true })
+                    .limit(1);
+
+                if (lookupError) {
+                    const msg = lookupError.message || 'Failed to query OffMarketOfferTextMessageGenerator.';
+                    if (msg.toLowerCase().includes('row-level security')) {
+                        throw new Error(
+                            'Permission denied by Supabase RLS on OffMarketOfferTextMessageGenerator. Please disable RLS or add a policy in Supabase.'
+                        );
+                    }
+                    throw new Error(msg);
+                }
+                if (existingRows && existingRows.length > 0 && typeof existingRows[0].id === 'number') {
+                    targetId = existingRows[0].id;
+                }
+            }
+
+            const query =
+                targetId !== null
+                    ? supabase
+                          .from('OffMarketOfferTextMessageGenerator')
+                          .update(dbPayload)
+                          .eq('id', targetId)
+                          .select()
+                          .single()
+                    : supabase
+                          .from('OffMarketOfferTextMessageGenerator')
+                          .insert(dbPayload)
+                          .select()
+                          .single();
+
+            const { data, error } = await query;
+
+            if (error) {
+                const msg = error.message || 'Failed to save templates to OffMarketOfferTextMessageGenerator.';
+                if (msg.toLowerCase().includes('row-level security')) {
+                    throw new Error(
+                        'Permission denied by Supabase RLS on OffMarketOfferTextMessageGenerator. Please disable RLS or add SELECT/INSERT/UPDATE policies in Supabase.'
+                    );
+                }
+                throw new Error(msg);
+            }
+
+            const savedRow = data as Record<string, any> | null;
+            if (savedRow && typeof savedRow.id === 'number') {
+                setTextTemplatesRowId(savedRow.id);
+            } else if (targetId !== null) {
+                setTextTemplatesRowId(targetId);
+            }
+
+            setTextTemplates(updatedTemplates);
+            saveLocalTextTemplates(updatedTemplates);
+        },
+        [textTemplatesRowId]
+    );
 
     const handleSaveProperty = async (updated: OffMarketProperty) => {
         const { id, ...fieldsToUpdate } = updated;
@@ -891,7 +1004,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                         )}
 
                                         <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
-                                            {ownerName || hasOwnerPhone ? (
+                                            {ownerName || hasOwnerPhone || prop['Text Message Sent'] === true ? (
                                                 <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 min-w-0">
                                                     {ownerName && (
                                                         <>
@@ -905,6 +1018,15 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                             title="Phone Number Found"
                                                         >
                                                             <Phone size={9} />
+                                                        </span>
+                                                    )}
+                                                    {prop['Text Message Sent'] === true && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/80 text-[9px] font-bold shrink-0"
+                                                            title="Text Message Sent"
+                                                        >
+                                                            <MessageSquare size={9} />
+                                                            <span>SMS Sent</span>
                                                         </span>
                                                     )}
                                                 </div>
@@ -956,6 +1078,16 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
             {selectedProperty && (
                 <OffMarketPropertyModal
                     property={selectedProperty}
+                    initialTemplates={textTemplates}
+                    onSaveTemplates={handleSaveTextMessageTemplates}
+                    onPropertyUpdated={(saved) => {
+                        setOffMarketProperties((prev) =>
+                            prev.map((p) => (p.id === saved.id ? saved : p))
+                        );
+                        setSelectedProperty((prev) =>
+                            prev && prev.id === saved.id ? saved : prev
+                        );
+                    }}
                     onClose={() => setSelectedProperty(null)}
                     onSave={handleSaveProperty}
                     onDelete={handleDeleteProperty}
