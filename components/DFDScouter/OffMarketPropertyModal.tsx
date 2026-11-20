@@ -25,6 +25,7 @@ import {
   ListPlus,
   RotateCcw,
   ThumbsDown,
+  UserX,
   ChevronDown,
   StickyNote,
   MessageSquare,
@@ -55,6 +56,7 @@ interface OffMarketPropertyModalProps {
   onSave: (updated: OffMarketProperty) => Promise<void>;
   onDelete?: (id: number) => Promise<void>;
   onMoveToNotInterested?: (id: number) => Promise<void>;
+  onMoveToOwnerNotInterested?: (id: number) => Promise<void>;
   onRestore?: (id: number) => Promise<void>;
   onToggleInterested?: (property: OffMarketProperty) => Promise<void>;
   onAddToList?: (property: OffMarketProperty) => void;
@@ -387,6 +389,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   onSave,
   onDelete,
   onMoveToNotInterested,
+  onMoveToOwnerNotInterested,
   onRestore,
   onToggleInterested,
   onAddToList,
@@ -846,7 +849,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   };
 
   const isTrashed = property['Trash'] === true;
-  const isNotInterested = property['Not Interested'] === true && !isTrashed;
+  const isNotInterested = property["I'm Not Interested"] === true && !isTrashed;
+  const isOwnerNotInterested = property['Owner Not Interested'] === true && !isTrashed && !isNotInterested;
 
   const handleConfirmDelete = async () => {
     if (!onDelete) return;
@@ -870,7 +874,20 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
       await onMoveToNotInterested(property.id);
       onClose();
     } catch (err: any) {
-      setSaveError(err?.message || 'Failed to move property to Not Interested.');
+      setSaveError(err?.message || "Failed to move property to I'm Not Interested.");
+      setIsDeleting(false);
+    }
+  };
+
+  const handleMoveToOwnerNotInterestedClick = async () => {
+    if (!onMoveToOwnerNotInterested) return;
+    setIsDeleting(true);
+    setSaveError(null);
+    try {
+      await onMoveToOwnerNotInterested(property.id);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to move property to Owner Not Interested.');
       setIsDeleting(false);
     }
   };
@@ -1172,6 +1189,50 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                   </div>
                 ) : section.id === 'text-message-generator' ? (
                   <div className="bg-gray-50 dark:bg-[#172235]/60 rounded-xl p-4 border border-gray-200 dark:border-gray-700/60 space-y-4">
+                    {/* Action Buttons: Edit Text Message Templates & Text Message Sent */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsTemplateModalOpen(true)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 transition-colors"
+                      >
+                        <Edit3 size={13} className="text-blue-500" />
+                        <span>Edit Text Message Templates</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isMarkingTextSent || isSaving || isDeleting}
+                        onClick={handleMarkTextMessageSent}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 disabled:opacity-60 transition-colors ${
+                          isTextMessageSent
+                            ? 'border-emerald-500 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                            : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                        }`}
+                      >
+                        {isMarkingTextSent ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2
+                            size={13}
+                            className={
+                              isTextMessageSent
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-gray-400'
+                            }
+                          />
+                        )}
+                        <span>Text Message Sent</span>
+                      </button>
+                    </div>
+
+                    {textGeneratorError && (
+                      <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+                        <AlertCircle size={14} className="shrink-0" />
+                        <span>{textGeneratorError}</span>
+                      </div>
+                    )}
+
                     {/* Top Row: Owner 1 - Owner 4 */}
                     <div className="space-y-1.5">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
@@ -1293,50 +1354,6 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                         })}
                       </div>
                     </div>
-
-                    {/* Action Buttons: Edit Text Message Templates & Text Message Sent */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setIsTemplateModalOpen(true)}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 transition-colors"
-                      >
-                        <Edit3 size={13} className="text-blue-500" />
-                        <span>Edit Text Message Templates</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={isMarkingTextSent || isSaving || isDeleting}
-                        onClick={handleMarkTextMessageSent}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 disabled:opacity-60 transition-colors ${
-                          isTextMessageSent
-                            ? 'border-emerald-500 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                            : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200'
-                        }`}
-                      >
-                        {isMarkingTextSent ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <CheckCircle2
-                            size={13}
-                            className={
-                              isTextMessageSent
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-gray-400'
-                            }
-                          />
-                        )}
-                        <span>Text Message Sent</span>
-                      </button>
-                    </div>
-
-                    {textGeneratorError && (
-                      <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
-                        <AlertCircle size={14} className="shrink-0" />
-                        <span>{textGeneratorError}</span>
-                      </div>
-                    )}
 
                     {/* Auto-Generated Seller Text Message Box */}
                     <div>
@@ -1525,7 +1542,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
         {/* Footer */}
         <div className="px-5 py-3 bg-gray-50 dark:bg-[#172235] border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
-            {(isTrashed || isNotInterested) && onRestore && (
+            {(isTrashed || isNotInterested || isOwnerNotInterested) && onRestore && (
               <button
                 type="button"
                 disabled={isSaving || isDeleting || isRestoring}
@@ -1536,7 +1553,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                 <span>Restore</span>
               </button>
             )}
-            {(onDelete || onMoveToNotInterested) && (
+            {(onDelete || onMoveToNotInterested || onMoveToOwnerNotInterested) && (
               confirmDelete ? (
                 <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-2.5 py-1">
                   <span className="text-xs font-semibold text-red-700 dark:text-red-300">
@@ -1578,7 +1595,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                   {isMoveMenuOpen && (
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 bottom-full mb-1.5 w-44 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-xl py-1 z-30"
+                      className="absolute left-0 bottom-full mb-1.5 w-48 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-xl py-1 z-30"
                     >
                       {onDelete && (
                         <button
@@ -1609,7 +1626,21 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                           className="w-full px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
                           <ThumbsDown size={13} />
-                          <span>Not Interested</span>
+                          <span>I&apos;m Not Interested</span>
+                        </button>
+                      )}
+                      {onMoveToOwnerNotInterested && (
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={async () => {
+                            setIsMoveMenuOpen(false);
+                            await handleMoveToOwnerNotInterestedClick();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <UserX size={13} />
+                          <span>Owner Not Interested</span>
                         </button>
                       )}
                     </div>

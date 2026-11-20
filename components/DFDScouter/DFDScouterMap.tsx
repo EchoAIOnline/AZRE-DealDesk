@@ -43,6 +43,7 @@ import {
     Phone,
     RotateCcw,
     ThumbsDown,
+    UserX,
     Calendar,
     MessageSquare,
 } from 'lucide-react';
@@ -61,8 +62,23 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     const [isLoadingProperties, setIsLoadingProperties] = useState(true);
     const [propertiesError, setPropertiesError] = useState<string | null>(null);
     const [isListOpen, setIsListOpen] = useState(true);
-    const [propertyTab, setPropertyTab] = useState<'Property Pool' | 'Interested' | 'Not Interested' | 'Trash'>('Property Pool');
+    const [propertyTab, setPropertyTab] = useState<'Property Pool' | 'Interested' | 'Not Interested' | 'Owner Not Interested' | 'Trash'>('Property Pool');
     const [listSearch, setListSearch] = useState('');
+    const [sortBy, setSortBy] = useState<
+        | 'default'
+        | 'highest_equity'
+        | 'lowest_equity'
+        | 'highest_equity_percent'
+        | 'lowest_equity_percent'
+        | 'oldest_year_built'
+        | 'youngest_year_built'
+        | 'address_asc'
+        | 'address_desc'
+        | 'phone_included_first'
+        | 'phone_included_last'
+        | 'sms_sent_first'
+        | 'sms_sent_last'
+    >('default');
     const [selectedProperty, setSelectedProperty] = useState<OffMarketProperty | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [openMoveMenuId, setOpenMoveMenuId] = useState<number | null>(null);
@@ -92,15 +108,49 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         setIsLoadingProperties(true);
         setPropertiesError(null);
         try {
-            const { data, error } = await supabase
-                .from('OffMarketProperties')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const PAGE_SIZE = 1000;
+            const allRows: OffMarketProperty[] = [];
+            const seenIds = new Set<number>();
+            let from = 0;
+            let totalCount: number | null = null;
 
-            if (error) {
-                throw error;
+            while (true) {
+                const { data, error, count } = await supabase
+                    .from('OffMarketProperties')
+                    .select('*', from === 0 ? { count: 'exact' as const } : undefined)
+                    .order('created_at', { ascending: false, nullsFirst: false })
+                    .order('id', { ascending: false })
+                    .range(from, from + PAGE_SIZE - 1);
+
+                if (error) {
+                    throw error;
+                }
+
+                if (from === 0 && typeof count === 'number') {
+                    totalCount = count;
+                }
+
+                const pageRows = (data as OffMarketProperty[]) || [];
+                for (const row of pageRows) {
+                    if (!seenIds.has(row.id)) {
+                        seenIds.add(row.id);
+                        allRows.push(row);
+                    }
+                }
+
+                if (pageRows.length === 0) {
+                    break;
+                }
+                from += pageRows.length;
+                if (totalCount !== null && from >= totalCount) {
+                    break;
+                }
+                if (totalCount === null && pageRows.length < PAGE_SIZE) {
+                    break;
+                }
             }
-            setOffMarketProperties((data as OffMarketProperty[]) || []);
+
+            setOffMarketProperties(allRows);
         } catch (err: any) {
             console.error('Failed to fetch OffMarketProperties:', err);
             setPropertiesError(err?.message || 'Unable to load Off-Market Properties.');
@@ -150,17 +200,34 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         return () => window.removeEventListener('click', handleWindowClick);
     }, [openMoveMenuId]);
 
-    const isTrashedProperty = useCallback((p: OffMarketProperty) => {
-        return p['Trash'] === true;
+    const isFlagTrue = useCallback((val: unknown): boolean => {
+        return (
+            val === true ||
+            val === 1 ||
+            (typeof val === 'string' && ['true', 'yes', '1'].includes(val.trim().toLowerCase()))
+        );
     }, []);
+
+    const isTrashedProperty = useCallback((p: OffMarketProperty) => {
+        return isFlagTrue(p['Trash']);
+    }, [isFlagTrue]);
 
     const isNotInterestedProperty = useCallback((p: OffMarketProperty) => {
-        return p['Not Interested'] === true && p['Trash'] !== true;
-    }, []);
+        return isFlagTrue(p["I'm Not Interested"]) && !isFlagTrue(p['Trash']);
+    }, [isFlagTrue]);
+
+    const isOwnerNotInterestedProperty = useCallback((p: OffMarketProperty) => {
+        return isFlagTrue(p['Owner Not Interested']) && !isFlagTrue(p['Trash']) && !isFlagTrue(p["I'm Not Interested"]);
+    }, [isFlagTrue]);
 
     const isInterestedProperty = useCallback((p: OffMarketProperty) => {
-        return p['Interested'] === true && p['Trash'] !== true && p['Not Interested'] !== true;
-    }, []);
+        return (
+            isFlagTrue(p['Interested']) &&
+            !isFlagTrue(p['Trash']) &&
+            !isFlagTrue(p["I'm Not Interested"]) &&
+            !isFlagTrue(p['Owner Not Interested'])
+        );
+    }, [isFlagTrue]);
 
     const searchFilteredProperties = useMemo(() => {
         const q = listSearch.trim().toLowerCase();
@@ -195,9 +262,17 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     const propertyPoolProperties = useMemo(
         () =>
             activeSearchFilteredProperties.filter(
-                (p) => !isInterestedProperty(p) && !isNotInterestedProperty(p)
+                (p) =>
+                    !isInterestedProperty(p) &&
+                    !isNotInterestedProperty(p) &&
+                    !isOwnerNotInterestedProperty(p)
             ),
-        [activeSearchFilteredProperties, isInterestedProperty, isNotInterestedProperty]
+        [
+            activeSearchFilteredProperties,
+            isInterestedProperty,
+            isNotInterestedProperty,
+            isOwnerNotInterestedProperty,
+        ]
     );
 
     const interestedPropertiesCount = useMemo(
@@ -210,29 +285,125 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         [activeSearchFilteredProperties, isNotInterestedProperty]
     );
 
+    const ownerNotInterestedPropertiesCount = useMemo(
+        () => activeSearchFilteredProperties.filter(isOwnerNotInterestedProperty).length,
+        [activeSearchFilteredProperties, isOwnerNotInterestedProperty]
+    );
+
     const trashedPropertiesCount = useMemo(
         () => searchFilteredProperties.filter(isTrashedProperty).length,
         [searchFilteredProperties, isTrashedProperty]
     );
 
     const filteredProperties = useMemo(() => {
-        if (propertyTab === 'Trash') {
-            return searchFilteredProperties.filter(isTrashedProperty);
+        const base =
+            propertyTab === 'Trash'
+                ? searchFilteredProperties.filter(isTrashedProperty)
+                : propertyTab === 'Not Interested'
+                    ? activeSearchFilteredProperties.filter(isNotInterestedProperty)
+                    : propertyTab === 'Owner Not Interested'
+                        ? activeSearchFilteredProperties.filter(isOwnerNotInterestedProperty)
+                        : propertyTab === 'Interested'
+                            ? activeSearchFilteredProperties.filter(isInterestedProperty)
+                            : propertyPoolProperties;
+
+        if (sortBy === 'default') {
+            return base;
         }
-        if (propertyTab === 'Not Interested') {
-            return activeSearchFilteredProperties.filter(isNotInterestedProperty);
-        }
-        if (propertyTab === 'Interested') {
-            return activeSearchFilteredProperties.filter(isInterestedProperty);
-        }
-        return propertyPoolProperties;
+
+        const parseNum = (val: unknown): number | null => {
+            if (val === null || val === undefined || val === '') return null;
+            if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+            const cleaned = String(val).replace(/[$,%\s,]/g, '').trim();
+            if (!cleaned) return null;
+            const num = Number(cleaned);
+            return Number.isFinite(num) ? num : null;
+        };
+
+        return [...base].sort((a, b) => {
+            if (sortBy === 'highest_equity' || sortBy === 'lowest_equity') {
+                const aEq = parseNum(a['Estimated Equity']);
+                const bEq = parseNum(b['Estimated Equity']);
+                if (aEq === null && bEq === null) return 0;
+                if (aEq === null) return 1;
+                if (bEq === null) return -1;
+                return sortBy === 'highest_equity' ? bEq - aEq : aEq - bEq;
+            }
+
+            if (sortBy === 'highest_equity_percent' || sortBy === 'lowest_equity_percent') {
+                const aPct = parseNum(a['Estimated Equity Percent']);
+                const bPct = parseNum(b['Estimated Equity Percent']);
+                if (aPct === null && bPct === null) return 0;
+                if (aPct === null) return 1;
+                if (bPct === null) return -1;
+                return sortBy === 'highest_equity_percent' ? bPct - aPct : aPct - bPct;
+            }
+
+            if (sortBy === 'oldest_year_built' || sortBy === 'youngest_year_built') {
+                const aRaw = parseNum(a['Year Built']);
+                const bRaw = parseNum(b['Year Built']);
+                const aYear = aRaw !== null && aRaw > 0 ? aRaw : null;
+                const bYear = bRaw !== null && bRaw > 0 ? bRaw : null;
+                if (aYear === null && bYear === null) return 0;
+                if (aYear === null) return 1;
+                if (bYear === null) return -1;
+                return sortBy === 'oldest_year_built' ? aYear - bYear : bYear - aYear;
+            }
+
+            if (sortBy === 'address_asc' || sortBy === 'address_desc') {
+                const aAddr = String(a['Address'] ?? '').trim();
+                const bAddr = String(b['Address'] ?? '').trim();
+                if (!aAddr && !bAddr) return 0;
+                if (!aAddr) return 1;
+                if (!bAddr) return -1;
+                const cmp = aAddr.localeCompare(bAddr, undefined, {
+                    numeric: true,
+                    sensitivity: 'base',
+                });
+                return sortBy === 'address_asc' ? cmp : -cmp;
+            }
+
+            if (sortBy === 'phone_included_first' || sortBy === 'phone_included_last') {
+                const hasPhone = (p: OffMarketProperty) =>
+                    [
+                        p['Owner 1 Phone Number 1'],
+                        p['Owner 1 Phone Number 2'],
+                        p['Owner 1 Phone Number 3'],
+                        p['Owner 2 Phone Number 1'],
+                        p['Owner 2 Phone Number 2'],
+                        p['Owner 2 Phone Number 3'],
+                        p['Owner 3 Phone Number 1'],
+                        p['Owner 3 Phone Number 2'],
+                        p['Owner 3 Phone Number 3'],
+                        p['Owner 4 Phone Number 1'],
+                        p['Owner 4 Phone Number 2'],
+                        p['Owner 4 Phone Number 3'],
+                    ].some((phone) => phone !== null && phone !== undefined && String(phone).trim() !== '');
+                const aHas = hasPhone(a);
+                const bHas = hasPhone(b);
+                if (aHas === bHas) return 0;
+                return sortBy === 'phone_included_first' ? (aHas ? -1 : 1) : (aHas ? 1 : -1);
+            }
+
+            if (sortBy === 'sms_sent_first' || sortBy === 'sms_sent_last') {
+                const aSent = isFlagTrue(a['Text Message Sent']);
+                const bSent = isFlagTrue(b['Text Message Sent']);
+                if (aSent === bSent) return 0;
+                return sortBy === 'sms_sent_first' ? (aSent ? -1 : 1) : (aSent ? 1 : -1);
+            }
+
+            return 0;
+        });
     }, [
         searchFilteredProperties,
         activeSearchFilteredProperties,
         propertyPoolProperties,
         propertyTab,
+        sortBy,
+        isFlagTrue,
         isInterestedProperty,
         isNotInterestedProperty,
+        isOwnerNotInterestedProperty,
         isTrashedProperty,
     ]);
 
@@ -342,7 +513,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
             if (!isAlreadyTrashed) {
                 const { data, error } = await supabase
                     .from('OffMarketProperties')
-                    .update({ Trash: true, 'Not Interested': false })
+                    .update({
+                        Trash: true,
+                        "I'm Not Interested": false,
+                        'Owner Not Interested': false,
+                    })
                     .eq('id', id)
                     .select()
                     .single();
@@ -353,7 +528,14 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
 
                 const saved =
                     (data as OffMarketProperty) ||
-                    (target ? { ...target, Trash: true, 'Not Interested': false } : null);
+                    (target
+                        ? {
+                              ...target,
+                              Trash: true,
+                              "I'm Not Interested": false,
+                              'Owner Not Interested': false,
+                          }
+                        : null);
                 if (saved) {
                     setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
                 }
@@ -398,18 +580,79 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         try {
             const { data, error } = await supabase
                 .from('OffMarketProperties')
-                .update({ 'Not Interested': true, Interested: false, Trash: false })
+                .update({
+                    "I'm Not Interested": true,
+                    'Owner Not Interested': false,
+                    Interested: false,
+                    Trash: false,
+                })
                 .eq('id', id)
                 .select()
                 .single();
 
             if (error) {
-                throw new Error(error.message || 'Failed to move property to Not Interested in Supabase.');
+                throw new Error(error.message || "Failed to move property to I'm Not Interested in Supabase.");
             }
 
             const saved =
                 (data as OffMarketProperty) ||
-                (target ? { ...target, 'Not Interested': true, Interested: false, Trash: false } : null);
+                (target
+                    ? {
+                          ...target,
+                          "I'm Not Interested": true,
+                          'Owner Not Interested': false,
+                          Interested: false,
+                          Trash: false,
+                      }
+                    : null);
+            if (saved) {
+                setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+            }
+            setSelectedProperty((prev) => (prev && prev.id === id ? null : prev));
+            setConfirmDeleteId((prev) => (prev === id ? null : prev));
+            setOpenMoveMenuId((prev) => (prev === id ? null : prev));
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleMoveToOwnerNotInterested = async (id: number) => {
+        if (id === undefined || id === null) {
+            throw new Error('Cannot move property: missing record ID.');
+        }
+        const target = offMarketProperties.find((p) => p.id === id);
+        setDeletingId(id);
+        setPropertiesError(null);
+        try {
+            const { data, error } = await supabase
+                .from('OffMarketProperties')
+                .update({
+                    'Owner Not Interested': true,
+                    "I'm Not Interested": false,
+                    Interested: false,
+                    Trash: false,
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(
+                    error.message || 'Failed to move property to Owner Not Interested in Supabase.'
+                );
+            }
+
+            const saved =
+                (data as OffMarketProperty) ||
+                (target
+                    ? {
+                          ...target,
+                          'Owner Not Interested': true,
+                          "I'm Not Interested": false,
+                          Interested: false,
+                          Trash: false,
+                      }
+                    : null);
             if (saved) {
                 setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
             }
@@ -429,7 +672,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         try {
             const { data, error } = await supabase
                 .from('OffMarketProperties')
-                .update({ Trash: false, 'Not Interested': false })
+                .update({
+                    Trash: false,
+                    "I'm Not Interested": false,
+                    'Owner Not Interested': false,
+                })
                 .eq('id', id)
                 .select()
                 .single();
@@ -440,7 +687,14 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
 
             const saved =
                 (data as OffMarketProperty) ||
-                (target ? { ...target, Trash: false, 'Not Interested': false } : null);
+                (target
+                    ? {
+                          ...target,
+                          Trash: false,
+                          "I'm Not Interested": false,
+                          'Owner Not Interested': false,
+                      }
+                    : null);
             if (saved) {
                 setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
             }
@@ -453,12 +707,17 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
     };
 
     const handleToggleInterested = async (prop: OffMarketProperty) => {
-        const nextValue = !(prop['Interested'] === true);
+        const nextValue = !isFlagTrue(prop['Interested']);
         setTogglingInterestedId(prop.id);
         setPropertiesError(null);
         try {
             const updates = nextValue
-                ? { Interested: true, 'Not Interested': false, Trash: false }
+                ? {
+                      Interested: true,
+                      "I'm Not Interested": false,
+                      'Owner Not Interested': false,
+                      Trash: false,
+                  }
                 : { Interested: false };
 
             const { data, error } = await supabase
@@ -652,7 +911,8 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                 [
                                     { id: 'Property Pool', label: 'Property Pool', count: propertyPoolProperties.length },
                                     { id: 'Interested', label: 'Interested', count: interestedPropertiesCount },
-                                    { id: 'Not Interested', label: 'Not Interested', count: notInterestedPropertiesCount },
+                                    { id: 'Not Interested', label: "I'm Not Interested", count: notInterestedPropertiesCount },
+                                    { id: 'Owner Not Interested', label: 'Owner Not Interested', count: ownerNotInterestedPropertiesCount },
                                     { id: 'Trash', label: 'Trash', count: trashedPropertiesCount },
                                 ] as const
                             ).map((tab) => (
@@ -680,25 +940,47 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                             ))}
                         </div>
 
-                        {/* List Search Input */}
-                        <div className="relative">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            <input
-                                type="text"
-                                value={listSearch}
-                                onChange={(e) => setListSearch(e.target.value)}
-                                placeholder="Filter by address, city, zip, owner..."
-                                className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1.5 pl-8 pr-7 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 outline-none"
-                            />
-                            {listSearch && (
-                                <button
-                                    type="button"
-                                    onClick={() => setListSearch('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                                >
-                                    <X size={13} />
-                                </button>
-                            )}
+                        {/* List Search Input & Sort By Dropdown */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1 min-w-0">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={listSearch}
+                                    onChange={(e) => setListSearch(e.target.value)}
+                                    placeholder="Filter by address, city, zip, owner..."
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1.5 pl-8 pr-7 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 outline-none"
+                                />
+                                {listSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setListSearch('')}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                )}
+                            </div>
+                            <select
+                                aria-label="Sort By"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                                className="shrink-0 w-[124px] sm:w-[144px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1.5 px-2 text-xs font-medium text-gray-700 dark:text-gray-200 focus:border-blue-500 outline-none cursor-pointer truncate"
+                            >
+                                <option value="default">Sort By</option>
+                                <option value="highest_equity">Highest Equity First</option>
+                                <option value="lowest_equity">Lowest Equity First</option>
+                                <option value="highest_equity_percent">Highest Equity % First</option>
+                                <option value="lowest_equity_percent">Lowest Equity % First</option>
+                                <option value="oldest_year_built">Oldest Year Built First</option>
+                                <option value="youngest_year_built">Youngest Year Built First</option>
+                                <option value="address_asc">Address A to Z</option>
+                                <option value="address_desc">Address Z to A</option>
+                                <option value="phone_included_first">Phone Number Included First</option>
+                                <option value="phone_included_last">Phone Number Included Last</option>
+                                <option value="sms_sent_first">SMS Sent First</option>
+                                <option value="sms_sent_last">SMS Sent Last</option>
+                            </select>
                         </div>
                     </div>
 
@@ -732,10 +1014,12 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                         : propertyTab === 'Trash'
                                             ? 'Trash is empty.'
                                             : propertyTab === 'Not Interested'
-                                                ? 'No not interested properties found yet.'
-                                                : propertyTab === 'Interested'
-                                                    ? 'No interested properties found yet.'
-                                                    : 'No off-market properties found yet.'}
+                                                ? "No I'm not interested properties found yet."
+                                                : propertyTab === 'Owner Not Interested'
+                                                    ? 'No owner not interested properties found yet.'
+                                                    : propertyTab === 'Interested'
+                                                        ? 'No interested properties found yet.'
+                                                        : 'No off-market properties found yet.'}
                                 </p>
                             </div>
                         ) : (
@@ -811,7 +1095,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         <MapPin size={14} />
                                                     </button>
                                                 )}
-                                                {(isTrashedProperty(prop) || isNotInterestedProperty(prop)) && (
+                                                {(isTrashedProperty(prop) || isNotInterestedProperty(prop) || isOwnerNotInterestedProperty(prop)) && (
                                                     <button
                                                         type="button"
                                                         disabled={restoringId === prop.id || deletingId === prop.id}
@@ -858,7 +1142,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                     {openMoveMenuId === prop.id && (
                                                         <div
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="absolute right-0 top-full mt-1 w-40 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-lg py-1 z-30"
+                                                            className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-gray-700 shadow-lg py-1 z-30"
                                                         >
                                                             <button
                                                                 type="button"
@@ -888,13 +1172,29 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                                     try {
                                                                         await handleMoveToNotInterested(prop.id);
                                                                     } catch (err: any) {
-                                                                        setPropertiesError(err?.message || 'Failed to move property to Not Interested.');
+                                                                        setPropertiesError(err?.message || "Failed to move property to I'm Not Interested.");
                                                                     }
                                                                 }}
                                                                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
                                                             >
                                                                 <ThumbsDown size={13} />
-                                                                <span>Not Interested</span>
+                                                                <span>I&apos;m Not Interested</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={deletingId === prop.id}
+                                                                onClick={async () => {
+                                                                    setOpenMoveMenuId(null);
+                                                                    try {
+                                                                        await handleMoveToOwnerNotInterested(prop.id);
+                                                                    } catch (err: any) {
+                                                                        setPropertiesError(err?.message || 'Failed to move property to Owner Not Interested.');
+                                                                    }
+                                                                }}
+                                                                className="w-full px-3 py-1.5 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <UserX size={13} />
+                                                                <span>Owner Not Interested</span>
                                                             </button>
                                                         </div>
                                                     )}
@@ -1045,11 +1345,11 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                     }
                                                 }}
                                                 className={`px-2 py-1 rounded-lg text-[11px] font-semibold border flex items-center gap-1 shrink-0 transition-colors disabled:opacity-60 ${
-                                                    prop['Interested'] === true
+                                                    isFlagTrue(prop['Interested'])
                                                         ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700/80 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
                                                         : 'bg-gray-50 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                                 }`}
-                                                title={prop['Interested'] === true ? 'Remove from Interested' : 'Mark as Interested'}
+                                                title={isFlagTrue(prop['Interested']) ? 'Remove from Interested' : 'Mark as Interested'}
                                             >
                                                 {togglingInterestedId === prop.id ? (
                                                     <Loader2 size={11} className="animate-spin" />
@@ -1057,7 +1357,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                     <Star
                                                         size={11}
                                                         className={
-                                                            prop['Interested'] === true
+                                                            isFlagTrue(prop['Interested'])
                                                                 ? 'fill-amber-400 text-amber-500 dark:text-amber-400'
                                                                 : 'text-gray-400'
                                                         }
@@ -1092,6 +1392,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     onSave={handleSaveProperty}
                     onDelete={handleDeleteProperty}
                     onMoveToNotInterested={handleMoveToNotInterested}
+                    onMoveToOwnerNotInterested={handleMoveToOwnerNotInterested}
                     onRestore={handleRestoreProperty}
                     onToggleInterested={handleToggleInterested}
                     onAddToList={handleOpenAddToList}

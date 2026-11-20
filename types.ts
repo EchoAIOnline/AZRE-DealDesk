@@ -509,7 +509,8 @@ export interface OffMarketProperty {
   'Auction Address'?: string | null;
   'Auction City State'?: string | null;
   'Interested'?: boolean | null;
-  'Not Interested'?: boolean | null;
+  "I'm Not Interested"?: boolean | null;
+  'Owner Not Interested'?: boolean | null;
   'Off Market List'?: string[] | null;
   'Trash'?: boolean | null;
   'My Estimated Offer'?: number | string | null;
