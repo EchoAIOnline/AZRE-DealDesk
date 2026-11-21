@@ -429,6 +429,7 @@ export interface OffMarketProperty {
   'Zip'?: number | string | null;
   'County'?: string | null;
   'Estimated Value'?: number | string | null;
+  'Zillow Estimate'?: number | string | null;
   'Estimated Equity Percent'?: number | string | null;
   'Estimated Equity'?: number | string | null;
   'Living Square Feet'?: number | string | null;

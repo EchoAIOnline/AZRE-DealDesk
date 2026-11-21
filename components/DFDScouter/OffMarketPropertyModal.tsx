@@ -180,6 +180,7 @@ interface SectionDef {
 export const NUMERIC_OFF_MARKET_COLUMNS = new Set<keyof OffMarketProperty>([
   'Zip',
   'Estimated Value',
+  'Zillow Estimate',
   'Estimated Equity Percent',
   'Estimated Equity',
   'Living Square Feet',
@@ -302,6 +303,7 @@ const SECTIONS: SectionDef[] = [
     icon: <DollarSign size={14} />,
     fields: [
       { key: 'Estimated Value', label: 'Estimated Value', type: 'currency' },
+      { key: 'Zillow Estimate', label: 'Zillow Estimate', type: 'currency' },
       { key: 'Estimated Equity Percent', label: 'Estimated Equity Percent', type: 'numeric' },
       { key: 'Estimated Equity', label: 'Estimated Equity', type: 'currency' },
       { key: 'Market Value', label: 'Market Value', type: 'currency' },

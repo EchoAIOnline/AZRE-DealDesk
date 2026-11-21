@@ -1348,8 +1348,14 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                     prop['Owner 4 Phone Number 3'],
                                 ].some((phone) => phone !== null && phone !== undefined && String(phone).trim() !== '');
                                 const estVal = Number(prop['Estimated Value']);
-                                const estEq = Number(prop['Estimated Equity']);
                                 const eqPct = prop['Estimated Equity Percent'];
+                                const hasEqPct =
+                                    eqPct !== null &&
+                                    eqPct !== undefined &&
+                                    String(eqPct).trim() !== '';
+                                const eqPctDisplay = hasEqPct
+                                    ? `${String(eqPct).trim().replace(/%+$/, '')}%`
+                                    : '—';
                                 const rawOffer = prop['My Estimated Offer'];
                                 const cleanOfferStr =
                                     rawOffer !== null && rawOffer !== undefined
@@ -1592,7 +1598,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                         )}
 
                                         {((!Number.isNaN(estVal) && estVal > 0) ||
-                                            (!Number.isNaN(estEq) && estEq > 0) ||
+                                            hasEqPct ||
                                             (!Number.isNaN(estOffer) && estOffer > 0)) && (
                                             <div className="flex flex-wrap items-stretch gap-x-3.5 gap-y-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
                                                 <div className="shrink-0 flex flex-col justify-between">
@@ -1601,17 +1607,16 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                                         {!Number.isNaN(estVal) && estVal > 0 ? formatCurrency(estVal) : '—'}
                                                     </div>
                                                 </div>
-                                                <div className="min-w-0 flex flex-col justify-between">
-                                                    <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">Est. Equity</div>
-                                                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono whitespace-nowrap">
-                                                        {!Number.isNaN(estEq) && estEq > 0 ? formatCurrency(estEq) : '—'}
-                                                        {eqPct !== null && eqPct !== undefined && eqPct !== '' ? ` (${eqPct}%)` : ''}
-                                                    </div>
-                                                </div>
                                                 <div className="shrink-0 flex flex-col justify-between">
                                                     <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">My Est. Offer</div>
                                                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono whitespace-nowrap">
                                                         {!Number.isNaN(estOffer) && estOffer > 0 ? formatCurrency(estOffer) : '—'}
+                                                    </div>
+                                                </div>
+                                                <div className="min-w-0 flex flex-col justify-between">
+                                                    <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">Est. Equity</div>
+                                                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono whitespace-nowrap">
+                                                        {eqPctDisplay}
                                                     </div>
                                                 </div>
                                             </div>
