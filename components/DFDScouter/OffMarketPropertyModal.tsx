@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Save,
@@ -413,6 +413,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     'property' | 'mailing' | 'textMessage' | 'phone-1' | 'phone-2' | 'phone-3' | 'phone-4' | null
   >(null);
 
+  const isNewProperty = !property.id || property.id <= 0;
+  const justSavedRef = useRef(false);
   const [selectedOwner, setSelectedOwner] = useState<1 | 2 | 3 | 4>(1);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey>('Text Template 1');
   const [templatesConfig, setTemplatesConfig] = useState<TextMessageTemplatesConfig>(() => ({
@@ -470,6 +472,10 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     const initial: Record<string, string> = {};
     SECTIONS.forEach((section) => {
       section.fields.forEach((f) => {
+        if (isNewProperty && f.key === 'id') {
+          initial[f.key] = '';
+          return;
+        }
         const val = property[f.key];
         if (val === null || val === undefined || val === '') {
           initial[f.key] = '';
@@ -533,7 +539,12 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     setTextGeneratorError(null);
     setIsTemplateModalOpen(false);
     setSaveError(null);
-    setSaveSuccess(false);
+    if (justSavedRef.current) {
+      justSavedRef.current = false;
+      setSaveSuccess(true);
+    } else {
+      setSaveSuccess(false);
+    }
     setConfirmDelete(false);
     setIsMoveMenuOpen(false);
   }, [property]);
@@ -622,6 +633,10 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   };
 
   const handleMarkTextMessageSent = async () => {
+    if (isNewProperty) {
+      setTextGeneratorError('Please click Save first before marking Text Message Sent.');
+      return;
+    }
     setIsMarkingTextSent(true);
     setTextGeneratorError(null);
     const nextSent = !isTextMessageSent;
@@ -795,7 +810,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     setSaveSuccess(false);
 
     try {
-      const payload: Record<string, any> = { id: property.id };
+      const payload: Record<string, any> = isNewProperty ? {} : { id: property.id };
 
       for (const section of SECTIONS) {
         for (const field of section.fields) {
@@ -839,9 +854,11 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
 
       payload['Text Message Generator'] = textMessageText.trim() === '' ? null : textMessageText;
 
+      justSavedRef.current = true;
       await onSave(payload as OffMarketProperty);
       setSaveSuccess(true);
     } catch (err: any) {
+      justSavedRef.current = false;
       setSaveError(err?.message || 'Failed to save property changes.');
     } finally {
       setIsSaving(false);
@@ -942,7 +959,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                  {formState['Address'] || `Off-Market Property #${property.id}`}
+                  {formState['Address'] ||
+                    (isNewProperty ? 'Add Off-Market Property' : `Off-Market Property #${property.id}`)}
                 </h2>
                 {formState['Status'] && (
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
@@ -1054,7 +1072,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                 className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-60 transition-colors"
               >
                 {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                <span>{isSaving ? 'Saving...' : isNewProperty ? 'Save' : 'Save Changes'}</span>
               </button>
 
               <button
@@ -1649,7 +1667,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
               )
             )}
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
-              Table: <span className="font-mono">OffMarketProperties</span> • ID #{property.id}
+              Table: <span className="font-mono">OffMarketProperties</span>
+              {!isNewProperty ? ` • ID #${property.id}` : ' • New Record'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1668,7 +1687,7 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
               className="px-4 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-60 transition-colors"
             >
               {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+              <span>{isSaving ? 'Saving...' : isNewProperty ? 'Save' : 'Save Changes'}</span>
             </button>
           </div>
         </div>

@@ -48,6 +48,138 @@ import {
     MessageSquare,
 } from 'lucide-react';
 
+type MapPropertyListTarget =
+    | 'property-pool'
+    | 'interested'
+    | 'not-interested'
+    | 'owner-not-interested'
+    | 'trash';
+
+interface MapAddressDetails {
+    formattedAddress: string;
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    county?: string;
+}
+
+const normalizeAddressPart = (val?: string | number | null): string =>
+    String(val ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[.,]/g, '')
+        .replace(/\s+/g, ' ');
+
+const parseFormattedAddressFallback = (formattedAddress: string): MapAddressDetails => {
+    const cleaned = formattedAddress.trim();
+    const parts = cleaned
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+    if (
+        parts.length > 1 &&
+        ['usa', 'us', 'united states', 'united states of america'].includes(
+            parts[parts.length - 1].toLowerCase()
+        )
+    ) {
+        parts.pop();
+    }
+
+    let streetAddress = cleaned;
+    let city = '';
+    let state = '';
+    let zip = '';
+
+    if (parts.length >= 3) {
+        const stateZipPart = parts[parts.length - 1];
+        const cityPart = parts[parts.length - 2];
+        streetAddress = parts.slice(0, parts.length - 2).join(', ');
+        city = cityPart;
+
+        const match = stateZipPart.match(/^([A-Za-z]{2})(?:\s+(\d{5}(?:-\d{4})?))?$/);
+        if (match) {
+            state = match[1].toUpperCase();
+            zip = match[2] || '';
+        } else {
+            const zipOnly = stateZipPart.match(/\b(\d{5}(?:-\d{4})?)\b/);
+            if (zipOnly) zip = zipOnly[1];
+            const stateOnly = stateZipPart.replace(/\b\d{5}(?:-\d{4})?\b/, '').trim();
+            if (stateOnly) state = stateOnly;
+        }
+    } else if (parts.length === 2) {
+        streetAddress = parts[0];
+        const second = parts[1];
+        const match = second.match(/^([A-Za-z]{2})(?:\s+(\d{5}(?:-\d{4})?))?$/);
+        if (match) {
+            state = match[1].toUpperCase();
+            zip = match[2] || '';
+        } else {
+            city = second;
+        }
+    }
+
+    return {
+        formattedAddress: cleaned,
+        streetAddress: streetAddress || cleaned,
+        city: city || undefined,
+        state: state || undefined,
+        zip: zip || undefined,
+    };
+};
+
+const extractAddressDetailsFromGeocoderResult = (
+    result: any,
+    fallbackAddress?: string
+): MapAddressDetails => {
+    const formattedAddress = result?.formatted_address || fallbackAddress || '';
+    const parsedFallback = parseFormattedAddressFallback(formattedAddress);
+    const components = Array.isArray(result?.address_components) ? result.address_components : [];
+    if (components.length === 0) {
+        return parsedFallback;
+    }
+
+    const getComponent = (type: string, useShort = false): string => {
+        const found = components.find((c: any) => Array.isArray(c.types) && c.types.includes(type));
+        if (!found) return '';
+        return (useShort ? found.short_name : found.long_name) || '';
+    };
+
+    const streetNumber = getComponent('street_number');
+    const route = getComponent('route');
+    const subpremise = getComponent('subpremise');
+    const premise = getComponent('premise');
+    const assembledStreet = [streetNumber, route].filter(Boolean).join(' ').trim();
+    const fullStreet = assembledStreet
+        ? subpremise
+            ? `${assembledStreet} #${subpremise}`
+            : assembledStreet
+        : premise || parsedFallback.streetAddress || formattedAddress;
+
+    const city =
+        getComponent('locality') ||
+        getComponent('sublocality_level_1') ||
+        getComponent('sublocality') ||
+        getComponent('postal_town') ||
+        parsedFallback.city ||
+        '';
+    const state =
+        getComponent('administrative_area_level_1', true) || parsedFallback.state || '';
+    const zip = getComponent('postal_code') || parsedFallback.zip || '';
+    const countyRaw = getComponent('administrative_area_level_2');
+    const county = countyRaw ? countyRaw.replace(/\s+County$/i, '').trim() : '';
+
+    return {
+        formattedAddress: formattedAddress || fullStreet,
+        streetAddress: fullStreet || formattedAddress,
+        city: city || undefined,
+        state: state || undefined,
+        zip: zip || undefined,
+        county: county || undefined,
+    };
+};
+
 interface DFDScouterMapProps {
     handleAddDeal: (overrides?: Partial<Deal>) => void;
     globalSearchQuery?: string;
@@ -78,6 +210,8 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         | 'phone_included_last'
         | 'sms_sent_first'
         | 'sms_sent_last'
+        | 'land_first'
+        | 'land_last'
     >('default');
     const [selectedProperty, setSelectedProperty] = useState<OffMarketProperty | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -392,6 +526,30 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                 return sortBy === 'sms_sent_first' ? (aSent ? -1 : 1) : (aSent ? 1 : -1);
             }
 
+            if (sortBy === 'land_first' || sortBy === 'land_last') {
+                const isLand = (p: OffMarketProperty) => {
+                    const propType = String(p['Property Type'] ?? '').trim().toLowerCase();
+                    const propUse = String(p['Property Use'] ?? '').trim().toLowerCase();
+                    const landUse = String(p['Land Use'] ?? '').trim().toLowerCase();
+                    if (/\bland\b/.test(propType) || propType === 'vacant lot' || propType === 'lot') {
+                        return true;
+                    }
+                    if (!propType) {
+                        return (
+                            /\bland\b/.test(propUse) ||
+                            /\bland\b/.test(landUse) ||
+                            propUse === 'vacant' ||
+                            landUse === 'vacant'
+                        );
+                    }
+                    return /\bvacant\s+land\b/.test(propUse) || /\bvacant\s+land\b/.test(landUse);
+                };
+                const aLand = isLand(a);
+                const bLand = isLand(b);
+                if (aLand === bLand) return 0;
+                return sortBy === 'land_first' ? (aLand ? -1 : 1) : (aLand ? 1 : -1);
+            }
+
             return 0;
         });
     }, [
@@ -484,6 +642,25 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
 
     const handleSaveProperty = async (updated: OffMarketProperty) => {
         const { id, ...fieldsToUpdate } = updated;
+        if (!id || id <= 0) {
+            const { data, error } = await supabase
+                .from('OffMarketProperties')
+                .insert(fieldsToUpdate)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(error.message || 'Failed to add property to Supabase.');
+            }
+
+            const saved = data as OffMarketProperty;
+            if (saved) {
+                setOffMarketProperties((prev) => [saved, ...prev]);
+                setSelectedProperty(saved);
+            }
+            return;
+        }
+
         const { data, error } = await supabase
             .from('OffMarketProperties')
             .update(fieldsToUpdate)
@@ -801,6 +978,126 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         }
     };
 
+    const handleAddMapPropertyToList = async (
+        target: MapPropertyListTarget,
+        addressDetails: MapAddressDetails
+    ): Promise<{ action: 'created' | 'updated'; property: OffMarketProperty }> => {
+        const rawFormatted = (addressDetails.formattedAddress || '').trim();
+        if (
+            !rawFormatted ||
+            rawFormatted === 'Unknown Address' ||
+            rawFormatted === 'Loading address...'
+        ) {
+            throw new Error('Please wait for a valid address before saving.');
+        }
+
+        const parsed = addressDetails.streetAddress
+            ? addressDetails
+            : parseFormattedAddressFallback(rawFormatted);
+        const streetToMatch = normalizeAddressPart(parsed.streetAddress || rawFormatted);
+        const fullToMatch = normalizeAddressPart(rawFormatted);
+        const parsedZip5 = (parsed.zip || '').slice(0, 5);
+        const parsedCityNorm = normalizeAddressPart(parsed.city);
+
+        const existing = offMarketProperties.find((p) => {
+            const propAddrNorm = normalizeAddressPart(p['Address']);
+            if (!propAddrNorm) return false;
+            if (propAddrNorm === fullToMatch) return true;
+            if (propAddrNorm !== streetToMatch) return false;
+
+            const propZip5 = String(p['Zip'] ?? '').trim().slice(0, 5);
+            if (parsedZip5 && propZip5) {
+                return parsedZip5 === propZip5;
+            }
+            const propCityNorm = normalizeAddressPart(p['City']);
+            if (parsedCityNorm && propCityNorm) {
+                return parsedCityNorm === propCityNorm;
+            }
+            return true;
+        });
+
+        const statusFlags: Record<string, boolean> =
+            target === 'property-pool'
+                ? {
+                      Interested: false,
+                      "I'm Not Interested": false,
+                      'Owner Not Interested': false,
+                      Trash: false,
+                  }
+                : target === 'interested'
+                ? {
+                      Interested: true,
+                      "I'm Not Interested": false,
+                      'Owner Not Interested': false,
+                      Trash: false,
+                  }
+                : target === 'not-interested'
+                ? {
+                      "I'm Not Interested": true,
+                      'Owner Not Interested': false,
+                      Interested: false,
+                      Trash: false,
+                  }
+                : target === 'owner-not-interested'
+                ? {
+                      'Owner Not Interested': true,
+                      "I'm Not Interested": false,
+                      Interested: false,
+                      Trash: false,
+                  }
+                : {
+                      Trash: true,
+                      "I'm Not Interested": false,
+                      'Owner Not Interested': false,
+                      Interested: false,
+                  };
+
+        setPropertiesError(null);
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from('OffMarketProperties')
+                .update(statusFlags)
+                .eq('id', existing.id)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(error.message || 'Failed to update property status in Supabase.');
+            }
+
+            const saved = (data as OffMarketProperty) || { ...existing, ...statusFlags };
+            setOffMarketProperties((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+            setSelectedProperty((prev) => (prev && prev.id === saved.id ? saved : prev));
+            return { action: 'updated', property: saved };
+        }
+
+        const insertPayload: Record<string, any> = {
+            Address: parsed.streetAddress || rawFormatted,
+            City: parsed.city || null,
+            State: parsed.state || null,
+            Zip: parsed.zip || null,
+            County: parsed.county || null,
+            ...statusFlags,
+        };
+
+        const { data, error } = await supabase
+            .from('OffMarketProperties')
+            .insert(insertPayload)
+            .select()
+            .single();
+
+        if (error) {
+            throw new Error(error.message || 'Failed to add property to Supabase.');
+        }
+
+        const saved = data as OffMarketProperty;
+        if (saved) {
+            setOffMarketProperties((prev) => [saved, ...prev]);
+        }
+        return { action: 'created', property: saved };
+    };
+
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (search.trim()) {
@@ -817,8 +1114,8 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     searchValue={search}
                     onSearchChange={setSearch}
                     searchPlaceholder="Search address or city on map..."
-                    actionLabel="Add Deal"
-                    onAction={() => handleAddDeal()} 
+                    actionLabel="Add Property"
+                    onAction={() => setSelectedProperty({ id: 0 } as OffMarketProperty)} 
                     secondaryActionLabel="Import Deals"
                     onSecondaryAction={() => setIsImportModalOpen(true)}
                 />
@@ -829,6 +1126,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     <APIProvider apiKey={GOOGLE_MAPS_API_KEY} version="weekly">
                         <DFDMapContent 
                             handleAddDeal={handleAddDeal} 
+                            onAddPropertyToList={handleAddMapPropertyToList}
                             searchQuery={triggerSearch}
                             onSearchHandled={() => setTriggerSearch(null)}
                             locateRequest={locateRequest}
@@ -980,6 +1278,8 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                 <option value="phone_included_last">Phone Number Included Last</option>
                                 <option value="sms_sent_first">SMS Sent First</option>
                                 <option value="sms_sent_last">SMS Sent Last</option>
+                                <option value="land_first">Land First</option>
+                                <option value="land_last">Land Last</option>
                             </select>
                         </div>
                     </div>
@@ -1390,20 +1690,31 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                     }}
                     onClose={() => setSelectedProperty(null)}
                     onSave={handleSaveProperty}
-                    onDelete={handleDeleteProperty}
-                    onMoveToNotInterested={handleMoveToNotInterested}
-                    onMoveToOwnerNotInterested={handleMoveToOwnerNotInterested}
-                    onRestore={handleRestoreProperty}
-                    onToggleInterested={handleToggleInterested}
-                    onAddToList={handleOpenAddToList}
+                    onDelete={selectedProperty.id > 0 ? handleDeleteProperty : undefined}
+                    onMoveToNotInterested={
+                        selectedProperty.id > 0 ? handleMoveToNotInterested : undefined
+                    }
+                    onMoveToOwnerNotInterested={
+                        selectedProperty.id > 0 ? handleMoveToOwnerNotInterested : undefined
+                    }
+                    onRestore={selectedProperty.id > 0 ? handleRestoreProperty : undefined}
+                    onToggleInterested={
+                        selectedProperty.id > 0 ? handleToggleInterested : undefined
+                    }
+                    onAddToList={selectedProperty.id > 0 ? handleOpenAddToList : undefined}
                     onLocateOnMap={handleLocateProperty}
-                    onNavigate={(dir) => {
-                        if (selectedIndex === -1) return;
-                        const nextIdx = dir === 'next' ? selectedIndex + 1 : selectedIndex - 1;
-                        if (nextIdx >= 0 && nextIdx < filteredProperties.length) {
-                            setSelectedProperty(filteredProperties[nextIdx]);
-                        }
-                    }}
+                    onNavigate={
+                        selectedProperty.id > 0
+                            ? (dir) => {
+                                  if (selectedIndex === -1) return;
+                                  const nextIdx =
+                                      dir === 'next' ? selectedIndex + 1 : selectedIndex - 1;
+                                  if (nextIdx >= 0 && nextIdx < filteredProperties.length) {
+                                      setSelectedProperty(filteredProperties[nextIdx]);
+                                  }
+                              }
+                            : undefined
+                    }
                     hasPrevious={selectedIndex > 0}
                     hasNext={selectedIndex !== -1 && selectedIndex < filteredProperties.length - 1}
                 />
@@ -1463,6 +1774,10 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
 
 interface DFDMapContentProps {
     handleAddDeal: (overrides?: Partial<Deal>) => void;
+    onAddPropertyToList: (
+        target: MapPropertyListTarget,
+        addressDetails: MapAddressDetails
+    ) => Promise<{ action: 'created' | 'updated'; property: OffMarketProperty }>;
     searchQuery: string | null;
     onSearchHandled: () => void;
     locateRequest: { address: string; id: number } | null;
@@ -1471,6 +1786,7 @@ interface DFDMapContentProps {
 
 const DFDMapContent = ({
     handleAddDeal,
+    onAddPropertyToList,
     searchQuery,
     onSearchHandled,
     locateRequest,
@@ -1482,8 +1798,15 @@ const DFDMapContent = ({
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 33.7490, lng: -84.3880 }); // Atlanta default
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedAddress, setSelectedAddress] = useState('');
-    const [locatedPin, setLocatedPin] = useState<{ position: { lat: number; lng: number }; address: string } | null>(null);
+    const [selectedAddressDetails, setSelectedAddressDetails] = useState<MapAddressDetails | null>(null);
+    const [locatedPin, setLocatedPin] = useState<{
+        position: { lat: number; lng: number };
+        address: string;
+        details?: MapAddressDetails;
+    } | null>(null);
     const [isLocatedPinInfoOpen, setIsLocatedPinInfoOpen] = useState(false);
+    const [savingListTarget, setSavingListTarget] = useState<MapPropertyListTarget | null>(null);
+    const [popupActionError, setPopupActionError] = useState<string | null>(null);
     const [hasLocated, setHasLocated] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [locationMethod, setLocationMethod] = useState<'gps' | 'ip' | 'default' | null>(null);
@@ -1591,6 +1914,8 @@ const DFDMapContent = ({
                     }
                     setClickedLocation(latLng);
                     setSelectedAddress(results[0].formatted_address);
+                    setSelectedAddressDetails(extractAddressDetailsFromGeocoderResult(results[0]));
+                    setPopupActionError(null);
                 } else {
                     setStatusMessage(`No results found for "${searchQuery}"`);
                     setTimeout(() => setStatusMessage(null), 4000);
@@ -1614,9 +1939,12 @@ const DFDMapContent = ({
                     }
                     setClickedLocation(null);
                     setSelectedAddress('');
+                    setSelectedAddressDetails(null);
+                    setPopupActionError(null);
                     setLocatedPin({
                         position: latLng,
                         address: results[0].formatted_address || locateRequest.address,
+                        details: extractAddressDetailsFromGeocoderResult(results[0], locateRequest.address),
                     });
                     setIsLocatedPinInfoOpen(false);
                 } else {
@@ -1631,7 +1959,10 @@ const DFDMapContent = ({
     useEffect(() => {
         const el = locatedPinMarker?.element;
         if (!el) return;
-        const handleMouseEnter = () => setIsLocatedPinInfoOpen(true);
+        const handleMouseEnter = () => {
+            setPopupActionError(null);
+            setIsLocatedPinInfoOpen(true);
+        };
         el.addEventListener('mouseenter', handleMouseEnter);
         return () => {
             el.removeEventListener('mouseenter', handleMouseEnter);
@@ -1642,7 +1973,10 @@ const DFDMapContent = ({
         if (!e.detail || !e.detail.latLng) return;
         const latLng = e.detail.latLng;
         setIsLocatedPinInfoOpen(false);
+        setPopupActionError(null);
         setClickedLocation(latLng);
+        setSelectedAddress('Loading address...');
+        setSelectedAddressDetails(null);
         
         if (geocodingLib) {
             const geocoder = new geocodingLib.Geocoder();
@@ -1650,12 +1984,15 @@ const DFDMapContent = ({
                 const response = await geocoder.geocode({ location: latLng });
                 if (response.results && response.results[0]) {
                     setSelectedAddress(response.results[0].formatted_address);
+                    setSelectedAddressDetails(extractAddressDetailsFromGeocoderResult(response.results[0]));
                 } else {
                     setSelectedAddress('Unknown Address');
+                    setSelectedAddressDetails(null);
                 }
             } catch (error) {
                 console.error("Geocoding failed", error);
                 setSelectedAddress('Unknown Address');
+                setSelectedAddressDetails(null);
             }
         }
     };
@@ -1664,7 +2001,143 @@ const DFDMapContent = ({
         handleAddDeal({ address: addressOverride ?? selectedAddress, pipelineType: type });
         setClickedLocation(null);
         setSelectedAddress('');
+        setSelectedAddressDetails(null);
         setIsLocatedPinInfoOpen(false);
+        setPopupActionError(null);
+    };
+
+    const MAP_LIST_LABELS: Record<MapPropertyListTarget, string> = {
+        'property-pool': 'Property Pool',
+        'interested': 'Interested',
+        'not-interested': "I'm Not Interested",
+        'owner-not-interested': 'Owner Not Interested',
+        'trash': 'Trash',
+    };
+
+    const handleSelectPropertyListAction = async (
+        target: MapPropertyListTarget,
+        addressOverride?: string,
+        detailsOverride?: MapAddressDetails
+    ) => {
+        const address = (addressOverride ?? selectedAddress).trim();
+        const details: MapAddressDetails = detailsOverride ||
+            selectedAddressDetails || {
+                formattedAddress: address,
+            };
+
+        setSavingListTarget(target);
+        setPopupActionError(null);
+        try {
+            const result = await onAddPropertyToList(target, {
+                ...details,
+                formattedAddress: details.formattedAddress || address,
+            });
+            setClickedLocation(null);
+            setSelectedAddress('');
+            setSelectedAddressDetails(null);
+            setIsLocatedPinInfoOpen(false);
+            const label = MAP_LIST_LABELS[target];
+            setStatusMessage(
+                result.action === 'updated'
+                    ? `Moved property to ${label}`
+                    : `Added property to ${label}`
+            );
+            setTimeout(() => setStatusMessage(null), 4000);
+        } catch (err: any) {
+            setPopupActionError(err?.message || 'Failed to save property to list.');
+        } finally {
+            setSavingListTarget(null);
+        }
+    };
+
+    const renderSelectedPropertyModalContent = (
+        address: string,
+        addressOverride?: string,
+        detailsOverride?: MapAddressDetails
+    ) => {
+        const isSaving = savingListTarget !== null;
+        const listButtons: Array<{
+            target: MapPropertyListTarget;
+            label: string;
+            className: string;
+        }> = [
+            {
+                target: 'property-pool',
+                label: 'Add to Property Pool',
+                className: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+            },
+            {
+                target: 'interested',
+                label: 'Add to Interested',
+                className: 'bg-amber-600 hover:bg-amber-700 text-white',
+            },
+            {
+                target: 'not-interested',
+                label: "Add to I'm Not Interested",
+                className: 'bg-orange-600 hover:bg-orange-700 text-white',
+            },
+            {
+                target: 'owner-not-interested',
+                label: 'Add to Owner Not Interested',
+                className: 'bg-purple-600 hover:bg-purple-700 text-white',
+            },
+            {
+                target: 'trash',
+                label: 'Add to Trash',
+                className: 'bg-red-600 hover:bg-red-700 text-white',
+            },
+        ];
+
+        return (
+            <div className="p-4 bg-white dark:bg-gray-800 rounded shadow text-gray-900 dark:text-white max-w-sm">
+                <h3 className="font-bold text-lg mb-2">Selected Property</h3>
+                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">{address}</p>
+                {popupActionError && (
+                    <p className="mb-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded px-2.5 py-1.5">
+                        {popupActionError}
+                    </p>
+                )}
+                <div className="flex flex-col gap-1.5">
+                    <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => handleAddToPipeline('off-market', addressOverride)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60"
+                    >
+                        Add to Off-Market Pipeline
+                    </button>
+                    <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => handleAddToPipeline('mls', addressOverride)}
+                        className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition disabled:opacity-60"
+                    >
+                        Add to MLS Pipeline
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-0.5" />
+                    {listButtons.map((btn) => (
+                        <button
+                            key={btn.target}
+                            type="button"
+                            disabled={isSaving}
+                            onClick={() =>
+                                handleSelectPropertyListAction(
+                                    btn.target,
+                                    addressOverride,
+                                    detailsOverride
+                                )
+                            }
+                            className={`${btn.className} px-4 py-1.5 rounded text-sm font-medium transition flex items-center justify-center gap-1.5 disabled:opacity-60`}
+                        >
+                            {savingListTarget === btn.target && (
+                                <Loader2 size={14} className="animate-spin shrink-0" />
+                            )}
+                            <span>{btn.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -1694,7 +2167,10 @@ const DFDMapContent = ({
                         ref={locatedPinRef}
                         position={locatedPin.position}
                         title={locatedPin.address}
-                        onClick={() => setIsLocatedPinInfoOpen(true)}
+                        onClick={() => {
+                            setPopupActionError(null);
+                            setIsLocatedPinInfoOpen(true);
+                        }}
                     >
                         <Pin
                             background="#EA4335"
@@ -1707,49 +2183,28 @@ const DFDMapContent = ({
                 {locatedPin && isLocatedPinInfoOpen && (
                     <InfoWindow
                         anchor={locatedPinMarker}
-                        onCloseClick={() => setIsLocatedPinInfoOpen(false)}
+                        onCloseClick={() => {
+                            setIsLocatedPinInfoOpen(false);
+                            setPopupActionError(null);
+                        }}
                     >
-                        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow text-gray-900 dark:text-white max-w-sm">
-                            <h3 className="font-bold text-lg mb-2">Selected Property</h3>
-                            <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{locatedPin.address}</p>
-                            <div className="flex flex-col gap-2">
-                                <button 
-                                    onClick={() => handleAddToPipeline('off-market', locatedPin.address)}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
-                                >
-                                    Add to Off-Market Pipeline
-                                </button>
-                                <button 
-                                    onClick={() => handleAddToPipeline('mls', locatedPin.address)}
-                                    className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition"
-                                >
-                                    Add to MLS Pipeline
-                                </button>
-                            </div>
-                        </div>
+                        {renderSelectedPropertyModalContent(
+                            locatedPin.address,
+                            locatedPin.address,
+                            locatedPin.details
+                        )}
                     </InfoWindow>
                 )}
 
                 {clickedLocation && (
-                    <InfoWindow position={clickedLocation} onCloseClick={() => setClickedLocation(null)}>
-                        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow text-gray-900 dark:text-white max-w-sm">
-                            <h3 className="font-bold text-lg mb-2">Selected Property</h3>
-                            <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{selectedAddress}</p>
-                            <div className="flex flex-col gap-2">
-                                <button 
-                                    onClick={() => handleAddToPipeline('off-market')}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
-                                >
-                                    Add to Off-Market Pipeline
-                                </button>
-                                <button 
-                                    onClick={() => handleAddToPipeline('mls')}
-                                    className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition"
-                                >
-                                    Add to MLS Pipeline
-                                </button>
-                            </div>
-                        </div>
+                    <InfoWindow
+                        position={clickedLocation}
+                        onCloseClick={() => {
+                            setClickedLocation(null);
+                            setPopupActionError(null);
+                        }}
+                    >
+                        {renderSelectedPropertyModalContent(selectedAddress)}
                     </InfoWindow>
                 )}
             </Map>
