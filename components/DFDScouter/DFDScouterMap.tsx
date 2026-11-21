@@ -1350,6 +1350,12 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                 const estVal = Number(prop['Estimated Value']);
                                 const estEq = Number(prop['Estimated Equity']);
                                 const eqPct = prop['Estimated Equity Percent'];
+                                const rawOffer = prop['My Estimated Offer'];
+                                const cleanOfferStr =
+                                    rawOffer !== null && rawOffer !== undefined
+                                        ? String(rawOffer).replace(/[$,\s]/g, '').trim()
+                                        : '';
+                                const estOffer = cleanOfferStr !== '' ? Number(cleanOfferStr) : Number.NaN;
 
                                 return (
                                     <div
@@ -1585,19 +1591,27 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                             </div>
                                         )}
 
-                                        {((!Number.isNaN(estVal) && estVal > 0) || (!Number.isNaN(estEq) && estEq > 0)) && (
-                                            <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
-                                                <div>
-                                                    <div className="text-[10px] text-gray-400 uppercase font-semibold">Est. Value</div>
-                                                    <div className="text-xs font-bold text-gray-900 dark:text-white font-mono">
+                                        {((!Number.isNaN(estVal) && estVal > 0) ||
+                                            (!Number.isNaN(estEq) && estEq > 0) ||
+                                            (!Number.isNaN(estOffer) && estOffer > 0)) && (
+                                            <div className="flex flex-wrap items-stretch gap-x-3.5 gap-y-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
+                                                <div className="shrink-0 flex flex-col justify-between">
+                                                    <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">Est. Value</div>
+                                                    <div className="text-xs font-bold text-gray-900 dark:text-white font-mono whitespace-nowrap">
                                                         {!Number.isNaN(estVal) && estVal > 0 ? formatCurrency(estVal) : '—'}
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-[10px] text-gray-400 uppercase font-semibold">Est. Equity</div>
-                                                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                                <div className="min-w-0 flex flex-col justify-between">
+                                                    <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">Est. Equity</div>
+                                                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono whitespace-nowrap">
                                                         {!Number.isNaN(estEq) && estEq > 0 ? formatCurrency(estEq) : '—'}
                                                         {eqPct !== null && eqPct !== undefined && eqPct !== '' ? ` (${eqPct}%)` : ''}
+                                                    </div>
+                                                </div>
+                                                <div className="shrink-0 flex flex-col justify-between">
+                                                    <div className="text-[10px] leading-tight text-gray-400 uppercase font-semibold whitespace-nowrap">My Est. Offer</div>
+                                                    <div className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono whitespace-nowrap">
+                                                        {!Number.isNaN(estOffer) && estOffer > 0 ? formatCurrency(estOffer) : '—'}
                                                     </div>
                                                 </div>
                                             </div>
