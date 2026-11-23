@@ -518,6 +518,9 @@ export interface OffMarketProperty {
   'Notes'?: string | string[] | null;
   'Text Message Generator'?: string | { message?: string; selectedOwner?: number; selectedTemplate?: number } | null;
   'Text Message Sent'?: boolean | null;
+  'TMS Date and Time'?: string | null;
+  'Owner Called'?: boolean | null;
+  'Called Date and Time'?: string | null;
   'Text Message Templates'?: Record<string, any> | string[] | null;
 }
 

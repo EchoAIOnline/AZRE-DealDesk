@@ -93,6 +93,19 @@ const formatCombinedAddress = (
   return [street?.trim(), city?.trim(), stateZip].filter(Boolean).join(', ');
 };
 
+const formatActionTimestamp = (val?: string | null): string | null => {
+  if (!val) return null;
+  const parsed = new Date(val);
+  if (Number.isNaN(parsed.getTime())) return String(val);
+  return parsed.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 export const DATE_OFF_MARKET_COLUMNS = new Set<keyof OffMarketProperty>([
   'Last Sale Date',
   'Mortgage Document Date',
@@ -427,7 +440,17 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
   const [isTextMessageSent, setIsTextMessageSent] = useState<boolean>(
     property['Text Message Sent'] === true
   );
+  const [tmsDateTime, setTmsDateTime] = useState<string | null>(
+    property['TMS Date and Time'] ?? null
+  );
   const [isMarkingTextSent, setIsMarkingTextSent] = useState(false);
+  const [isOwnerCalled, setIsOwnerCalled] = useState<boolean>(
+    property['Owner Called'] === true
+  );
+  const [calledDateTime, setCalledDateTime] = useState<string | null>(
+    property['Called Date and Time'] ?? null
+  );
+  const [isMarkingCalled, setIsMarkingCalled] = useState(false);
   const [textGeneratorError, setTextGeneratorError] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
@@ -538,6 +561,9 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     setSelectedTemplate(nextTemplate);
     setTextMessageText(initialGeneratedText);
     setIsTextMessageSent(property['Text Message Sent'] === true);
+    setTmsDateTime(property['TMS Date and Time'] ?? null);
+    setIsOwnerCalled(property['Owner Called'] === true);
+    setCalledDateTime(property['Called Date and Time'] ?? null);
     setTextGeneratorError(null);
     setIsTemplateModalOpen(false);
     setSaveError(null);
@@ -642,10 +668,12 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
     setIsMarkingTextSent(true);
     setTextGeneratorError(null);
     const nextSent = !isTextMessageSent;
+    const nextTimestamp = nextSent ? new Date().toISOString() : null;
     try {
       const nextGeneratorVal = textMessageText.trim() === '' ? null : textMessageText;
       const updatePayload: Record<string, any> = {
         'Text Message Sent': nextSent,
+        'TMS Date and Time': nextTimestamp,
       };
       if (nextSent) {
         updatePayload['Text Message Generator'] = nextGeneratorVal;
@@ -667,11 +695,52 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
         ...updatePayload,
       };
       setIsTextMessageSent(nextSent);
+      setTmsDateTime(saved['TMS Date and Time'] ?? nextTimestamp);
       onPropertyUpdated?.(saved);
     } catch (err: any) {
       setTextGeneratorError(err?.message || 'Failed to update Text Message Sent.');
     } finally {
       setIsMarkingTextSent(false);
+    }
+  };
+
+  const handleMarkCalled = async () => {
+    if (isNewProperty) {
+      setTextGeneratorError('Please click Save first before marking Called.');
+      return;
+    }
+    setIsMarkingCalled(true);
+    setTextGeneratorError(null);
+    const nextCalled = !isOwnerCalled;
+    const nextTimestamp = nextCalled ? new Date().toISOString() : null;
+    try {
+      const updatePayload: Record<string, any> = {
+        'Owner Called': nextCalled,
+        'Called Date and Time': nextTimestamp,
+      };
+
+      const { data, error } = await supabase
+        .from('OffMarketProperties')
+        .update(updatePayload)
+        .eq('id', property.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update Owner Called in Supabase.');
+      }
+
+      const saved = (data as OffMarketProperty) || {
+        ...property,
+        ...updatePayload,
+      };
+      setIsOwnerCalled(nextCalled);
+      setCalledDateTime(saved['Called Date and Time'] ?? nextTimestamp);
+      onPropertyUpdated?.(saved);
+    } catch (err: any) {
+      setTextGeneratorError(err?.message || 'Failed to update Owner Called.');
+    } finally {
+      setIsMarkingCalled(false);
     }
   };
 
@@ -755,6 +824,8 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
         section.id === 'text-message-generator' &&
         ('text message generator'.includes(q) ||
           'text message sent'.includes(q) ||
+          'called'.includes(q) ||
+          'owner called'.includes(q) ||
           'text message templates'.includes(q) ||
           'owner 1 owner 2 owner 3 owner 4'.includes(q) ||
           'text template 1 text template 2 text template 3 text template 4'.includes(q) ||
@@ -1209,40 +1280,79 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
                   </div>
                 ) : section.id === 'text-message-generator' ? (
                   <div className="bg-gray-50 dark:bg-[#172235]/60 rounded-xl p-4 border border-gray-200 dark:border-gray-700/60 space-y-4">
-                    {/* Action Buttons: Edit Text Message Templates & Text Message Sent */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Action Buttons: Edit Text Message Templates, Text Message Sent & Called */}
+                    <div className="flex flex-wrap items-stretch gap-2">
                       <button
                         type="button"
                         onClick={() => setIsTemplateModalOpen(true)}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 transition-colors"
                       >
-                        <Edit3 size={13} className="text-blue-500" />
+                        <Edit3 size={13} className="text-blue-500 shrink-0" />
                         <span>Edit Text Message Templates</span>
                       </button>
 
                       <button
                         type="button"
-                        disabled={isMarkingTextSent || isSaving || isDeleting}
+                        disabled={isMarkingTextSent || isMarkingCalled || isSaving || isDeleting}
                         onClick={handleMarkTextMessageSent}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 disabled:opacity-60 transition-colors ${
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 disabled:opacity-60 transition-colors text-left ${
                           isTextMessageSent
                             ? 'border-emerald-500 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400'
                             : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200'
                         }`}
                       >
                         {isMarkingTextSent ? (
-                          <Loader2 size={13} className="animate-spin" />
+                          <Loader2 size={13} className="animate-spin shrink-0" />
                         ) : (
                           <CheckCircle2
                             size={13}
-                            className={
+                            className={`shrink-0 ${
                               isTextMessageSent
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-gray-400'
-                            }
+                            }`}
                           />
                         )}
-                        <span>Text Message Sent</span>
+                        <div className="flex flex-col leading-tight">
+                          <span>Text Message Sent</span>
+                          {isTextMessageSent && tmsDateTime && (
+                            <span className="text-[10px] font-normal text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                              {formatActionTimestamp(tmsDateTime)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isMarkingCalled || isMarkingTextSent || isSaving || isDeleting}
+                        onClick={handleMarkCalled}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 disabled:opacity-60 transition-colors text-left ${
+                          isOwnerCalled
+                            ? 'border-emerald-500 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                            : 'border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                        }`}
+                      >
+                        {isMarkingCalled ? (
+                          <Loader2 size={13} className="animate-spin shrink-0" />
+                        ) : (
+                          <CheckCircle2
+                            size={13}
+                            className={`shrink-0 ${
+                              isOwnerCalled
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                        )}
+                        <div className="flex flex-col leading-tight">
+                          <span>Called</span>
+                          {isOwnerCalled && calledDateTime && (
+                            <span className="text-[10px] font-normal text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                              {formatActionTimestamp(calledDateTime)}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     </div>
 
