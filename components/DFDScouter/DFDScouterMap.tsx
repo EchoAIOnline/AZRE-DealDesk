@@ -210,6 +210,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
         | 'phone_included_last'
         | 'sms_sent_first'
         | 'sms_sent_last'
+        | 'phone_and_sms_first'
         | 'land_first'
         | 'land_last'
     >('default');
@@ -497,22 +498,23 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                 return sortBy === 'address_asc' ? cmp : -cmp;
             }
 
+            const hasPhone = (p: OffMarketProperty) =>
+                [
+                    p['Owner 1 Phone Number 1'],
+                    p['Owner 1 Phone Number 2'],
+                    p['Owner 1 Phone Number 3'],
+                    p['Owner 2 Phone Number 1'],
+                    p['Owner 2 Phone Number 2'],
+                    p['Owner 2 Phone Number 3'],
+                    p['Owner 3 Phone Number 1'],
+                    p['Owner 3 Phone Number 2'],
+                    p['Owner 3 Phone Number 3'],
+                    p['Owner 4 Phone Number 1'],
+                    p['Owner 4 Phone Number 2'],
+                    p['Owner 4 Phone Number 3'],
+                ].some((phone) => phone !== null && phone !== undefined && String(phone).trim() !== '');
+
             if (sortBy === 'phone_included_first' || sortBy === 'phone_included_last') {
-                const hasPhone = (p: OffMarketProperty) =>
-                    [
-                        p['Owner 1 Phone Number 1'],
-                        p['Owner 1 Phone Number 2'],
-                        p['Owner 1 Phone Number 3'],
-                        p['Owner 2 Phone Number 1'],
-                        p['Owner 2 Phone Number 2'],
-                        p['Owner 2 Phone Number 3'],
-                        p['Owner 3 Phone Number 1'],
-                        p['Owner 3 Phone Number 2'],
-                        p['Owner 3 Phone Number 3'],
-                        p['Owner 4 Phone Number 1'],
-                        p['Owner 4 Phone Number 2'],
-                        p['Owner 4 Phone Number 3'],
-                    ].some((phone) => phone !== null && phone !== undefined && String(phone).trim() !== '');
                 const aHas = hasPhone(a);
                 const bHas = hasPhone(b);
                 if (aHas === bHas) return 0;
@@ -524,6 +526,18 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                 const bSent = isFlagTrue(b['Text Message Sent']);
                 if (aSent === bSent) return 0;
                 return sortBy === 'sms_sent_first' ? (aSent ? -1 : 1) : (aSent ? 1 : -1);
+            }
+
+            if (sortBy === 'phone_and_sms_first') {
+                const getScore = (p: OffMarketProperty) => {
+                    const phone = hasPhone(p);
+                    const sms = isFlagTrue(p['Text Message Sent']);
+                    if (phone && sms) return 3;
+                    if (phone) return 2;
+                    if (sms) return 1;
+                    return 0;
+                };
+                return getScore(b) - getScore(a);
             }
 
             if (sortBy === 'land_first' || sortBy === 'land_last') {
@@ -1276,6 +1290,7 @@ export const DFDScouterMap: React.FC<DFDScouterMapProps> = ({ handleAddDeal }) =
                                 <option value="address_desc">Address Z to A</option>
                                 <option value="phone_included_first">Phone Number Included First</option>
                                 <option value="phone_included_last">Phone Number Included Last</option>
+                                <option value="phone_and_sms_first">Phone Number Included + SMS Sent First</option>
                                 <option value="sms_sent_first">SMS Sent First</option>
                                 <option value="sms_sent_last">SMS Sent Last</option>
                                 <option value="land_first">Land First</option>
