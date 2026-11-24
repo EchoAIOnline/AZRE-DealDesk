@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Deal, Agent, Buyer, User as UserType, ActivityLog } from '../../types';
+import { Deal, Agent, Buyer, User as UserType, ActivityLog, OffMarketProperty } from '../../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Filter, Plus, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Briefcase, FileText, DollarSign, CheckCircle, Clock, MoreHorizontal, Layout, Calendar, Mail, Search, Bell, Settings } from 'lucide-react';
 import { formatCurrency, getLogTimestamp, processPhotoUrl, timeAgo } from '../../services/utils';
 import { POTENTIAL_STATUSES, UNDER_CONTRACT_STATUSES, DECLINED_STATUSES, CLOSED_STATUSES } from '../../constants';
 import { RecentDealCard } from './RecentDealCard';
 import { activityLogService } from '../../services/activityLogService';
-import { api } from '../../services/api';
+import { api, supabase } from '../../services/api';
 
 interface DashboardProps {
     currentUser: UserType | null;
@@ -190,6 +190,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     // Real Activity Feed
     const [activities, setActivities] = useState<ActivityLog[]>([]);
     const [loiLogs, setLoiLogs] = useState<ActivityLog[]>([]);
+    const [ownerTextLogs, setOwnerTextLogs] = useState<ActivityLog[]>([]);
+    const [offMarketProps, setOffMarketProps] = useState<Pick<OffMarketProperty, 'id' | 'created_at' | 'Text Message Sent' | 'TMS Date and Time' | 'Owner Called' | 'Called Date and Time'>[]>([]);
     const [allUsers, setAllUsers] = useState<UserType[]>([]);
     const [selectedUserForLoi, setSelectedUserForLoi] = useState<string>(currentUser?.name || 'All');
     const [totalLoisTimeframe, setTotalLoisTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
@@ -204,11 +206,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
     const [agentConvosTimeframe, setAgentConvosTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
     const [selectedUserForAgentTexts, setSelectedUserForAgentTexts] = useState<string>(currentUser?.name || 'All');
 
+    const [totalOwnerTextsTimeframe, setTotalOwnerTextsTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [userOwnerTextsTimeframe, setUserOwnerTextsTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [ownerConvosTimeframe, setOwnerConvosTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('week');
+    const [selectedUserForOwnerTexts, setSelectedUserForOwnerTexts] = useState<string>(currentUser?.name || 'All');
+
     const hasSetInitialUser = useRef(false);
     useEffect(() => {
         if (currentUser?.name && !hasSetInitialUser.current) {
             setSelectedUserForLoi(currentUser.name);
             setSelectedUserForAgentTexts(currentUser.name);
+            setSelectedUserForOwnerTexts(currentUser.name);
             hasSetInitialUser.current = true;
         }
     }, [currentUser]);
@@ -221,11 +229,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
             const loiLogsData = await activityLogService.getLogsByActionType('LOI_SENT');
             setLoiLogs(loiLogsData);
 
+            const ownerTextLogsData = await activityLogService.getLogsByActionType('OWNER_TEXT_SENT');
+            setOwnerTextLogs(ownerTextLogsData);
+
             try {
                 const users = await api.load('Users') as UserType[];
                 setAllUsers(users);
             } catch (e) {
                 console.error("Failed to fetch users", e);
+            }
+
+            try {
+                const PAGE_SIZE = 1000;
+                const rows: Pick<OffMarketProperty, 'id' | 'created_at' | 'Text Message Sent' | 'TMS Date and Time' | 'Owner Called' | 'Called Date and Time'>[] = [];
+                const seenIds = new Set<number>();
+                let from = 0;
+
+                while (true) {
+                    const { data, error } = await supabase
+                        .from('OffMarketProperties')
+                        .select('*')
+                        .order('id', { ascending: false })
+                        .range(from, from + PAGE_SIZE - 1);
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    const pageRows = (data as any[]) || [];
+                    for (const row of pageRows) {
+                        if (!seenIds.has(row.id)) {
+                            seenIds.add(row.id);
+                            rows.push({
+                                id: row.id,
+                                created_at: row.created_at ?? null,
+                                'Text Message Sent': row['Text Message Sent'] ?? null,
+                                'TMS Date and Time': row['TMS Date and Time'] ?? null,
+                                'Owner Called': row['Owner Called'] ?? null,
+                                'Called Date and Time': row['Called Date and Time'] ?? null,
+                            });
+                        }
+                    }
+
+                    if (pageRows.length < PAGE_SIZE) {
+                        break;
+                    }
+                    from += pageRows.length;
+                }
+
+                setOffMarketProps(rows);
+            } catch (e) {
+                console.error("Failed to fetch OffMarketProperties metrics", e);
             }
         };
         fetchActivities();
@@ -365,6 +419,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
             return new Date(dateStr) >= startDate;
         }).length;
     }, [agents, agentConvosTimeframe]);
+
+    const totalOwnerTextsSent = useMemo(() => {
+        const startDate = getStartDateForTimeframe(totalOwnerTextsTimeframe);
+        return offMarketProps.filter(p => {
+            if (p['Text Message Sent'] !== true) return false;
+            const dateStr = p['TMS Date and Time'];
+            if (!dateStr) return false;
+            return new Date(dateStr) >= startDate;
+        }).length;
+    }, [offMarketProps, totalOwnerTextsTimeframe]);
+
+    const ownerTextsSentByUser = useMemo(() => {
+        const startDate = getStartDateForTimeframe(userOwnerTextsTimeframe);
+        const counts: Record<string, number> = {};
+
+        allUsers.forEach(u => {
+            counts[u.name] = 0;
+        });
+
+        const propMap = new Map<string, Pick<OffMarketProperty, 'id' | 'created_at' | 'Text Message Sent' | 'TMS Date and Time' | 'Owner Called' | 'Called Date and Time'>>();
+        offMarketProps.forEach(p => {
+            propMap.set(String(p.id), p);
+        });
+
+        const seenPropertyIds = new Set<string>();
+        ownerTextLogs.forEach(log => {
+            const entityId = String(log.entity_id || '');
+            if (entityId) {
+                if (seenPropertyIds.has(entityId)) return;
+                const matchedProp = propMap.get(entityId);
+                if (matchedProp && matchedProp['Text Message Sent'] !== true) {
+                    return;
+                }
+                seenPropertyIds.add(entityId);
+            }
+
+            const matchedProp = entityId ? propMap.get(entityId) : undefined;
+            const dateStr = matchedProp?.['TMS Date and Time'] || log.metadata?.tmsDateTime || log.created_at;
+            if (!dateStr) return;
+
+            const dateToUse = new Date(dateStr);
+            const sentBy = log.user_name || 'Unknown User';
+            if (dateToUse >= startDate) {
+                if (counts[sentBy] === undefined) counts[sentBy] = 0;
+                counts[sentBy] += 1;
+            }
+        });
+
+        return counts;
+    }, [ownerTextLogs, offMarketProps, userOwnerTextsTimeframe, allUsers]);
+
+    const ownerConversationsCount = useMemo(() => {
+        const startDate = getStartDateForTimeframe(ownerConvosTimeframe);
+        return offMarketProps.filter(p => {
+            if (p['Owner Called'] !== true) return false;
+            const dateStr = p['Called Date and Time'];
+            if (!dateStr) return false;
+            return new Date(dateStr) >= startDate;
+        }).length;
+    }, [offMarketProps, ownerConvosTimeframe]);
 
     const renderTrend = (trend: number, isCurrency = false) => {
         const isPositive = trend >= 0;
@@ -583,10 +697,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
 
             {/* New KPI Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Total LOI's Sent */}
+                {/* Pipeline Deals Added */}
+                <div className="bg-[#00D4FF] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Pipeline Deals Added</h3>
+                        <select 
+                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                            value={dealsAddedTimeframe}
+                            onChange={(e) => setDealsAddedTimeframe(e.target.value as any)}
+                        >
+                            <option value="today" className="text-gray-900">Today</option>
+                            <option value="week" className="text-gray-900">This Week</option>
+                            <option value="month" className="text-gray-900">This Month</option>
+                            <option value="year" className="text-gray-900">This Year</option>
+                        </select>
+                    </div>
+                    <div className="text-3xl font-bold text-white">{dealsAddedCount}</div>
+                </div>
+                {/* Total LOI Emails Sent */}
                 <div className="bg-[#10B981] rounded-2xl p-6 shadow-xl">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-bold text-white/90">Total LOI's Sent</h3>
+                        <h3 className="text-sm font-bold text-white/90">Total LOI Emails Sent</h3>
                         <select 
                             className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
                             value={totalLoisTimeframe}
@@ -600,10 +731,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                     </div>
                     <div className="text-3xl font-bold text-white">{totalLoisSent}</div>
                 </div>
-                {/* LOI's Sent by User */}
+                {/* LOI Emails Sent by User */}
                 <div className="bg-[#A855F7] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-bold text-white/90">LOI's Sent by User</h3>
+                        <h3 className="text-sm font-bold text-white/90">LOI Emails Sent by User</h3>
                         <div className="flex flex-col gap-2 items-end">
                             <select 
                                 className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
@@ -630,23 +761,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                     <div className="text-3xl font-bold text-white mt-auto">
                         {selectedUserForLoi === 'All' ? Object.values(loiSentByUser).reduce((a: number, b: number) => a + b, 0) : (loiSentByUser[selectedUserForLoi] || 0)}
                     </div>
-                </div>
-                {/* Deals Added */}
-                <div className="bg-[#00D4FF] rounded-2xl p-6 shadow-xl">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-bold text-white/90">Deals Added</h3>
-                        <select 
-                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
-                            value={dealsAddedTimeframe}
-                            onChange={(e) => setDealsAddedTimeframe(e.target.value as any)}
-                        >
-                            <option value="today" className="text-gray-900">Today</option>
-                            <option value="week" className="text-gray-900">This Week</option>
-                            <option value="month" className="text-gray-900">This Month</option>
-                            <option value="year" className="text-gray-900">This Year</option>
-                        </select>
-                    </div>
-                    <div className="text-3xl font-bold text-white">{dealsAddedCount}</div>
                 </div>
                 {/* Total Agent Text Messages Sent */}
                 <div className="bg-[#DB2777] rounded-2xl p-6 shadow-xl">
@@ -712,6 +826,71 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, deals, agents
                         </select>
                     </div>
                     <div className="text-3xl font-bold text-white">{agentConversationsCount}</div>
+                </div>
+                {/* Total Owner Text Messages Sent */}
+                <div className="bg-[#0284C7] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Total Owner Text Messages Sent</h3>
+                        <select 
+                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                            value={totalOwnerTextsTimeframe}
+                            onChange={(e) => setTotalOwnerTextsTimeframe(e.target.value as any)}
+                        >
+                            <option value="today" className="text-gray-900">Today</option>
+                            <option value="week" className="text-gray-900">This Week</option>
+                            <option value="month" className="text-gray-900">This Month</option>
+                            <option value="year" className="text-gray-900">This Year</option>
+                        </select>
+                    </div>
+                    <div className="text-3xl font-bold text-white">{totalOwnerTextsSent}</div>
+                </div>
+                {/* Owner Text Messages Sent by User */}
+                <div className="bg-[#7C3AED] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Owner Text Messages Sent by User</h3>
+                        <div className="flex flex-col gap-2 items-end">
+                            <select 
+                                className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                                value={selectedUserForOwnerTexts}
+                                onChange={(e) => setSelectedUserForOwnerTexts(e.target.value)}
+                            >
+                                <option value="All" className="text-gray-900">All Users</option>
+                                {Object.keys(ownerTextsSentByUser).map(user => (
+                                    <option key={user} value={user} className="text-gray-900">{user}</option>
+                                ))}
+                            </select>
+                            <select 
+                                className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                                value={userOwnerTextsTimeframe}
+                                onChange={(e) => setUserOwnerTextsTimeframe(e.target.value as any)}
+                            >
+                                <option value="today" className="text-gray-900">Today</option>
+                                <option value="week" className="text-gray-900">This Week</option>
+                                <option value="month" className="text-gray-900">This Month</option>
+                                <option value="year" className="text-gray-900">This Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="text-3xl font-bold text-white mt-auto">
+                        {selectedUserForOwnerTexts === 'All' ? Object.values(ownerTextsSentByUser).reduce((a: number, b: number) => a + b, 0) : (ownerTextsSentByUser[selectedUserForOwnerTexts] || 0)}
+                    </div>
+                </div>
+                {/* Owner Conversations */}
+                <div className="bg-[#0D9488] rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-white/90">Owner Conversations</h3>
+                        <select 
+                            className="bg-white/20 border-none text-xs rounded-lg px-2 py-1 text-white outline-none cursor-pointer"
+                            value={ownerConvosTimeframe}
+                            onChange={(e) => setOwnerConvosTimeframe(e.target.value as any)}
+                        >
+                            <option value="today" className="text-gray-900">Today</option>
+                            <option value="week" className="text-gray-900">This Week</option>
+                            <option value="month" className="text-gray-900">This Month</option>
+                            <option value="year" className="text-gray-900">This Year</option>
+                        </select>
+                    </div>
+                    <div className="text-3xl font-bold text-white">{ownerConversationsCount}</div>
                 </div>
                 {/* Listings Removed */}
                 <div className="bg-[#F59E0B] rounded-2xl p-6 shadow-xl">

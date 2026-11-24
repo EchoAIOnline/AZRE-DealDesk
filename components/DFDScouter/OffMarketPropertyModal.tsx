@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { OffMarketProperty } from '../../types';
 import { supabase } from '../../services/api';
+import { activityLogService } from '../../services/activityLogService';
 import { useAppStore } from '../../store/useAppStore';
 import { normalizeOffMarketLists } from './OffMarketPropertiesListModal';
 import {
@@ -696,6 +697,21 @@ export const OffMarketPropertyModal: React.FC<OffMarketPropertyModalProps> = ({
       };
       setIsTextMessageSent(nextSent);
       setTmsDateTime(saved['TMS Date and Time'] ?? nextTimestamp);
+      if (nextSent) {
+        const displayAddr = formState['Address'] || property['Address'] || `Property #${property.id}`;
+        activityLogService.logActivity(
+          currentUser,
+          'OWNER_TEXT_SENT',
+          'OFF_MARKET_PROPERTY',
+          String(property.id),
+          `Sent text message to owner for ${displayAddr}`,
+          {
+            propertyId: property.id,
+            tmsDateTime: saved['TMS Date and Time'] ?? nextTimestamp,
+          },
+          displayAddr
+        );
+      }
       onPropertyUpdated?.(saved);
     } catch (err: any) {
       setTextGeneratorError(err?.message || 'Failed to update Text Message Sent.');
