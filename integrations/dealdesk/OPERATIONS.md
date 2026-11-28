@@ -1,8 +1,9 @@
-# Hosted controlled operations (v0.3)
+# Hosted controlled operations (v0.4)
 
-The existing eight reads remain. Five operational writes and two Zillow wrappers
-are added. The hosted server never exposes buyer writes, offer execution,
-messaging, SQL, deletion, archive, restore, organization or permission changes.
+Ten read tools (including Off-Market Scouter), two Zillow wrappers, and ten
+operational writes are available. The hosted server never exposes offer
+execution, messaging, SQL, deletion, archive, restore, organization or
+permission changes.
 
 ## Authorization and release
 
@@ -105,3 +106,73 @@ listing changes, queue exit, stale revisions, and audit entries. Existing
 business deals must not be changed for validation. For rollback, restore the
 previous application deployment first, then apply `006-queue-rollback.sql` only
 if its guard still matches. Rollback preserves all deal values and audit rows.
+
+## Buyers, notes, and Off-Market Scouter (007)
+
+Apply `backend/007-hosted-expansion.sql` before deploying the 22-tool Hosted server.
+It adds nullable `organization_id` and `pluginArchivedAt` columns (plus index) to
+`OffMarketProperties` without modifying or backfilling existing rows, and updates
+`public.dealdesk_operational_mutation` to preserve all comparables (005) and queue
+routing (006) while adding:
+
+- `create_buyer`: creates a `Buyers` row (`New Lead`, `Subscribed`, `propertiesBought=0`,
+  `notes=[]`) with duplicate checks (email, 7+ digit phone, or un-emailed name) and
+  `request_id` idempotency.
+- `update_buyer`: patches `Buyers` using `expected_revision`, merging supplied `buyBox`
+  keys into existing `buyBox` JSON without wiping unspecified criteria, and checking
+  email/phone collisions.
+- `add_buyer_note` / `add_agent_note`: appends timestamped `ChatGPT / DealDesk Hosted`
+  notes to `Buyers.notes` or `Agents.notes` without overwriting prior entries, with
+  `request_id` idempotency and `PluginMutationAudit` tracking.
+- `search_off_market_properties` / `get_off_market_property`: read-only access to
+  `OffMarketProperties` scoped strictly to `org_azre_00001` (`organization_id = 'org_azre_00001'`),
+  with literal address `query` search, exact column filters, and `offset`/`limit`/`next_offset`
+  matching `off-market` and `Interested` filters, and `offset`/`limit`/`next_offset`
+  pagination. Assign `organization_id = 'org_azre_00001'` on existing `OffMarketProperties`
+  rows in Supabase so they are visible through the organization-scoped Hosted tools.
+
+## Full user capabilities (008)
+
+Apply `backend/008-full-user-capabilities.sql` to enable all user DealDesk capabilities
+across Hosted MCP (`/api/mcp`), Plugin API + Local MCP (`/api/ai/plugin`), and AI
+Operate (`/api/ai/operate`), while keeping organization scoping (`org_azre_00001`),
+OAuth / API key authentication, revision conflict detection, write/archive gates, and
+atomic `PluginMutationAudit` tracking intact:
+
+- **Full table & field access**: Reads, creates, updates, deletes, archive/restore, and
+  notes on `Deals` (including `lockBoxCode`, `dispo`, `documents`, `motivationSignals`,
+  `renovationWorkflow`, owner info, LOI tracking, buyer interest lists, and comparables),
+  `JVDeals`, `Buyers`, `Agents`, `Wholesalers`, `OffMarketProperties`,
+  `OffMarketOfferTextMessageGenerator`, `PluginTasks`, and all CRM workspace tables
+  (`Brokerages`, `Contacts`, `EmailLists`, `Campaigns`, `EmailTemplates`, `OfferTemplates`,
+  `sender_emails`, `activity_logs`, `InboxMessages`, `MarketData`, `Integrations` with
+  sensitive API keys/tokens omitted from reads).
+- **Workflow moves**: `move_deal` (`Deals` <-> `JVDeals` or pipeline transfers across
+  `mls`, `off-market`, `azre-queue`, `dfd`) and `move_contact` (`Buyers` <-> `Agents` <->
+  `Wholesalers`).
+- **Service integrations**: `send_email` (AWS SES single/bulk email, requires
+  `operational_writes`), `import_from_zillow` / `pull_zillow_comps` (BrightData via
+  validated canonical Zillow homedetails URLs), `generate_ai_comps` (Gemini comps), and
+  `ai_search_chat` (Gemini web-grounded search chat).
+
+## User Accounts, Activity Feed, and Dashboard (009)
+
+Apply `backend/009-users-activity-dashboard.sql` after `008-full-user-capabilities.sql`
+to enable user account provisioning, Activity Feed reads/writes, and live Dashboard
+aggregation across Hosted MCP (`/api/mcp`), Plugin API + Local MCP (`/api/ai/plugin`),
+and AI Operate (`/api/ai/operate`):
+
+- `create_user`: creates a Supabase Auth user (`auth.admin.createUser` via
+  `SUPABASE_SERVICE_ROLE_KEY`) and a matching organization-scoped profile in `public."Users"`,
+  with optional `grant_mcp_access` + `mcp_operational_writes` provisioning in
+  `PluginOAuthGrants`. Passwords are never stored in `public."Users"`, never recorded in
+  `PluginMutationAudit`, and never returned in API responses. Duplicate emails return
+  `DUPLICATE`. Direct `read`/`update`/`delete` access to `Users` remains blocked.
+- `get_activity_feed` & `log_activity`: chronological (`created_at DESC`) read and write
+  access to `activity_logs` scoped to `org_azre_00001`, mirroring `activityLogService.ts`
+  including 5-minute `UPDATE` grouping and `sent_text_to_agent_only` filtering.
+- `get_dashboard`: read-only aggregation matching `Dashboard.tsx`, returning active
+  pipeline KPIs and 7-day trends, timeframe metrics (deals added, listings removed, offers
+  declined, canceled deals, LOIs, agent/owner texts & conversations), 14-day chart series,
+  recent deals, upcoming follow-ups/tasks, recent activity, and non-sensitive user summaries.
+

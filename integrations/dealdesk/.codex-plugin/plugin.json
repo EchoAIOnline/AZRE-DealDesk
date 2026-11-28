@@ -1,15 +1,15 @@
 {
   "name": "dealdesk",
-  "version": "0.1.0",
-  "description": "Operate AZRE DealDesk through scoped MCP tools.",
+  "version": "0.6.0",
+  "description": "Operate AZRE DealDesk through scoped MCP tools with full user capabilities.",
   "author": {
     "name": "AZRE"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "AZRE DealDesk",
-    "shortDescription": "Deal pipeline, buyer matching, and follow-ups.",
-    "longDescription": "Read deals and contacts, screen buyer buy boxes, and make controlled internal updates through a dedicated organization-scoped DealDesk backend.",
+    "shortDescription": "Full DealDesk CRM, pipelines, dashboard, activity feed, scouter, Zillow, AI, and email tools.",
+    "longDescription": "Read, create, update, delete, move, and search Deals, JVDeals, Buyers, Agents, Wholesalers, Off-Market Scouter properties, workspace CRM tables, Dashboard metrics, Activity Feed, user accounts, Zillow imports, Gemini comps/chat, and AWS SES email sending through organization-scoped DealDesk APIs.",
     "developerName": "AZRE",
     "category": "Productivity",
     "capabilities": [

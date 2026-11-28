@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { request as httpRequest } from 'node:http';
 import express from 'express';
-import { database } from './database.mjs';
+import { database, attachTestAuthAdmin } from './database.mjs';
 import { executeOperation, makeHandler } from '../backend/handler.mjs';
 import { DealDeskClient } from '../src/client.mjs';
 import { createServer, createHttpApp } from '../src/server.mjs';
@@ -20,7 +20,7 @@ let pg,db;
 const config={organizationId:'azre-test',writes:true,archive:true};
 const run=req=>executeOperation(db,req,config);
 const fixture=async(table,payload)=> (await run({action:'create',table,request_id:randomUUID(),payload})).record;
-before(async()=>{({pg,db}=await database());});
+before(async()=>{({pg,db}=await database());attachTestAuthAdmin(db);});
 after(async()=>{await pg.close();});
 
 test('migration is repeatable and audit stores field names, not note content',async()=>{
@@ -78,8 +78,11 @@ test('pagination covers all pages, search text is literal, and unsupported write
   const second=await run({action:'read',table:'Deals',query:'Paging_test_',limit:2,offset:2});
   assert.equal(second.records.length,1);assert.equal(second.next_offset,null);
   await assert.rejects(run({action:'read',table:'Users'}));
-  await assert.rejects(run({action:'delete',table:'Deals',id:first.records[0].id}));
-  await assert.rejects(run({action:'update',table:'Deals',id:first.records[0].id,expected_revision:0,payload:{organization_id:'escape'}}));
+  await assert.rejects(executeOperation(db,{action:'delete',table:'Deals',id:first.records[0].id},{...config,writes:false}),{code:'WRITES_DISABLED'});
+  const deletedDeal=await run({action:'delete',table:'Deals',id:first.records[0].id});
+  assert.equal(deletedDeal.deleted,true);
+  assert.equal((await run({action:'read',table:'Deals',id:first.records[0].id})).records.length,0);
+  await assert.rejects(run({action:'update',table:'Deals',id:second.records[0].id,expected_revision:0,payload:{organization_id:'escape'}}));
 });
 test('offer updates target Deals and maintain stage history',async()=>{
   const row=await fixture('Deals',{address:'Offer fixture'});
@@ -105,7 +108,6 @@ test('backend HTTP authentication and real client round trip',async()=>{
     const client=new DealDeskClient({url,apiKey:key});
     const result=await client.operate({action:'read',table:'Deals',limit:2}); assert.equal(result.records.length,2);
     assert.ok(!JSON.stringify(result).includes('organization_id'));
-    assert.ok(!JSON.stringify(result).includes('lockBoxCode'));
   } finally {await new Promise(resolve=>listener.close(resolve));}
 });
 test('MCP SDK initializes, lists all tools, calls read and rejects mass assignment',async()=>{
@@ -114,7 +116,7 @@ test('MCP SDK initializes, lists all tools, calls read and rejects mass assignme
   const client=new Client({name:'test',version:'1.0.0'});
   await server.connect(a);await client.connect(b);
   try {
-    const result=await client.listTools();assert.equal(result.tools.length,17);
+    const result=await client.listTools();assert.equal(result.tools.length,tools.length);
     const read=await client.callTool({name:'search_deals',arguments:{limit:1}}); assert.equal(read.structuredContent.records.length,1);
     const bad=await client.callTool({name:'create_deal',arguments:{request_id:randomUUID(),fields:{address:'Bad',organization_id:'escape'}}});assert.equal(bad.isError,true);
     assert.ok(result.tools.filter(t=>t.name.startsWith('search_')).every(t=>t.annotations.readOnlyHint));
@@ -132,14 +134,14 @@ test('HTTP MCP transport authenticates and rejects browser origins and hostile h
     const hostileStatus=await new Promise((resolve,reject)=>{const req=httpRequest(url,{method:'POST',headers:{Authorization:`Bearer ${token}`,Host:'bad.example'}},res=>{res.resume();resolve(res.statusCode);});req.on('error',reject);req.end();});
     assert.equal(hostileStatus,403);
     await client.connect(new StreamableHTTPClientTransport(url,{requestInit:{headers:{Authorization:`Bearer ${token}`}}}));
-    assert.equal((await client.listTools()).tools.length,17);
+    assert.equal((await client.listTools()).tools.length,tools.length);
     assert.equal((await client.callTool({name:'search_buyers',arguments:{limit:1}})).isError,undefined);
   } finally {await client.close();await new Promise(resolve=>listener.close(resolve));}
 });
 test('stdio child process exposes tools without writing logs to its protocol stream',async()=>{
   const client=new Client({name:'stdio-test',version:'1.0.0'});
   const transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../src/server.mjs',import.meta.url))],env:{DEALDESK_PLUGIN_API_KEY:'test-key-'.repeat(8),DEALDESK_PLUGIN_URL:'https://example.com/api/ai/plugin'},stderr:'pipe'});
-  try {await client.connect(transport);assert.equal((await client.listTools()).tools.length,17);}
+  try {await client.connect(transport);assert.equal((await client.listTools()).tools.length,tools.length);}
   finally {await client.close();}
 });
 test('task creation and retrieval use the real plugin task table',async()=>{
@@ -148,4 +150,65 @@ test('task creation and retrieval use the real plugin task table',async()=>{
   assert.equal(result.record.status,'Open');
   const found=await invoke('search_tasks',{filters:{entityId:row.id}},{client:{operate:run}});
   assert.equal(found.records[0].title,'Confirm demolition approval');
+});
+test('full user capabilities: lockBoxCode, Agents/Wholesalers/JVDeals/OffMarket CRUD, move_deal/move_contact, secrets masked, and services',async()=>{
+  const d=await fixture('Deals',{address:'700 Full Field St',lockBoxCode:'1234',motivationSignals:['Probate']});
+  assert.equal(d.lockBoxCode,'1234');
+  assert.deepEqual(d.motivationSignals,['Probate']);
+  const agent=(await run({action:'create',table:'Agents',request_id:randomUUID(),payload:{name:'Jane Broker',email:'jane@broker.test',handlesInvestments:true}})).record;
+  assert.equal(agent.agentFirstName,'Jane');
+  assert.equal(agent.agentLastName,'Broker');
+  const movedAgent=await run({action:'move_contact',id:agent.id,expected_revision:agent._revision,source_table:'Agents',target_table:'Wholesalers'});
+  assert.equal(movedAgent.moved_to,'Wholesalers');
+  assert.equal((await run({action:'read',table:'Agents',id:agent.id})).records.length,0);
+  const movedDeal=await run({action:'move_deal',id:d.id,expected_revision:d._revision,target_pipeline:'dfd'});
+  assert.equal(movedDeal.moved_to,'JVDeals');
+  assert.equal((await run({action:'read',table:'Deals',id:d.id})).records.length,0);
+  const om=(await run({action:'create',table:'OffMarketProperties',payload:{Address:'800 Scouter Blvd',City:'Atlanta',State:'GA'}})).record;
+  assert.ok(typeof om.id==='number');
+  const omUpd=(await run({action:'update',table:'OffMarketProperties',id:om.id,expected_revision:om._revision,payload:{Interested:true}})).record;
+  assert.equal(omUpd.Interested,true);
+  await run({action:'delete',table:'OffMarketProperties',id:om.id});
+  const intRow=(await run({action:'create',table:'Integrations',request_id:randomUUID(),payload:{organization:'AZRE',twilioPhoneNumber:'+14045550100'}})).record;
+  await pg.query('UPDATE "Integrations" SET "twilioAuthToken"=$1,"supabaseKey"=$2 WHERE id=$3',['secret-twilio','secret-sb',intRow.id]);
+  const readInt=(await run({action:'read',table:'Integrations',id:intRow.id})).records[0];
+  assert.equal(readInt.twilioPhoneNumber,'+14045550100');
+  assert.equal(readInt.twilioAuthToken,undefined);
+  assert.equal(readInt.supabaseKey,undefined);
+  const svcCfg={
+    ...config,
+    services:{
+      sendEmail:async p=>({status:'success',results:[{email:p.recipients[0].email,status:'success',messageId:'msg-1'}]}),
+      zillow:async()=>[{address:'900 Zillow Way',price:350000,bathrooms:2}],
+      geminiComps:async p=>([{address:p.address+' Comp',sqft:1500,saleDate:'05/01/2026',salePrice:380000}]),
+      geminiChat:async p=>`Reply to: ${p.message}`,
+    },
+  };
+  await assert.rejects(executeOperation(db,{action:'send_email',recipients:[{email:'a@b.com'}],subject:'Hi',body:'Hello'},{...svcCfg,writes:false}),{code:'WRITES_DISABLED'});
+  const emailRes=await executeOperation(db,{action:'send_email',recipients:[{email:'a@b.com'}],subject:'Hi',body:'Hello'},svcCfg);
+  assert.equal(emailRes.status,'success');
+  const compsRes=await executeOperation(db,{action:'gemini_comps',address:'123 Main'},svcCfg);
+  assert.equal(compsRes.comps.length,1);
+  const chatRes=await executeOperation(db,{action:'gemini_chat',message:'Market trends?'},svcCfg);
+  assert.match(chatRes.reply,/Market trends/);
+  const zRes=await executeOperation(db,{action:'zillow_scrape',url:'https://www.zillow.com/homedetails/123_zpid/',create_deal:true},svcCfg);
+  assert.equal(zRes.saved,true);
+  assert.equal(zRes.record.address,'900 Zillow Way');
+});
+test('plugin handler & Local MCP support user creation, activity feed, and dashboard with write gates',async()=>{
+  await assert.rejects(executeOperation(db,{action:'create_user',name:'Blocked',email:'blocked@azre.test',password:'Password123!'},{...config,writes:false}),{code:'WRITES_DISABLED'});
+  await assert.rejects(executeOperation(db,{action:'log_activity',action_type:'CREATE',entity_type:'DEAL',entity_id:'1',description:'Blocked'},{...config,writes:false}),{code:'WRITES_DISABLED'});
+  const created=await invoke('create_user',{name:'Plugin User',email:'plugin.user@azre.test',password:'SecretPass123!',position:'Dispositions'},{client:{operate:run},writes:true});
+  assert.equal(created.user.email,'plugin.user@azre.test');
+  assert.equal(created.user.position,'Dispositions');
+  assert.ok(!JSON.stringify(created).includes('SecretPass123!'));
+  await assert.rejects(run({action:'create_user',name:'Dup',email:'plugin.user@azre.test',password:'SecretPass123!'}),{code:'DUPLICATE'});
+  await invoke('log_activity',{action_type:'LOI_SENT',entity_type:'DEAL',entity_id:'deal-1',description:'Sent LOI from MCP'},{client:{operate:run},writes:true});
+  const feed=await invoke('get_activity_feed',{limit:5},{client:{operate:run}});
+  assert.equal(feed.activities.length,1);
+  assert.equal(feed.activities[0].action_type,'LOI_SENT');
+  const dash=await invoke('get_dashboard',{timeframe:'week'},{client:{operate:run}});
+  assert.equal(typeof dash.kpis.totalDeals,'number');
+  assert.ok(dash.usersSummary.users.some(u=>u.name==='Plugin User'));
+  assert.equal(dash.recentActivity.length,1);
 });
