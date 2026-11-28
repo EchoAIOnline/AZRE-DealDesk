@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createSchema, patchSchema, fields, fail } from './domain.mjs';
+import { createSchema, patchSchema, fields, scopeOrgQuery, fail } from './domain.mjs';
 
 export const offMarketFilterShape = {
   City: z.string().max(200).optional(),
@@ -63,17 +63,22 @@ export async function executeOffMarketRead(db, name, input, organizationId) {
   if (!tool) fail('UNKNOWN_TOOL', 'Unknown off-market tool.');
   const args = tool.schema.parse(input);
   if (name === 'get_off_market_templates') {
-    const { data, error } = await db
-      .from('OffMarketOfferTextMessageGenerator')
-      .select('*')
-      .eq('organization_id', organizationId)
+    const { data, error } = await scopeOrgQuery(
+      db.from('OffMarketOfferTextMessageGenerator').select('*'),
+      'OffMarketOfferTextMessageGenerator',
+      organizationId,
+    )
       .order('id', { ascending: true })
       .limit(1);
     if (error) fail('DATABASE_ERROR', 'Database operation failed. Verify the migration and field schema; details are confined to the database.');
     const row = data && data[0] ? projectOffMarketProperty(data[0]) : null;
     return { templates: row };
   }
-  let q = db.from('OffMarketProperties').select('*').eq('organization_id', organizationId);
+  let q = scopeOrgQuery(
+    db.from('OffMarketProperties').select('*'),
+    'OffMarketProperties',
+    organizationId,
+  );
   if (name === 'get_off_market_property') {
     const { data, error } = await q.eq('id', args.property_id);
     if (error) fail('DATABASE_ERROR', 'Database operation failed. Verify the migration and field schema; details are confined to the database.');

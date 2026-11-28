@@ -47,6 +47,21 @@ class Query {
   select() {return this;}
   eq(k,v) {this.conditions.push(`${quote(k)} = ${this.bind(v)}`);return this;}
   is(k,v) {if(v!==null)throw Error('Only null supported');this.conditions.push(`${quote(k)} IS NULL`);return this;}
+  or(expr) {
+    const parts = String(expr).split(',').map(c => c.trim()).filter(Boolean).map(clause => {
+      const dot1 = clause.indexOf('.');
+      const dot2 = clause.indexOf('.', dot1 + 1);
+      if (dot1 <= 0 || dot2 <= dot1 + 1) throw Error('Unsupported or clause: ' + clause);
+      const col = clause.slice(0, dot1);
+      const op = clause.slice(dot1 + 1, dot2);
+      const val = clause.slice(dot2 + 1);
+      if (op === 'eq') return `${quote(col)} = ${this.bind(val)}`;
+      if (op === 'is' && val === 'null') return `${quote(col)} IS NULL`;
+      throw Error('Unsupported or operator: ' + op);
+    });
+    if (parts.length) this.conditions.push(`(${parts.join(' OR ')})`);
+    return this;
+  }
   ilike(k,v) {this.conditions.push(`${quote(k)} ILIKE ${this.bind(v)}`);return this;}
   order(k,opts) {this.sort=`${quote(k)}${opts&&opts.ascending===false?' DESC':''}`;return this;}
   limit(n) {this.limitVal=n;return this;}

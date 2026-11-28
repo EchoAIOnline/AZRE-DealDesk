@@ -568,6 +568,18 @@ export function project(table, record) {
   return out;
 }
 
+export const legacyNullOrgTables = new Set([
+  'OffMarketProperties',
+  'OffMarketOfferTextMessageGenerator',
+]);
+
+export function scopeOrgQuery(query, table, org, masterOrg = 'org_azre_00001') {
+  if (org === masterOrg && legacyNullOrgTables.has(table)) {
+    return query.or(`organization_id.eq.${org},organization_id.is.null`);
+  }
+  return query.eq('organization_id', org);
+}
+
 export class DomainError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }

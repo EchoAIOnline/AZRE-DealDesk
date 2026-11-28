@@ -131,7 +131,8 @@ test('audit is atomic, attributed and retains before/after values; ordinary role
  await pg.exec('DROP TRIGGER reject_audit ON "PluginMutationAudit";');
 });
 test('hosted transport exposes all 63 user-capability tools across all tables, dashboard, activity feed, and user creation',async()=>{
- await pg.query('INSERT INTO "OffMarketProperties"(id,"Address","City","State","Zip","Interested","Trash",organization_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[501,'501 Scouter Way','Decatur','GA','30030',true,false,ORGANIZATION]);
+ await pg.query('INSERT INTO "OffMarketProperties"(id,"Address","City","State","Zip","Interested","Trash",organization_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8),($9,$10,$11,$12,$13,$14,$15,$16)',[501,'501 Scouter Way','Decatur','GA','30030',true,false,ORGANIZATION,505,'505 UI Legacy Dr','Atlanta','GA','30306',true,false,null]);
+ await pg.query('UPDATE "OffMarketProperties" SET "Text Message Sent"=true,"TMS Date and Time"=$1 WHERE id=505',[new Date().toISOString()]);
  const server=createHostedServer(db,{
    identity,
    writes:true,
@@ -232,9 +233,17 @@ test('hosted transport exposes all 63 user-capability tools across all tables, d
  assert.equal(feedAll.activities[0].action_type,'LOI_SENT');
  const dash=(await client.callTool({name:'get_dashboard',arguments:{timeframe:'week'}})).structuredContent;
  assert.ok(dash.kpis.totalDeals>=1);
+ assert.ok(dash.timeframeMetrics.totalOwnerTextsSent>=1);
  assert.ok(dash.recentActivity.length>=2);
  assert.ok(dash.usersSummary.users.some(u=>u.name==='API Operator'));
  assert.ok(!JSON.stringify(dash).includes('Str0ngPass!123'));
+ assert.equal((await client.callTool({name:'search_off_market_properties',arguments:{query:'505 UI Legacy'}})).structuredContent.records.length,1);
+
+ // Apply 010 migration: sets DEFAULT org_azre_00001 and backfills NULL organization_id rows for Hosted writes
+ await pg.exec(await readFile(new URL('../backend/010-offmarket-org-scope.sql',import.meta.url),'utf8'));
+ const legacyRow=(await client.callTool({name:'get_off_market_property',arguments:{property_id:505}})).structuredContent.record;
+ const legacyUpdated=(await client.callTool({name:'update_off_market_property',arguments:{property_id:505,expected_revision:legacyRow._revision,fields:{Interested:false}}})).structuredContent.record;
+ assert.equal(legacyUpdated.Interested,false);
 
  for(const name of ['get_deal','match_buyers']) assert.ok(!(await client.callTool({name,arguments:{deal_id:deal.id}})).isError);
  const before=(await pg.query('SELECT count(*)::int n FROM "PluginMutationAudit"')).rows[0].n;

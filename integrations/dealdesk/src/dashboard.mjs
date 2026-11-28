@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { project, fail } from './domain.mjs';
+import { project, scopeOrgQuery, fail } from './domain.mjs';
 
 const POTENTIAL_STATUSES = new Set([
   'No Offer Made Yet',
@@ -130,7 +130,7 @@ async function fetchAllOrgRows(db, table, org, { excludeArchived = true, orderCo
   let offset = 0;
 
   while (rows.length < maxRows) {
-    let q = db.from(table).select(selectCols).eq('organization_id', org);
+    let q = scopeOrgQuery(db.from(table).select(selectCols), table, org);
     if (excludeArchived) q = q.is('pluginArchivedAt', null);
     const { data, error } = await q.order(orderCol, { ascending }).range(offset, offset + pageSize - 1);
     if (error) fail('DATABASE_ERROR', `Failed reading ${table} for dashboard.`);

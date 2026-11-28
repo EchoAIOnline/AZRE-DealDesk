@@ -3,7 +3,13 @@ import { createClient, type OAuthAuthorizationDetails } from '@supabase/supabase
 
 // Use the same Supabase project/storage key as DealDesk, without mounting App:
 // the consent page must not run business-data synchronization or profile writes.
-const auth = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+const rawAuthUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const authUrl = rawAuthUrl.startsWith('http') ? rawAuthUrl : (rawAuthUrl ? `https://${rawAuthUrl}` : '');
+const authKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const isAuthConfigured = Boolean(authUrl && authKey && !authUrl.includes('your-project-id'));
+const auth = isAuthConfigured
+  ? createClient(authUrl, authKey)
+  : createClient('http://localhost:65535', 'placeholder_key_will_fail_fast');
 function returnToChatGPT(value: string) {
   const url = new URL(value);
   if (url.origin !== 'https://chatgpt.com' ||

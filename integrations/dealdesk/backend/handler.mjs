@@ -12,6 +12,8 @@ import {
   createSchema,
   patchSchema,
   project,
+  legacyNullOrgTables,
+  scopeOrgQuery,
   DomainError,
   fail,
 } from '../src/domain.mjs';
@@ -112,7 +114,7 @@ function checkDb(result) {
 }
 
 function scoped(db, table, org) {
-  return db.from(table).select('*').eq('organization_id', org);
+  return scopeOrgQuery(db.from(table).select('*'), table, org);
 }
 
 function computeDealPipelineType(queueStatus, listingType) {
@@ -466,7 +468,7 @@ export async function executeOperation(db, input, config) {
     if (req.expected_revision !== undefined && current[0].pluginRevision !== req.expected_revision) {
       fail('CONFLICT', 'The record changed. Read it again and reconcile before retrying.');
     }
-    let delQ = db.from(table).delete().eq('id', req.id).eq('organization_id', org);
+    let delQ = scopeOrgQuery(db.from(table).delete().eq('id', req.id), table, org);
     if (req.expected_revision !== undefined) delQ = delQ.eq('pluginRevision', req.expected_revision);
     checkDb(await delQ);
     return { deleted: true, id: current[0].id, table };
@@ -533,11 +535,11 @@ export async function executeOperation(db, input, config) {
   if (row.pluginArchivedAt && !['restore', 'archive'].includes(req.action)) {
     fail('ARCHIVED', 'Restore this record before editing it.');
   }
+  if (row.organization_id == null && org === 'org_azre_00001' && legacyNullOrgTables.has(table)) {
+    patch = { ...patch, organization_id: org };
+  }
   const rows = checkDb(
-    await db.from(table)
-      .update(patch)
-      .eq('id', req.id)
-      .eq('organization_id', org)
+    await scopeOrgQuery(db.from(table).update(patch).eq('id', req.id), table, org)
       .eq('pluginRevision', req.expected_revision)
       .select('*'),
   );

@@ -30,11 +30,12 @@ before(async () => {
   await pg.exec(await readFile(new URL('../backend/009-users-activity-dashboard.sql',import.meta.url),'utf8'));
   await pg.query('INSERT INTO "PluginOAuthGrants" (client_id,user_id,organization_id,resource,enabled) VALUES ($1,$2,$3,$4,true)',[clientId,user,ORGANIZATION,RESOURCE]);
   await pg.query('INSERT INTO "Deals" (id,address,organization_id) VALUES ($1,$2,$3),($4,$5,$6)',[randomUUID(),'AZRE fixture',ORGANIZATION,randomUUID(),'Other org private address','other']);
-  await pg.query('INSERT INTO "OffMarketProperties" (id,"Address","City","State","Interested","Trash",organization_id,"pluginArchivedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8),($9,$10,$11,$12,$13,$14,$15,$16),($17,$18,$19,$20,$21,$22,$23,$24),($25,$26,$27,$28,$29,$30,$31,$32)',[
+  await pg.query('INSERT INTO "OffMarketProperties" (id,"Address","City","State","Interested","Trash",organization_id,"pluginArchivedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8),($9,$10,$11,$12,$13,$14,$15,$16),($17,$18,$19,$20,$21,$22,$23,$24),($25,$26,$27,$28,$29,$30,$31,$32),($33,$34,$35,$36,$37,$38,$39,$40)',[
     101,'101 Peachtree St','Atlanta','GA',true,false,ORGANIZATION,null,
     102,'102 Oak Ave','Marietta','GA',false,false,ORGANIZATION,null,
     103,'103 Archived Rd','Atlanta','GA',true,false,ORGANIZATION,'2026-01-01T00:00:00Z',
     104,'104 Private Blvd','Atlanta','GA',true,false,'other',null,
+    105,'105 UI Imported Rd','Roswell','GA',true,false,null,null,
   ]);
   keys = await generateKeyPair('ES256');
   keySet = createLocalJWKSet({keys:[{...await exportJWK(keys.publicKey),kid:'test'}]});
@@ -81,12 +82,18 @@ test('hosted MCP discovers only read tools, reads one organization and rejects a
     const page2 = await client.callTool({name:'search_off_market_properties',arguments:{limit:1,offset:1}});
     assert.equal(page2.structuredContent.records.length,1);
     assert.equal(page2.structuredContent.records[0].id,102);
-    assert.equal(page2.structuredContent.next_offset,null);
+    assert.equal(page2.structuredContent.next_offset,2);
+    const page3 = await client.callTool({name:'search_off_market_properties',arguments:{limit:1,offset:2}});
+    assert.equal(page3.structuredContent.records.length,1);
+    assert.equal(page3.structuredContent.records[0].id,105);
+    assert.equal(page3.structuredContent.next_offset,null);
     const filtered = await client.callTool({name:'search_off_market_properties',arguments:{filters:{City:'Atlanta',Interested:true}}});
     assert.equal(filtered.structuredContent.records.length,1);
     assert.equal(filtered.structuredContent.records[0].id,101);
     const prop = await client.callTool({name:'get_off_market_property',arguments:{property_id:101}});
     assert.equal(prop.structuredContent.record.Address,'101 Peachtree St');
+    const nullOrgProp = await client.callTool({name:'get_off_market_property',arguments:{property_id:105}});
+    assert.equal(nullOrgProp.structuredContent.record.Address,'105 UI Imported Rd');
     assert.equal((await client.callTool({name:'get_off_market_property',arguments:{property_id:104}})).isError,true);
     for(const name of ['create_deal','update_deal','delete_deal','move_deal','add_deal_note','add_deal_photos','create_jv_deal','create_buyer','update_buyer','add_buyer_note','delete_buyer','create_agent','update_agent','add_agent_note','delete_agent','create_wholesaler','move_contact','create_off_market_property','update_off_market_property','delete_off_market_property','create_task','update_task','delete_task','create_note','update_offer','archive_record','restore_record','create_workspace_record','send_email','log_activity','create_user']) {
       const rejected = await client.callTool({name,arguments:{}}); assert.equal(rejected.isError,true); assert.match(rejected.content[0].text,/WRITES_DISABLED/);

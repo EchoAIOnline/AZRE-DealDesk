@@ -176,3 +176,13 @@ and AI Operate (`/api/ai/operate`):
   declined, canceled deals, LOIs, agent/owner texts & conversations), 14-day chart series,
   recent deals, upcoming follow-ups/tasks, recent activity, and non-sensitive user summaries.
 
+## Off-Market Scouter Organization Scoping (010)
+
+Apply `backend/010-offmarket-org-scope.sql` to set `DEFAULT 'org_azre_00001'` on
+`OffMarketProperties.organization_id` and `OffMarketOfferTextMessageGenerator.organization_id`
+and backfill any `organization_id IS NULL` rows to `org_azre_00001`. Even before running
+`010`, `org_azre_00001` API reads (`search_off_market_properties`, `get_off_market_property`,
+`get_off_market_templates`, `get_dashboard`, and `/api/ai/plugin` reads) include rows where
+`organization_id` is `'org_azre_00001'` or `NULL` (from direct UI inserts/imports) while
+strictly excluding any foreign organization's rows.
+

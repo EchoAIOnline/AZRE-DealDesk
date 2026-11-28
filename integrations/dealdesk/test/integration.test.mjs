@@ -169,6 +169,16 @@ test('full user capabilities: lockBoxCode, Agents/Wholesalers/JVDeals/OffMarket 
   const omUpd=(await run({action:'update',table:'OffMarketProperties',id:om.id,expected_revision:om._revision,payload:{Interested:true}})).record;
   assert.equal(omUpd.Interested,true);
   await run({action:'delete',table:'OffMarketProperties',id:om.id});
+  await pg.query('INSERT INTO "OffMarketProperties"(id,"Address","City","State",organization_id) VALUES($1,$2,$3,$4,$5),($6,$7,$8,$9,$10)',[801,'801 UI Imported Rd','Roswell','GA',null,802,'802 Other Org Rd','Atlanta','GA','other']);
+  const masterRun=r=>executeOperation(db,r,{...config,organizationId:'org_azre_00001'});
+  const legacyRead=await invoke('search_off_market_properties',{query:'801 UI Imported'},{client:{operate:masterRun}});
+  assert.equal(legacyRead.records.length,1);
+  assert.equal(legacyRead.records[0].id,801);
+  assert.equal((await invoke('search_off_market_properties',{query:'801 UI Imported'},{client:{operate:run}})).records.length,0);
+  assert.equal((await invoke('search_off_market_properties',{query:'802 Other Org'},{client:{operate:masterRun}})).records.length,0);
+  const legacyUpd=(await masterRun({action:'update',table:'OffMarketProperties',id:801,expected_revision:legacyRead.records[0]._revision,payload:{Interested:true}})).record;
+  assert.equal(legacyUpd.Interested,true);
+  await masterRun({action:'delete',table:'OffMarketProperties',id:801});
   const intRow=(await run({action:'create',table:'Integrations',request_id:randomUUID(),payload:{organization:'AZRE',twilioPhoneNumber:'+14045550100'}})).record;
   await pg.query('UPDATE "Integrations" SET "twilioAuthToken"=$1,"supabaseKey"=$2 WHERE id=$3',['secret-twilio','secret-sb',intRow.id]);
   const readInt=(await run({action:'read',table:'Integrations',id:intRow.id})).records[0];
